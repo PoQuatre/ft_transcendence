@@ -1,0 +1,6 @@
+*
+!src/
+!src/**
+!CMakeLists.txt
+!CMakePresets.json
+!dev.sh

@@ -1,0 +1,19 @@
+# outputs
+.cache/
+dist/
+build/
+tmp/
+
+# generated
+.generated/
+compile_commands.json
+
+# environment
+.env
+.env*.local
+CMakeUserPresets.json
+certs/
+
+# dependencies
+node_modules/
+.pnpm-store/

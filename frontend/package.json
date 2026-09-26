@@ -1,0 +1,41 @@
+{
+  "name": "frontend",
+  "type": "module",
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.server.json",
+    "dev": "vite",
+    "format": "oxfmt --check .",
+    "format-fix": "oxfmt --write .",
+    "lint": "oxlint -c oxlint.config.ts .",
+    "lint-fix": "oxlint -c oxlint.config.ts --fix .",
+    "serve": "node dist/adapter/server.js",
+    "start": "vite",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@solidjs/meta": "^1.0.0-next.2",
+    "@solidjs/router": "^2.0.0-next.26",
+    "@solidjs/web": "^2.0.0-rc.9",
+    "sirv": "^3.0.2",
+    "solid-js": "^2.0.0-rc.9"
+  },
+  "devDependencies": {
+    "@solidjs/diagnostics": "^2.0.0-rc.9",
+    "@solidjs/start-devtools": "github:solidjs/solid-start-devtools#341960b47ce45fb17526addc08c5e781983784f4",
+    "@solidjs/testing-library": "^1.0.0-beta.3",
+    "@solidjs/vite-plugin": "^3.0.0-next.44",
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@types/node": "^26.6.2",
+    "eslint-plugin-solid": "~0.18.0",
+    "filesystem-routing": "0.3.1",
+    "jsdom": "^30.1.0",
+    "oxfmt": "^0.68.0",
+    "oxlint": "~1.83.0",
+    "oxlint-tsgolint": "^7.0.2002",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
+  }
+}

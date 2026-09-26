@@ -1,0 +1,60 @@
+ARG GO_VERSION=1.27.0
+ARG ALPINE_VERSION=3.24
+ARG AIR_VERSION=v1.67.4
+
+
+
+# ------------------------------------------------------------------------------
+# Build
+# ------------------------------------------------------------------------------
+FROM docker.io/library/golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS builder
+
+WORKDIR /app
+
+RUN apk add --no-cache gcc=15.2.0-r5 musl-dev=1.2.6-r2
+
+COPY go.mod go.sum ./
+
+RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod \
+	go mod download
+
+COPY . .
+
+RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod \
+	--mount=type=cache,id=go-build,target=/root/.cache/go-build \
+	CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o ./tmp/api ./cmd/api
+
+
+
+# ------------------------------------------------------------------------------
+# Development runtime
+# ------------------------------------------------------------------------------
+FROM docker.io/library/golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS dev
+
+ARG AIR_VERSION
+
+WORKDIR /app
+
+RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod \
+	--mount=type=cache,id=go-build,target=/root/.cache/go-build \
+	go install "github.com/air-verse/air@${AIR_VERSION}"
+
+RUN mkdir -p /app/tmp /home/app
+
+ENV HOME=/home/app \
+	GOCACHE=/go-build
+
+CMD ["air"]
+
+
+
+# ------------------------------------------------------------------------------
+# Production runtime
+# ------------------------------------------------------------------------------
+FROM docker.io/library/alpine:${ALPINE_VERSION} AS prod
+
+COPY --from=builder --chown=1000:1000 /app/tmp/api /usr/local/bin/api
+
+USER 1000:1000
+EXPOSE 8080
+CMD ["/usr/local/bin/api", "serve"]

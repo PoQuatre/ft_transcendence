@@ -1,0 +1,14 @@
+*
+!src/
+!src/**
+!public/
+!public/**
+!package.json
+!pnpm-lock.yaml
+!server.ts
+!tsconfig.json
+!tsconfig.server.json
+!vite.config.ts
+
+**/*.test.ts
+**/*.test.tsx

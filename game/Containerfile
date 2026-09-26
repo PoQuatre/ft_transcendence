@@ -1,0 +1,26 @@
+ARG EMSCRIPTEN_VERSION=6.0.9
+ARG NINJA_VERSION=1.11.1-2
+ARG INOTIFY_VERSION=3.22.6.0-4
+
+
+
+# ------------------------------------------------------------------------------
+# Development runtime
+# ------------------------------------------------------------------------------
+FROM docker.io/emscripten/emsdk:${EMSCRIPTEN_VERSION} AS dev
+
+ARG NINJA_VERSION
+ARG INOTIFY_VERSION
+
+RUN apt-get update && \
+	apt-get install --no-install-recommends -y "ninja-build=${NINJA_VERSION}" "inotify-tools=${INOTIFY_VERSION}" && \
+	rm -rf /var/lib/apt/lists/* && \
+	mkdir -p /home/app
+
+WORKDIR /app
+
+COPY dev.sh /usr/local/bin/dev.sh
+
+ENV HOME=/home/app
+
+CMD ["sh", "/usr/local/bin/dev.sh"]

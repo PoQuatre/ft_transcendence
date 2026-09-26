@@ -1,0 +1,27 @@
+services:
+  migrate:
+    restart: "no"
+    build:
+      context: ./backend
+      dockerfile: ./Containerfile
+      target: prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vault-bootstrap:
+        condition: service_healthy
+    volumes:
+      - vault-migrate-credentials:/credentials:ro
+      - ./backend/migrations:/migrations
+    environment:
+      VAULT_ADDR: http://vault:8200
+      MIGRATE_ROLE_ID: ${MIGRATE_ROLE_ID:?MIGRATE_ROLE_ID is required}
+      MIGRATE_SECRET_ID_PATH: /credentials/secret_id
+      DATABASE_DSN: postgres://{{user-passwd}}@postgres:5432/postgres?sslmode=disable&role=app_migrate
+      MIGRATIONS_DIR: /migrations
+    command: ["/usr/local/bin/api", "migrate", "up"]
+
+  backend:
+    depends_on:
+      migrate:
+        condition: service_completed_successfully

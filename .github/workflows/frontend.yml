@@ -1,0 +1,107 @@
+name: Frontend CI
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+    working-directory: frontend
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm and Node.js
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          version: 11.25.0
+          runtime: node@26.8.1
+          working-directory: frontend
+          cache: true
+
+      - name: Check formatting
+        run: |
+          pnpm run format-fix
+          git diff --quiet -- || {
+            git diff --name-only -z | while IFS= read -r -d '' file; do
+              printf '::error file=%s,line=1,title=Formatting::Run pnpm run format-fix\n' "$file"
+            done
+            exit 1
+          }
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm and Node.js
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          version: 11.25.0
+          runtime: node@26.8.1
+          working-directory: frontend
+          cache: true
+
+      - name: Run lint
+        run: |
+          # Vite generates this declaration, but lint runs without starting Vite.
+          sed -i 's#../\.generated/file-routes\.d\.ts#filesystem-routing/types#' src/vite-env.d.ts
+          pnpm run lint
+
+  build:
+    name: Build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm and Node.js
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          version: 11.25.0
+          runtime: node@26.8.1
+          working-directory: frontend
+          cache: true
+
+      - name: Build frontend
+        run: pnpm run build
+
+  test:
+    name: Test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm and Node.js
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          version: 11.25.0
+          runtime: node@26.8.1
+          working-directory: frontend
+          cache: true
+
+      - name: Run tests
+        run: pnpm test run

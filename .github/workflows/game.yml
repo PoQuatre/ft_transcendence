@@ -1,0 +1,193 @@
+name: Game CI
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+    working-directory: game
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup game build
+        uses: ./.github/actions/setup-game-build
+
+      - name: Enable Clang problem matcher
+        run: echo "::add-matcher::${{ github.workspace }}/.github/problem-matchers/clang.json"
+
+      - name: Check formatting
+        run: git ls-files -z -- '*.cpp' '*.hpp' | xargs -0r clang-format-23 --dry-run --Werror
+
+  lint-native:
+    name: Lint Native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup game build
+        uses: ./.github/actions/setup-game-build
+        with:
+          fetchcontent-hash: ${{ hashFiles('game/CMakeLists.txt', 'game/CMakePresets.json') }}
+          fetchcontent-cache-key-prefix: fetchcontent-native
+          install-native-dependencies: true
+
+      - name: Configure native debug build
+        env:
+          CC: clang-23
+          CXX: clang++-23
+        run: |
+          cmake --preset native-debug \
+            -DSDL_UNIX_CONSOLE_BUILD=ON \
+            -DFETCHCONTENT_BASE_DIR="${{ github.workspace }}/.cache/fetchcontent"
+
+      - name: Enable Clang problem matcher
+        run: echo "::add-matcher::${{ github.workspace }}/.github/problem-matchers/clang.json"
+
+      - name: Run clang-tidy
+        run: git ls-files -z -- '**.cpp' | xargs -0r run-clang-tidy-23 -p build/native-debug
+
+  lint-web:
+    name: Lint Web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup game build
+        uses: ./.github/actions/setup-game-build
+        with:
+          fetchcontent-hash: ${{ hashFiles('game/CMakeLists.txt', 'game/CMakePresets.json') }}
+          fetchcontent-cache-key-prefix: fetchcontent-web
+          emsdk-version: 6.0.9
+
+      - name: Configure web debug build
+        env:
+          CC: clang-23
+          CXX: clang++-23
+        run: |
+          cmake --preset web-debug \
+            -DSDL_UNIX_CONSOLE_BUILD=ON \
+            -DFETCHCONTENT_BASE_DIR="${{ github.workspace }}/.cache/fetchcontent"
+
+      - name: Enable Clang problem matcher
+        run: echo "::add-matcher::${{ github.workspace }}/.github/problem-matchers/clang.json"
+
+      - name: Run clang-tidy
+        run: git ls-files -z -- '**.cpp' | xargs -0r run-clang-tidy-23 -p build/web-debug
+
+  build:
+    name: Build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup game build
+        uses: ./.github/actions/setup-game-build
+        with:
+          fetchcontent-hash: ${{ hashFiles('game/CMakeLists.txt', 'game/CMakePresets.json') }}
+          fetchcontent-cache-key-prefix: fetchcontent-web
+          sccache-cache-key-prefix: sccache-web
+          emsdk-version: 6.0.9
+
+      - name: Configure web release build
+        env:
+          CC: clang-23
+          CXX: clang++-23
+        run: |
+          cmake --preset web-release \
+            -DSDL_UNIX_CONSOLE_BUILD=ON \
+            -DFETCHCONTENT_BASE_DIR="${{ github.workspace }}/.cache/fetchcontent" \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+      - name: Enable custom problem matchers
+        run: echo "::add-matcher::${{ github.workspace }}/.github/problem-matchers/clang.json"
+
+      - name: Build web release
+        run: cmake --build --preset web-release --parallel
+
+      - name: Show sccache statistics
+        if: always()
+        run: sccache --show-stats
+
+      - name: Save sccache cache
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .cache/sccache
+          key: sccache-web-${{ runner.os }}-${{ github.sha }}
+
+  test:
+    name: Test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup game build
+        uses: ./.github/actions/setup-game-build
+        with:
+          fetchcontent-hash: ${{ hashFiles('game/CMakeLists.txt', 'game/CMakePresets.json') }}
+          fetchcontent-cache-key-prefix: fetchcontent-native
+          sccache-cache-key-prefix: sccache-native
+          install-native-dependencies: true
+
+      - name: Configure native debug build
+        env:
+          CC: clang-23
+          CXX: clang++-23
+        run: |
+          cmake --preset native-debug \
+            -DSDL_UNIX_CONSOLE_BUILD=ON \
+            -DFETCHCONTENT_BASE_DIR="${{ github.workspace }}/.cache/fetchcontent" \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+      - name: Enable custom problem matchers
+        run: |
+          echo "::add-matcher::${{ github.workspace }}/.github/problem-matchers/clang.json"
+          echo "::add-matcher::${{ github.workspace }}/.github/problem-matchers/catch2.json"
+
+      - name: Build native tests
+        run: cmake --build --preset native-debug --parallel
+
+      - name: Run native tests
+        run: ctest --preset native-debug --parallel -V
+
+      - name: Show sccache statistics
+        if: always()
+        run: sccache --show-stats
+
+      - name: Save sccache cache
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .cache/sccache
+          key: sccache-native-${{ runner.os }}-${{ github.sha }}

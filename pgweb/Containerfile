@@ -1,0 +1,31 @@
+ARG PGWEB_VERSION=0.17.0
+ARG VAULT_VERSION=2.1.1
+
+
+
+# ------------------------------------------------------------------------------
+# pgweb binary
+# ------------------------------------------------------------------------------
+FROM docker.io/sosedoff/pgweb:${PGWEB_VERSION} AS pgweb
+
+
+
+# ------------------------------------------------------------------------------
+# Vault Agent and pgweb
+# ------------------------------------------------------------------------------
+FROM docker.io/hashicorp/vault:${VAULT_VERSION}
+
+USER 0
+RUN mkdir -p /vault/file && \
+	chown 100:1000 /vault/file && \
+	chmod 0700 /vault/file
+
+COPY --from=pgweb /usr/bin/pgweb /usr/local/bin/pgweb
+COPY --chown=100:1000 agent.hcl /vault/config/agent.hcl
+COPY --chown=100:1000 entrypoint.sh /usr/local/bin/pgweb-vault-agent
+
+RUN chmod 0555 /usr/local/bin/pgweb /usr/local/bin/pgweb-vault-agent
+
+USER 100:1000
+
+ENTRYPOINT ["/usr/local/bin/pgweb-vault-agent"]

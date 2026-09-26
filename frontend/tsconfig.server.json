@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    // General
+    "outDir": "dist/adapter",
+    "rootDir": ".",
+    "target": "ESNext",
+    "allowJs": false,
+    "checkJs": false,
+
+    // Modules
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    // Type Checking & Safety
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true
+  },
+  "include": ["server.ts"]
+}

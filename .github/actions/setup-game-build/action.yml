@@ -1,0 +1,79 @@
+name: Setup game build
+description: Install the game build toolchain and restore CMake dependencies.
+
+inputs:
+  fetchcontent-hash:
+    description: Hash of CMake FetchContent dependency declarations.
+    required: false
+  fetchcontent-cache-key-prefix:
+    description: Cache key prefix for CMake FetchContent dependencies.
+    default: fetchcontent
+  sccache-cache-key-prefix:
+    description: Cache key prefix for sccache.
+    required: false
+  emsdk-version:
+    description: The version of emsdk to install.
+    required: false
+  install-native-dependencies:
+    description: Install Linux libraries required by the native raylib build.
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Add LLVM apt repository
+      shell: bash
+      run: |
+        key=$(mktemp)
+        curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key -o "$key"
+        fpr=$(gpg --show-keys --with-colons "$key" | awk -F: '$1 == "fpr" { print $10; exit }')
+        test "$fpr" = "6084F3CF814B57C1CF12EFD515CF4D18AF4F7421"
+        sudo install -Dm644 "$key" /etc/apt/keyrings/apt.llvm.org.asc
+        rm "$key"
+        echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] https://apt.llvm.org/noble/ llvm-toolchain-noble-23 main" \
+          | sudo tee /etc/apt/sources.list.d/llvm.list
+
+    - name: Install LLVM 23 toolchain
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y --no-install-recommends clang-23 clang-format-23 clang-tidy-23 ninja-build
+
+    - name: Install native game dependencies
+      if: inputs.install-native-dependencies == 'true'
+      shell: bash
+      run: sudo apt-get install -y --no-install-recommends libglfw3 libglfw3-dev libx11-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libxext-dev libxfixes-dev libwayland-dev libxkbcommon-dev
+
+    - name: Setup sccache
+      if: inputs.sccache-cache-key-prefix != ''
+      uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
+
+    - name: Restore sccache
+      if: inputs.sccache-cache-key-prefix != ''
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .cache/sccache
+        key: ${{ inputs.sccache-cache-key-prefix }}-${{ runner.os }}-${{ github.sha }}
+        restore-keys: ${{ inputs.sccache-cache-key-prefix }}-${{ runner.os }}-
+
+    - name: Configure sccache
+      if: inputs.sccache-cache-key-prefix != ''
+      shell: bash
+      run: |
+        echo "SCCACHE_DIR=${{ github.workspace }}/.cache/sccache" >> "$GITHUB_ENV"
+        echo "SCCACHE_CACHE_SIZE=2G" >> "$GITHUB_ENV"
+
+    - name: Cache CMake dependencies
+      if: inputs.fetchcontent-hash != ''
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .cache/fetchcontent
+        key: ${{ inputs.fetchcontent-cache-key-prefix }}-${{ runner.os }}-${{ inputs.fetchcontent-hash }}
+        restore-keys: ${{ inputs.fetchcontent-cache-key-prefix }}-${{ runner.os }}-
+
+    - name: Setup Emscripten
+      if: inputs.emsdk-version != ''
+      uses: emscripten-core/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984 # v16
+      with:
+        version: ${{ inputs.emsdk-version }}
+        actions-cache-folder: .cache/emsdk

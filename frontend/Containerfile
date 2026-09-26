@@ -1,0 +1,97 @@
+ARG NODE_VERSION=26.8.1
+ARG PNPM_VERSION=11.25.0
+ARG ALPINE_VERSION=3.24
+ARG EMSCRIPTEN_VERSION=6.0.9
+ARG NINJA_VERSION=1.11.1-2
+
+
+
+# ------------------------------------------------------------------------------
+# Game build
+# ------------------------------------------------------------------------------
+FROM docker.io/emscripten/emsdk:${EMSCRIPTEN_VERSION} AS game-builder
+
+ARG NINJA_VERSION
+
+RUN apt-get update && \
+	apt-get install --no-install-recommends -y "ninja-build=${NINJA_VERSION}" && \
+	rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY game ./
+
+RUN --mount=type=cache,id=game-build,target=/app/build \
+	cmake --preset web-release && \
+	cmake --build --preset web-release && \
+	mkdir /out && \
+	cp build/web-release/src/game.mjs build/web-release/src/game.wasm /out/
+
+
+
+# ------------------------------------------------------------------------------
+# Frontend build
+# ------------------------------------------------------------------------------
+FROM docker.io/library/node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS pnpm-base
+
+ARG PNPM_VERSION
+
+ENV PNPM_HOME="/pnpm"
+
+RUN npm install -g "pnpm@${PNPM_VERSION}" && \
+	npm cache clean --force
+
+WORKDIR /app
+
+
+
+# ------------------------------------------------------------------------------
+# Frontend build
+# ------------------------------------------------------------------------------
+FROM pnpm-base AS frontend-builder
+
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+	pnpm install --frozen-lockfile
+
+COPY frontend/ ./
+COPY --from=game-builder /out/ ./public/assets/game/
+
+RUN sha256sum public/assets/game/game.mjs public/assets/game/game.wasm | sha256sum | cut -d ' ' -f1 > public/assets/game/build-id && \
+	pnpm build && \
+	pnpm prune --prod
+
+
+
+# ------------------------------------------------------------------------------
+# Development runtime
+# ------------------------------------------------------------------------------
+FROM pnpm-base AS dev
+
+RUN mkdir -p /app/.generated /home/app /pnpm/store
+
+ENV HOME=/home/app
+
+EXPOSE 3000
+CMD ["sh", "-c", "pnpm install --frozen-lockfile --store-dir /pnpm/store && exec pnpm dev --host"]
+
+
+
+# ------------------------------------------------------------------------------
+# Production runtime
+# ------------------------------------------------------------------------------
+FROM docker.io/library/node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS prod
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+	NODE_OPTIONS="--enable-source-maps"
+
+COPY --from=frontend-builder --chown=1000:1000 /app/package.json ./
+COPY --from=frontend-builder --chown=1000:1000 /app/dist ./dist
+COPY --from=frontend-builder --chown=1000:1000 /app/node_modules ./node_modules
+
+USER 1000:1000
+EXPOSE 3000
+CMD ["node", "dist/adapter/server.js"]

@@ -1,0 +1,25 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "catch2",
+      "pattern": [
+        {
+          "regexp": "^(?:\\d+:\\s*)(?:\\.\\./)*([^:]+):(\\d+): .*FAILED:.*$",
+          "file": 1,
+          "line": 2
+        },
+        {
+          "regexp": "^(?:\\d+:\\s*)?\\s*(.+)$",
+          "code": 1
+        },
+        {
+          "regexp": "^(?:\\d+:\\s*)?\\s*(with expansion|due to a fatal error condition):$"
+        },
+        {
+          "regexp": "^(?:\\d+:\\s*)?\\s*(.+)$",
+          "message": 1
+        }
+      ]
+    }
+  ]
+}

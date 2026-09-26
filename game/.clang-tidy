@@ -1,0 +1,27 @@
+Checks: >
+  -*,
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-implicit-widening-of-multiplication-result,
+  -bugprone-narrowing-conversions,
+  -cert-dcl16-c,
+  -cert-err58-cpp,
+  -misc-const-correctness,
+  -misc-include-cleaner,
+  -modernize-use-trailing-return-type,
+  -portability-avoid-pragma-once,
+  -readability-braces-around-statements,
+  -readability-identifier-length,
+  -readability-identifier-naming,
+  -readability-magic-numbers,
+
+WarningsAsErrors: "*"
+HeaderFilterRegex: ".*/game/(src|tests)/.*"
+FormatStyle: file

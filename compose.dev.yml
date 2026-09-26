@@ -1,0 +1,81 @@
+services:
+  nginx:
+    environment:
+      MODSEC_RULE_ENGINE: "Off"
+
+  vault:
+    ports:
+      - 127.0.0.1:8200:8200
+
+  vault-bootstrap:
+    build:
+      context: ./vault
+      dockerfile: ./Containerfile
+      target: dev
+    volumes:
+      - ./vault/policies:/bootstrap/policies:ro
+      - vault-pgweb-credentials:/credentials/pgweb
+    environment:
+      PGWEB_ROLE_ID: ${PGWEB_ROLE_ID:?PGWEB_ROLE_ID is required}
+      PGWEB_ROLE_POLICIES: pgweb
+
+  pgweb:
+    restart: unless-stopped
+    build:
+      context: ./pgweb
+      dockerfile: ./Containerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vault-bootstrap:
+        condition: service_healthy
+    ports:
+      - 127.0.0.1:8081:8081
+    volumes:
+      - vault-pgweb-credentials:/credentials:ro
+    environment:
+      PGWEB_ROLE_ID: ${PGWEB_ROLE_ID:?PGWEB_ROLE_ID is required}
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ./Containerfile
+      target: dev
+    volumes:
+      - ./frontend:/app:ro
+      - ./frontend/.generated:/app/.generated
+      - frontend-node-modules:/app/node_modules
+      - frontend-pnpm-store:/pnpm/store
+      - game-out:/app/public/assets/game:ro
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ./Containerfile
+      target: dev
+    volumes:
+      - ./backend:/app:ro
+      - backend-tmp:/app/tmp
+      - backend-go-mod:/go/pkg/mod
+      - backend-go-build:/go-build
+    command: ["air"]
+
+  game:
+    build:
+      context: ./game
+      dockerfile: ./Containerfile
+      target: dev
+    volumes:
+      - ./game:/app:ro
+      - game-build:/app/build
+      - game-out:/out
+
+volumes:
+  frontend-node-modules:
+  frontend-pnpm-store:
+  backend-tmp:
+  backend-go-mod:
+  backend-go-build:
+  game-build:
+  game-out:
+  vault-pgweb-credentials:

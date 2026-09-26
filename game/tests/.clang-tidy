@@ -1,0 +1,9 @@
+InheritParentConfig: true
+
+Checks: >
+  -misc-use-anonymous-namespace,
+  -readability-magic-numbers,
+
+CheckOptions:
+  - key: readability-function-cognitive-complexity.IgnoreMacros
+    value: "true"

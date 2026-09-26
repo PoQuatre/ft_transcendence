@@ -1,0 +1,28 @@
+{
+  "printWidth": 80,
+  "tabWidth": 2,
+  "useTabs": false,
+
+  "semi": true,
+  "singleQuote": true,
+  "trailingComma": "all",
+
+  "arrowParens": "always",
+  "bracketSpacing": true,
+  "bracketSameLine": false,
+
+  "endOfLine": "lf",
+  "proseWrap": "preserve",
+
+  "sortImports": {
+    "newlinesBetween": true,
+    "sortSideEffects": false,
+    "internalPattern": ["@/", "~/", "#"]
+  },
+
+  "sortPackageJson": {
+    "sortScripts": true
+  },
+
+  "ignorePatterns": ["dist/**"]
+}

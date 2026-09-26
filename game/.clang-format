@@ -1,0 +1,16 @@
+BasedOnStyle: WebKit
+PointerAlignment: Right
+NamespaceIndentation: None
+ColumnLimit: 80
+SpaceInEmptyBlock: false
+IncludeBlocks: Regroup
+BreakTemplateDeclarations: Yes
+IncludeCategories:
+  - Regex: "^<catch2/.*>$"
+    Priority: 1
+  - Regex: '^<.*\.h>$'
+    Priority: 2
+  - Regex: "^<.*>$"
+    Priority: 3
+  - Regex: '^".*"$'
+    Priority: 4
