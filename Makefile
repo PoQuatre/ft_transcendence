@@ -219,6 +219,7 @@ certs:
 					-out certs/localhost.pem -days 365 -extfile /dev/stdin && \
 			rm certs/rootCA-key.pem certs/localhost.csr certs/rootCA.srl; \
 		fi; \
+		chmod 644 certs/rootCA.pem certs/localhost.pem certs/localhost-key.pem; \
 	fi
 
 .env:
