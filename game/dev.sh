@@ -13,11 +13,13 @@ trap stop TERM
 
 build() {
 	cmake --preset web-debug -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF || return
-	cmake --build --preset web-debug || return
+	cmake --build --preset web-debug --parallel || return
 	cp build/web-debug/src/game.mjs build/web-debug/src/game.wasm /out/ || return
 	date +%s%N >/out/.build-id || return
 	mv /out/.build-id /out/build-id
 }
+
+date +%s%N >/out/build-id
 
 if ! build; then
 	printf '%s\n' 'Initial game build failed; waiting for source changes.' >&2
