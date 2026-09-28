@@ -19,8 +19,8 @@ services:
       dockerfile: ./Containerfile
       target: dev
     volumes:
-      - ./vault/policies:/bootstrap/policies:ro
-      - vault-pgweb-credentials:/credentials/pgweb
+      - ./vault/policies:/bootstrap/policies:ro,Z
+      - vault-pgweb-credentials:/credentials/pgweb:z
     environment:
       PGWEB_ROLE_ID: ${PGWEB_ROLE_ID:?PGWEB_ROLE_ID is required}
       PGWEB_ROLE_POLICIES: pgweb
@@ -38,7 +38,7 @@ services:
     ports:
       - 127.0.0.1:8081:8081
     volumes:
-      - vault-pgweb-credentials:/credentials:ro
+      - vault-pgweb-credentials:/credentials:ro,z
     environment:
       PGWEB_ROLE_ID: ${PGWEB_ROLE_ID:?PGWEB_ROLE_ID is required}
     networks:
@@ -54,11 +54,11 @@ services:
       game:
         condition: service_healthy
     volumes:
-      - ./frontend:/app:ro
-      - ./frontend/.generated:/app/.generated
-      - frontend-node-modules:/app/node_modules
-      - frontend-pnpm-store:/pnpm/store
-      - game-out:/app/public/assets/game:ro
+      - ./frontend:/app:ro,Z
+      - ./frontend/.generated:/app/.generated:Z
+      - frontend-node-modules:/app/node_modules:Z
+      - frontend-pnpm-store:/pnpm/store:Z
+      - game-out:/app/public/assets/game:ro,z
     networks:
       frontend-egress:
 
@@ -68,10 +68,10 @@ services:
       dockerfile: ./Containerfile
       target: dev
     volumes:
-      - ./backend:/app:ro
-      - backend-tmp:/app/tmp
-      - backend-go-mod:/go/pkg/mod
-      - backend-go-build:/go-build
+      - ./backend:/app:ro,Z
+      - backend-tmp:/app/tmp:Z
+      - backend-go-mod:/go/pkg/mod:Z
+      - backend-go-build:/go-build:Z
     command: ["air"]
     networks:
       backend-egress:
@@ -89,9 +89,9 @@ services:
       start_interval: 1s
       retries: 3
     volumes:
-      - ./game:/app:ro
-      - game-build:/app/build
-      - game-out:/out
+      - ./game:/app:ro,Z
+      - game-build:/app/build:Z
+      - game-out:/out:z
     networks:
       game-egress:
 

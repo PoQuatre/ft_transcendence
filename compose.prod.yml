@@ -19,8 +19,8 @@ services:
       vault-bootstrap:
         condition: service_healthy
     volumes:
-      - vault-migrate-credentials:/credentials:ro
-      - ./backend/migrations:/migrations
+      - vault-migrate-credentials:/credentials:ro,z
+      - ./backend/migrations:/migrations:Z
     environment:
       VAULT_ADDR: http://vault:8200
       MIGRATE_ROLE_ID: ${MIGRATE_ROLE_ID:?MIGRATE_ROLE_ID is required}
