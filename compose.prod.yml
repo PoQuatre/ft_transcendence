@@ -1,4 +1,12 @@
 services:
+  postgres:
+    networks:
+      postgres-migrate:
+
+  vault:
+    networks:
+      vault-migrate:
+
   migrate:
     restart: "no"
     build:
@@ -20,8 +28,17 @@ services:
       DATABASE_DSN: postgres://{{user-passwd}}@postgres:5432/postgres?sslmode=disable&role=app_migrate
       MIGRATIONS_DIR: /migrations
     command: ["/usr/local/bin/api", "migrate", "up"]
+    networks:
+      vault-migrate:
+      postgres-migrate:
 
   backend:
     depends_on:
       migrate:
         condition: service_completed_successfully
+
+networks:
+  vault-migrate:
+    internal: true
+  postgres-migrate:
+    internal: true

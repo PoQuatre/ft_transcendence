@@ -6,6 +6,12 @@ services:
   vault:
     ports:
       - 127.0.0.1:8200:8200
+    networks:
+      vault-pgweb:
+
+  postgres:
+    networks:
+      postgres-pgweb:
 
   vault-bootstrap:
     build:
@@ -35,6 +41,9 @@ services:
       - vault-pgweb-credentials:/credentials:ro
     environment:
       PGWEB_ROLE_ID: ${PGWEB_ROLE_ID:?PGWEB_ROLE_ID is required}
+    networks:
+      vault-pgweb:
+      postgres-pgweb:
 
   frontend:
     build:
@@ -50,6 +59,8 @@ services:
       - frontend-node-modules:/app/node_modules
       - frontend-pnpm-store:/pnpm/store
       - game-out:/app/public/assets/game:ro
+    networks:
+      frontend-egress:
 
   backend:
     build:
@@ -62,6 +73,8 @@ services:
       - backend-go-mod:/go/pkg/mod
       - backend-go-build:/go-build
     command: ["air"]
+    networks:
+      backend-egress:
 
   game:
     build:
@@ -79,6 +92,8 @@ services:
       - ./game:/app:ro
       - game-build:/app/build
       - game-out:/out
+    networks:
+      game-egress:
 
 volumes:
   frontend-node-modules:
@@ -89,3 +104,12 @@ volumes:
   game-build:
   game-out:
   vault-pgweb-credentials:
+
+networks:
+  vault-pgweb:
+    internal: true
+  postgres-pgweb:
+    internal: true
+  frontend-egress:
+  backend-egress:
+  game-egress:
