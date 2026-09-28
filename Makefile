@@ -1,6 +1,6 @@
 DOCKER = podman
 COMPOSE = $(DOCKER) compose
-
+DEV_DIRS = frontend/.generated frontend/node_modules frontend/public/assets/game backend/tmp game/build
 JFLAG := $(filter -j%,$(MAKEFLAGS))
 HELP_RESET = \033[0m
 HELP_BOLD = \033[1m
@@ -173,11 +173,10 @@ start: certs .env
 	$(COMPOSE) -f compose.yml -f compose.prod.yml up --build --force-recreate -d
 
 .PHONY: dev
-dev: certs .env frontend/.generated
+dev: certs .env $(DEV_DIRS)
 	$(COMPOSE) -f compose.yml -f compose.dev.yml up --build --force-recreate -d
 
-.PHONY: frontend/.generated
-frontend/.generated:
+$(DEV_DIRS):
 	mkdir -p $@
 
 .PHONY: db-generate
