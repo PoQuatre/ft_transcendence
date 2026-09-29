@@ -1,42 +1,38 @@
 import { Title } from '@solidjs/meta';
 import { Loading } from 'solid-js';
-
 import { paths, Router } from './router';
-
 import './App.css';
 
-// The app root: the router and the site-wide layout live here. Pages are
-// the modules under src/routes.
 export default function App() {
   return (
     <Router>
       {(props) => (
-        <>
-          <Title>Solid App</Title>
-          <nav class="bg-slate-800 p-4">
+        <div class="min-h-screen bg-[#050510] text-white font-sans selection:bg-[#ff007f] selection:text-white">
+          <Title>Rider App</Title>
+          <nav class="bg-[#080d1a] p-4 border-b border-[#00f0ff]/30 shadow-[0_4px_20px_rgba(0,240,255,0.15)] flex justify-center gap-6">
             <a
-              class="mx-0.5 inline-block rounded-lg px-3 py-1.5 font-semibold text-sky-300 no-underline transition-colors hover:bg-white/10 hover:text-sky-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-600"
+              class="px-4 py-2 font-bold text-[#00f0ff] text-glow-cyan no-underline transition-all hover:text-white hover:scale-105"
               href={paths()}
             >
-              Home
+              HOME
             </a>
             <a
-              class="mx-0.5 inline-block rounded-lg px-3 py-1.5 font-semibold text-sky-300 no-underline transition-colors hover:bg-white/10 hover:text-sky-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-600"
+              class="px-4 py-2 font-bold text-[#00f0ff] text-glow-cyan no-underline transition-all hover:text-white hover:scale-105"
               href={paths.users(1)}
             >
-              Users
+              USERS
             </a>
             <a
-              class="mx-0.5 inline-block rounded-lg px-3 py-1.5 font-semibold text-sky-300 no-underline transition-colors hover:bg-white/10 hover:text-sky-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-600"
+              class="px-4 py-2 font-bold text-[#ff007f] text-glow-pink no-underline transition-all hover:text-white hover:scale-105"
               href="/game"
             >
-              Game
+              GAME
             </a>
           </nav>
-          <Loading fallback={<main class="px-4 py-12">Loading…</main>}>
+          <Loading fallback={<main class="px-4 py-12 text-[#ff007f] text-glow-pink font-bold">CHARGEMENT DU CYBERSPACE...</main>}>
             {props.children}
           </Loading>
-        </>
+        </div>
       )}
     </Router>
   );
