@@ -16,9 +16,13 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_VAULT_PASSWORD: ${POSTGRES_VAULT_PASSWORD:?POSTGRES_VAULT_PASSWORD is required}
     volumes:
-      - postgres-data:/var/lib/postgresql
-      - ./postgres/init:/docker-entrypoint-initdb.d:ro
-      - ./postgres/pg_hba.conf:/etc/postgres/pg_hba.conf:ro
+      - postgres-data:/var/lib/postgresql:Z
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro,Z
+      - ./postgres/pg_hba.conf:/etc/postgres/pg_hba.conf:ro,Z
+    networks:
+      postgres-bootstrap:
+      postgres-backend:
+      vault-postgres:
 
   nginx:
     restart: unless-stopped
@@ -33,9 +37,12 @@ services:
       DETECTION_PARANOIA: "2"
       MODSEC_RULE_ENGINE: "On"
     volumes:
-      - ./nginx/default.conf.template:/etc/nginx/templates/conf.d/default.conf.template:ro
-      - ./certs/localhost.pem:/etc/nginx/conf/server.crt:ro
-      - ./certs/localhost-key.pem:/etc/nginx/conf/server.key:ro
+      - ./nginx/default.conf.template:/etc/nginx/templates/conf.d/default.conf.template:ro,Z
+      - ./certs/localhost.pem:/etc/nginx/conf/server.crt:ro,Z
+      - ./certs/localhost-key.pem:/etc/nginx/conf/server.key:ro,Z
+    networks:
+      nginx-frontend:
+      nginx-backend:
 
   vault:
     restart: unless-stopped
@@ -45,8 +52,12 @@ services:
       target: server
     command: server
     volumes:
-      - ./vault/vault.hcl:/vault/config/vault.hcl:ro
-      - vault-data:/vault/data
+      - ./vault/vault.hcl:/vault/config/vault.hcl:ro,Z
+      - vault-data:/vault/data:Z
+    networks:
+      vault-bootstrap:
+      vault-backend:
+      vault-postgres:
 
   vault-bootstrap:
     restart: unless-stopped
@@ -64,9 +75,9 @@ services:
       start_interval: 1s
       retries: 3
     volumes:
-      - vault-bootstrap:/bootstrap
-      - vault-backend-credentials:/credentials/backend
-      - vault-migrate-credentials:/credentials/migrate
+      - vault-bootstrap:/bootstrap:Z
+      - vault-backend-credentials:/credentials/backend:z
+      - vault-migrate-credentials:/credentials/migrate:z
     environment:
       VAULT_ADDR: http://vault:8200
       POSTGRES_HOST: postgres
@@ -78,6 +89,9 @@ services:
       BACKEND_ROLE_POLICIES: backend
       MIGRATE_ROLE_ID: ${MIGRATE_ROLE_ID:?MIGRATE_ROLE_ID is required}
       MIGRATE_ROLE_POLICIES: migrate
+    networks:
+      vault-bootstrap:
+      postgres-bootstrap:
 
   frontend:
     restart: unless-stopped
@@ -89,7 +103,9 @@ services:
       NODE_EXTRA_CA_CERTS: /etc/ssl/certs/rootCA.pem
       INTERNAL_ORIGIN: https://nginx:8443
     volumes:
-      - ./certs/rootCA.pem:/etc/ssl/certs/rootCA.pem:ro
+      - ./certs/rootCA.pem:/etc/ssl/certs/rootCA.pem:ro,Z
+    networks:
+      nginx-frontend:
 
   backend:
     restart: unless-stopped
@@ -101,12 +117,16 @@ services:
       vault-bootstrap:
         condition: service_healthy
     volumes:
-      - vault-backend-credentials:/credentials:ro
+      - vault-backend-credentials:/credentials:ro,z
     environment:
       VAULT_ADDR: http://vault:8200
       BACKEND_ROLE_ID: ${BACKEND_ROLE_ID:?BACKEND_ROLE_ID is required}
       BACKEND_SECRET_ID_PATH: /credentials/secret_id
       DATABASE_DSN: postgres://{{user-passwd}}@postgres:5432/postgres?sslmode=disable&role=app_readwrite
+    networks:
+      nginx-backend:
+      vault-backend:
+      postgres-backend:
 
 volumes:
   postgres-data:
@@ -114,3 +134,19 @@ volumes:
   vault-bootstrap:
   vault-backend-credentials:
   vault-migrate-credentials:
+
+networks:
+  nginx-frontend:
+    internal: true
+  nginx-backend:
+    internal: true
+  vault-bootstrap:
+    internal: true
+  vault-backend:
+    internal: true
+  vault-postgres:
+    internal: true
+  postgres-bootstrap:
+    internal: true
+  postgres-backend:
+    internal: true

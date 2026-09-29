@@ -5,7 +5,7 @@ ARG VAULT_VERSION=2.1.1
 # ------------------------------------------------------------------------------
 # Vault server
 # ------------------------------------------------------------------------------
-FROM hashicorp/vault:${VAULT_VERSION} AS server
+FROM docker.io/hashicorp/vault:${VAULT_VERSION} AS server
 
 # Docker and Podman copy this pre-owned directory into a new named volume.
 USER 0
@@ -19,7 +19,7 @@ USER 100:1000
 # ------------------------------------------------------------------------------
 # Bootstrap runtime base
 # ------------------------------------------------------------------------------
-FROM hashicorp/vault:${VAULT_VERSION} AS bootstrap-base
+FROM docker.io/hashicorp/vault:${VAULT_VERSION} AS bootstrap-base
 
 # These are the targets of the bootstrap and credential named volumes.
 USER 0

@@ -6,6 +6,12 @@ services:
   vault:
     ports:
       - 127.0.0.1:8200:8200
+    networks:
+      vault-pgweb:
+
+  postgres:
+    networks:
+      postgres-pgweb:
 
   vault-bootstrap:
     build:
@@ -13,8 +19,8 @@ services:
       dockerfile: ./Containerfile
       target: dev
     volumes:
-      - ./vault/policies:/bootstrap/policies:ro
-      - vault-pgweb-credentials:/credentials/pgweb
+      - ./vault/policies:/bootstrap/policies:ro,Z
+      - vault-pgweb-credentials:/credentials/pgweb:z
     environment:
       PGWEB_ROLE_ID: ${PGWEB_ROLE_ID:?PGWEB_ROLE_ID is required}
       PGWEB_ROLE_POLICIES: pgweb
@@ -32,21 +38,29 @@ services:
     ports:
       - 127.0.0.1:8081:8081
     volumes:
-      - vault-pgweb-credentials:/credentials:ro
+      - vault-pgweb-credentials:/credentials:ro,z
     environment:
       PGWEB_ROLE_ID: ${PGWEB_ROLE_ID:?PGWEB_ROLE_ID is required}
+    networks:
+      vault-pgweb:
+      postgres-pgweb:
 
   frontend:
     build:
       context: ./frontend
       dockerfile: ./Containerfile
       target: dev
+    depends_on:
+      game:
+        condition: service_healthy
     volumes:
-      - ./frontend:/app:ro
-      - ./frontend/.generated:/app/.generated
-      - frontend-node-modules:/app/node_modules
-      - frontend-pnpm-store:/pnpm/store
-      - game-out:/app/public/assets/game:ro
+      - ./frontend:/app:ro,Z
+      - ./frontend/.generated:/app/.generated:Z
+      - frontend-node-modules:/app/node_modules:Z
+      - frontend-pnpm-store:/pnpm/store:Z
+      - game-out:/app/public/assets/game:ro,z
+    networks:
+      frontend-egress:
 
   backend:
     build:
@@ -54,21 +68,32 @@ services:
       dockerfile: ./Containerfile
       target: dev
     volumes:
-      - ./backend:/app:ro
-      - backend-tmp:/app/tmp
-      - backend-go-mod:/go/pkg/mod
-      - backend-go-build:/go-build
+      - ./backend:/app:ro,Z
+      - backend-tmp:/app/tmp:Z
+      - backend-go-mod:/go/pkg/mod:Z
+      - backend-go-build:/go-build:Z
     command: ["air"]
+    networks:
+      backend-egress:
 
   game:
     build:
       context: ./game
       dockerfile: ./Containerfile
       target: dev
+    healthcheck:
+      test: ["CMD", "test", "-f", "/out/build-id"]
+      interval: 15s
+      timeout: 3s
+      start_period: 30s
+      start_interval: 1s
+      retries: 3
     volumes:
-      - ./game:/app:ro
-      - game-build:/app/build
-      - game-out:/out
+      - ./game:/app:ro,Z
+      - game-build:/app/build:Z
+      - game-out:/out:z
+    networks:
+      game-egress:
 
 volumes:
   frontend-node-modules:
@@ -79,3 +104,12 @@ volumes:
   game-build:
   game-out:
   vault-pgweb-credentials:
+
+networks:
+  vault-pgweb:
+    internal: true
+  postgres-pgweb:
+    internal: true
+  frontend-egress:
+  backend-egress:
+  game-egress:

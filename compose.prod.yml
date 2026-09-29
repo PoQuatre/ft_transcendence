@@ -1,4 +1,12 @@
 services:
+  postgres:
+    networks:
+      postgres-migrate:
+
+  vault:
+    networks:
+      vault-migrate:
+
   migrate:
     restart: "no"
     build:
@@ -11,8 +19,8 @@ services:
       vault-bootstrap:
         condition: service_healthy
     volumes:
-      - vault-migrate-credentials:/credentials:ro
-      - ./backend/migrations:/migrations
+      - vault-migrate-credentials:/credentials:ro,z
+      - ./backend/migrations:/migrations:Z
     environment:
       VAULT_ADDR: http://vault:8200
       MIGRATE_ROLE_ID: ${MIGRATE_ROLE_ID:?MIGRATE_ROLE_ID is required}
@@ -20,8 +28,17 @@ services:
       DATABASE_DSN: postgres://{{user-passwd}}@postgres:5432/postgres?sslmode=disable&role=app_migrate
       MIGRATIONS_DIR: /migrations
     command: ["/usr/local/bin/api", "migrate", "up"]
+    networks:
+      vault-migrate:
+      postgres-migrate:
 
   backend:
     depends_on:
       migrate:
         condition: service_completed_successfully
+
+networks:
+  vault-migrate:
+    internal: true
+  postgres-migrate:
+    internal: true
