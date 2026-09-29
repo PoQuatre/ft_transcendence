@@ -4,7 +4,8 @@ package server
 import (
 	"net/http"
 
-	"github.com/PoQuatre/ft_transcendence/backend/internal/todos"
+	// "github.com/PoQuatre/ft_transcendence/backend/internal/todos"
+	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
@@ -43,7 +44,8 @@ func New(options ...Option) http.Handler {
 	})
 
 	if cfg.database != nil {
-		todos.RegisterRoutes(e.Group("/api/todos"), todos.NewService(todos.NewRepository(cfg.database)))
+		// todos.RegisterRoutes(e.Group("/api/todos"), todos.NewService(todos.NewRepository(cfg.database)))
+		auth.RegisterRoutes(e.Group("/api/auth"), auth.NewService(auth.NewRepository(cfg.database)))
 	}
 
 	return e

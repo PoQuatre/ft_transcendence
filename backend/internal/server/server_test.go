@@ -31,13 +31,21 @@ func TestNewHealthzWithUnavailableDatabase(t *testing.T) {
 	assertStatusResponse(t, response, "unavailable")
 }
 
-func TestNewDoesNotRegisterTodoRoutesWithoutDatabase(t *testing.T) {
-	response := serve(t, New(), http.MethodGet, "/api/todos")
+func TestNewDoesNotRegisterAuthRoutesWithoutDatabase(t *testing.T) {
+	response := serve(t, New(), http.MethodGet, "/api/auth")
 
 	if response.Code != http.StatusNotFound {
-		t.Errorf("GET /api/todos status = %d, want %d", response.Code, http.StatusNotFound)
+		t.Errorf("GET /api/auth status = %d, want %d", response.Code, http.StatusNotFound)
 	}
 }
+
+// func TestNewDoesNotRegisterTodoRoutesWithoutDatabase(t *testing.T) {
+// 	response := serve(t, New(), http.MethodGet, "/api/todos")
+//
+// 	if response.Code != http.StatusNotFound {
+// 		t.Errorf("GET /api/todos status = %d, want %d", response.Code, http.StatusNotFound)
+// 	}
+// }
 
 func serve(t *testing.T, handler http.Handler, method, target string) *httptest.ResponseRecorder {
 	t.Helper()
