@@ -7,11 +7,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/driver/pgdriver"
 )
 
 var (
 	ErrNotFound      = errors.New("user not found")
-	ErrAlreadyExists = errors.New("email already taken")
+	ErrAlreadyExists = errors.New("email or username already used")
 )
 
 type Repository interface {
@@ -37,6 +38,10 @@ func NewRepository(db *bun.DB) Repository {
 
 func (r *bunRepository) CreateUser(ctx context.Context, user *User) (*User, error) {
 	if _, err := r.db.NewInsert().Model(user).Exec(ctx); err != nil {
+		var pgErr pgdriver.Error
+		if errors.As(err, &pgErr) && pgErr.Field('C') == "23505" {
+			return nil, ErrAlreadyExists
+		}
 		return nil, err
 	}
 	return user, nil
