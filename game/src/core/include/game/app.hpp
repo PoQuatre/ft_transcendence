@@ -6,14 +6,24 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:59 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/09/20 02:05:11 by mle-flem         ###   ########.fr       */
+/*   Updated: 2026/09/30 12:28:07 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include "game/platform.hpp"
 #include "game/simulation.hpp"
+
+template <>
+struct fmt::formatter<glm::vec2> : fmt::formatter<std::string> {
+    static auto format(glm::vec2 my, format_context &ctx) -> decltype(ctx.out())
+    {
+        return fmt::format_to(ctx.out(), "[vec x={}, y={}]", my.x, my.y);
+    }
+};
 
 namespace game::core {
 
@@ -26,6 +36,9 @@ public:
 private:
     platform::Platform platform_;
     simulation::Simulation simulation_;
+
+    std::string tank_name_;
+    void update_player();
 };
 
 } // namespace game::core

@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:38 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/09/20 04:30:59 by mle-flem         ###   ########.fr       */
+/*   Updated: 2026/09/30 12:05:49 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@ namespace game::renderer {
 
 class Renderer {
 public:
-    static void draw(const simulation::Ball &ball);
+    static void draw(const entt::registry *registry);
 };
 
 } // namespace game::renderer
