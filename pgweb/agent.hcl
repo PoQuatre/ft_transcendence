@@ -21,7 +21,7 @@ template_config {
 env_template "PGWEB_DATABASE_URL" {
 	contents = <<EOF
 {{- with secret "database/creds/app-admin" -}}
-postgres://{{ .Data.username | urlquery }}:{{ .Data.password | urlquery }}@postgres:5432/postgres?sslmode=disable&role=app_admin
+postgres://{{ .Data.username | urlquery }}:{{ .Data.password | urlquery }}@postgres:5432/postgres?sslmode=verify-full&sslrootcert=/etc/ssl/certs/rootCA.pem&role=app_admin
 {{- end -}}
 EOF
 	error_on_missing_key = true

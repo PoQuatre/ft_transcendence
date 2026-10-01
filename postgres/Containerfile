@@ -1,0 +1,37 @@
+ARG POSTGRES_VERSION=18.6
+ARG ALPINE_VERSION=3.24
+ARG VAULT_VERSION=2.1.1
+
+
+
+# ------------------------------------------------------------------------------
+# Vault Agent
+# ------------------------------------------------------------------------------
+FROM docker.io/hashicorp/vault:${VAULT_VERSION} AS vault-agent
+
+
+
+# ------------------------------------------------------------------------------
+# PostgreSQL with its certificate agent
+# ------------------------------------------------------------------------------
+FROM docker.io/library/postgres:${POSTGRES_VERSION}-alpine${ALPINE_VERSION}
+
+USER root
+
+COPY --from=vault-agent /bin/vault /usr/local/bin/vault
+COPY --chown=postgres:postgres agent.hcl /vault/config/postgres-agent.hcl
+COPY --chown=postgres:postgres entrypoint.sh /usr/local/bin/postgres-tls-entrypoint
+COPY --chown=postgres:postgres install-pki.sh /usr/local/bin/install-postgres-pki
+
+RUN mkdir -p /vault/file /run/postgres-tls && \
+	chown -R postgres:postgres /vault/file /run/postgres-tls && \
+	chmod 0700 /vault/file /run/postgres-tls && \
+	chmod 0555 /usr/local/bin/postgres-tls-entrypoint /usr/local/bin/install-postgres-pki
+
+# The bootstrap credentials volume is group-readable by GID 1000. Retain the
+# postgres UID so PostgreSQL accepts its private key, while joining that group
+# to read only this service's AppRole Secret ID.
+USER postgres:1000
+
+ENTRYPOINT ["/usr/local/bin/postgres-tls-entrypoint"]
+CMD ["postgres"]

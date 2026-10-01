@@ -1,49 +1,4 @@
 services:
-  postgres:
-    restart: unless-stopped
-    image: docker.io/library/postgres:18.6-alpine3.24
-    command: [postgres, -c, hba_file=/etc/postgres/pg_hba.conf]
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - pg_isready -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-$${POSTGRES_USER:-postgres}}"
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-      start_interval: 1s
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-      POSTGRES_VAULT_PASSWORD: ${POSTGRES_VAULT_PASSWORD:?POSTGRES_VAULT_PASSWORD is required}
-    volumes:
-      - postgres-data:/var/lib/postgresql:Z
-      - ./postgres/init:/docker-entrypoint-initdb.d:ro,Z
-      - ./postgres/pg_hba.conf:/etc/postgres/pg_hba.conf:ro,Z
-    networks:
-      postgres-bootstrap:
-      postgres-backend:
-      vault-postgres:
-
-  nginx:
-    restart: unless-stopped
-    image: docker.io/owasp/modsecurity-crs:4.29.0-nginx-202609111209
-    depends_on:
-      - frontend
-      - backend
-    ports:
-      - 127.0.0.1:8443:8443
-    environment:
-      BLOCKING_PARANOIA: "2"
-      DETECTION_PARANOIA: "2"
-      MODSEC_RULE_ENGINE: "On"
-    volumes:
-      - ./nginx/default.conf.template:/etc/nginx/templates/conf.d/default.conf.template:ro,Z
-      - ./certs/localhost.pem:/etc/nginx/conf/server.crt:ro,Z
-      - ./certs/localhost-key.pem:/etc/nginx/conf/server.key:ro,Z
-    networks:
-      nginx-frontend:
-      nginx-backend:
-
   vault:
     restart: unless-stopped
     build:
@@ -54,9 +9,13 @@ services:
     volumes:
       - ./vault/vault.hcl:/vault/config/vault.hcl:ro,Z
       - vault-data:/vault/data:Z
+      - ./certs/rootCA.pem:/etc/ssl/certs/rootCA.pem:ro,Z
+    environment:
+      PGSSLROOTCERT: /etc/ssl/certs/rootCA.pem
     networks:
       vault-bootstrap:
       vault-backend:
+      vault-nginx:
       vault-postgres:
 
   vault-bootstrap:
@@ -68,7 +27,7 @@ services:
     depends_on:
       - vault
     healthcheck:
-      test: ["CMD", "test", "-f", "/tmp/vault-bootstrap-healthy"]
+      test: [CMD-SHELL, test -f /tmp/vault-bootstrap-healthy]
       timeout: 3s
       interval: 15s
       start_period: 30s
@@ -78,8 +37,13 @@ services:
       - vault-bootstrap:/bootstrap:Z
       - vault-backend-credentials:/credentials/backend:z
       - vault-migrate-credentials:/credentials/migrate:z
+      - vault-nginx-pki-credentials:/credentials/nginx-pki:z
+      - vault-postgres-pki-credentials:/credentials/postgres-pki:z
+      - ./certs/rootCA.pem:/certs/rootCA.pem:ro,Z
+      - ./certs/rootCA-key.pem:/certs/rootCA-key.pem:ro,Z
     environment:
       VAULT_ADDR: http://vault:8200
+      HOST_NAME: ${HOST_NAME:?HOST_NAME is required}
       POSTGRES_HOST: postgres
       POSTGRES_DB: postgres
       POSTGRES_VAULT_PASSWORD: ${POSTGRES_VAULT_PASSWORD:?POSTGRES_VAULT_PASSWORD is required}
@@ -89,9 +53,124 @@ services:
       BACKEND_ROLE_POLICIES: backend
       MIGRATE_ROLE_ID: ${MIGRATE_ROLE_ID:?MIGRATE_ROLE_ID is required}
       MIGRATE_ROLE_POLICIES: migrate
+      NGINX_PKI_ROLE_ID: ${NGINX_PKI_ROLE_ID:?NGINX_PKI_ROLE_ID is required}
+      NGINX_PKI_ROLE_POLICIES: nginx-pki
+      POSTGRES_PKI_ROLE_ID: ${POSTGRES_PKI_ROLE_ID:?POSTGRES_PKI_ROLE_ID is required}
+      POSTGRES_PKI_ROLE_POLICIES: postgres-pki
     networks:
       vault-bootstrap:
       postgres-bootstrap:
+
+  postgres:
+    restart: unless-stopped
+    build:
+      context: ./postgres
+      dockerfile: ./Containerfile
+    command:
+      [
+        postgres,
+        -c,
+        hba_file=/etc/postgres/pg_hba.conf,
+        -c,
+        ssl=on,
+        -c,
+        ssl_cert_file=/run/postgres-tls/server.crt,
+        -c,
+        ssl_key_file=/run/postgres-tls/server.key,
+      ]
+    depends_on:
+      vault-bootstrap:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          test -s /run/postgres-tls/server.crt &&
+          test -s /run/postgres-tls/server.key &&
+          test -s /run/postgres-tls/revision &&
+          ! test -e /run/postgres-tls/renewal-failed &&
+          test -s /run/postgres-tls/agent.pid &&
+          kill -0 "$$(cat /run/postgres-tls/agent.pid)" &&
+          pg_isready -h /var/run/postgresql
+          -U "$${POSTGRES_USER:-postgres}"
+          -d "$${POSTGRES_DB:-$${POSTGRES_USER:-postgres}}"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+      start_interval: 1s
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_VAULT_PASSWORD: ${POSTGRES_VAULT_PASSWORD:?POSTGRES_VAULT_PASSWORD is required}
+      POSTGRES_PKI_ROLE_ID: ${POSTGRES_PKI_ROLE_ID:?POSTGRES_PKI_ROLE_ID is required}
+    volumes:
+      - postgres-data:/var/lib/postgresql:Z
+      - vault-postgres-pki-credentials:/credentials:ro,z
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro,Z
+      - ./postgres/pg_hba.conf:/etc/postgres/pg_hba.conf:ro,Z
+    networks:
+      postgres-bootstrap:
+      postgres-backend:
+      vault-postgres:
+
+  nginx-agent:
+    restart: unless-stopped
+    build:
+      context: ./vault
+      dockerfile: ./Containerfile
+      target: nginx-agent
+    depends_on:
+      vault-bootstrap:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          test -s /run/nginx-tls/server.crt &&
+          test -s /run/nginx-tls/server.key &&
+          test -s /run/nginx-tls/revision
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+      start_interval: 1s
+    volumes:
+      - vault-nginx-pki-credentials:/credentials:ro,z
+      - nginx-tls:/run/nginx-tls:z
+    environment:
+      HOST_NAME: ${HOST_NAME:?HOST_NAME is required}
+      NGINX_PKI_ROLE_ID: ${NGINX_PKI_ROLE_ID:?NGINX_PKI_ROLE_ID is required}
+    networks:
+      vault-nginx:
+
+  nginx:
+    restart: unless-stopped
+    image: docker.io/owasp/modsecurity-crs:4.29.0-nginx-202609111209
+    entrypoint: ["/bin/sh", "/usr/local/bin/tls-reload-entrypoint.sh"]
+    command: ["nginx", "-g", "daemon off;"]
+    depends_on:
+      nginx-agent:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_started
+    ports:
+      - 127.0.0.1:8443:8443
+    environment:
+      BLOCKING_PARANOIA: "2"
+      DETECTION_PARANOIA: "2"
+      MODSEC_RULE_ENGINE: "On"
+      SSL_OCSP_STAPLING: "off"
+      SSL_CERT_FILE: /run/nginx-tls/server.crt
+      SSL_CERT_KEY_FILE: /run/nginx-tls/server.key
+    volumes:
+      - ./nginx/default.conf.template:/etc/nginx/templates/conf.d/default.conf.template:ro,Z
+      - ./nginx/tls-reload-entrypoint.sh:/usr/local/bin/tls-reload-entrypoint.sh:ro,Z
+      - nginx-tls:/run/nginx-tls:ro,z
+    networks:
+      nginx-frontend:
+      nginx-backend:
 
   frontend:
     restart: unless-stopped
@@ -116,13 +195,20 @@ services:
     depends_on:
       vault-bootstrap:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     volumes:
       - vault-backend-credentials:/credentials:ro,z
+      - ./certs/rootCA.pem:/etc/ssl/certs/rootCA.pem:ro,Z
     environment:
       VAULT_ADDR: http://vault:8200
       BACKEND_ROLE_ID: ${BACKEND_ROLE_ID:?BACKEND_ROLE_ID is required}
       BACKEND_SECRET_ID_PATH: /credentials/secret_id
-      DATABASE_DSN: postgres://{{user-passwd}}@postgres:5432/postgres?sslmode=disable&role=app_readwrite
+      DATABASE_DSN: "\
+        postgres://{{user-passwd}}@postgres:5432/postgres?\
+        sslmode=verify-full&\
+        sslrootcert=/etc/ssl/certs/rootCA.pem&\
+        role=app_readwrite"
     networks:
       nginx-backend:
       vault-backend:
@@ -134,6 +220,9 @@ volumes:
   vault-bootstrap:
   vault-backend-credentials:
   vault-migrate-credentials:
+  vault-nginx-pki-credentials:
+  vault-postgres-pki-credentials:
+  nginx-tls:
 
 networks:
   nginx-frontend:
@@ -143,6 +232,8 @@ networks:
   vault-bootstrap:
     internal: true
   vault-backend:
+    internal: true
+  vault-nginx:
     internal: true
   vault-postgres:
     internal: true

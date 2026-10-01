@@ -1,6 +1,8 @@
 DOCKER = podman
 COMPOSE = $(DOCKER) compose
 DEV_DIRS = frontend/.generated frontend/node_modules frontend/public/assets/game backend/tmp game/build
+PASSWORD_VARS = POSTGRES_PASSWORD POSTGRES_VAULT_PASSWORD
+ROLE_VARS = BOOTSTRAP_ROLE_ID BACKEND_ROLE_ID MIGRATE_ROLE_ID PGWEB_ROLE_ID NGINX_PKI_ROLE_ID POSTGRES_PKI_ROLE_ID
 JFLAG := $(filter -j%,$(MAKEFLAGS))
 HELP_RESET = \033[0m
 HELP_BOLD = \033[1m
@@ -169,11 +171,11 @@ format-fix-sql:
 	sqlfluff format --dialect postgres $$(git ls-files -- '*.sql')
 
 .PHONY: start
-start: certs .env
+start: certs env
 	$(COMPOSE) -f compose.yml -f compose.prod.yml up --build --force-recreate -d
 
 .PHONY: dev
-dev: certs .env $(DEV_DIRS)
+dev: certs env $(DEV_DIRS)
 	$(COMPOSE) -f compose.yml -f compose.dev.yml up --build --force-recreate -d
 
 $(DEV_DIRS):
@@ -184,70 +186,59 @@ db-generate: db-up
 	$(COMPOSE) -f compose.yml -f compose.prod.yml run --rm --no-deps --build --user 0:0 migrate /usr/local/bin/api migrate generate '$(NAME)'
 
 .PHONY: db-up
-db-up: .env
+db-up: env
 	$(COMPOSE) -f compose.yml -f compose.prod.yml run --rm --no-deps migrate /usr/local/bin/api migrate up
 
 .PHONY: db-down
-db-down: .env
+db-down: env
 	$(COMPOSE) -f compose.yml -f compose.prod.yml run --rm --no-deps migrate /usr/local/bin/api migrate down
 
 .PHONY: db-status
-db-status: .env
+db-status: env
 	$(COMPOSE) -f compose.yml -f compose.prod.yml run --rm --no-deps migrate /usr/local/bin/api migrate status
 
 .PHONY: certs
 certs:
-	@if [ ! -f certs/rootCA.pem ] || [ ! -f certs/localhost.pem ] || [ ! -f certs/localhost-key.pem ]; then \
-		mkdir -p certs && \
+	@set -eu; \
+	mkdir -p certs; \
+	if [ ! -f certs/rootCA.pem ] || [ ! -f certs/rootCA-key.pem ]; then \
+		rm -f certs/rootCA.pem certs/rootCA-key.pem; \
 		if command -v mkcert >/dev/null; then \
-			mkcert -cert-file certs/localhost.pem -key-file certs/localhost-key.pem localhost $$(uname -n) nginx 127.0.0.1 ::1 && \
-			cp "$$(mkcert -CAROOT)/rootCA.pem" certs/rootCA.pem; \
+			cp "$$(mkcert -CAROOT)/rootCA.pem" certs/rootCA.pem && \
+			cp "$$(mkcert -CAROOT)/rootCA-key.pem" certs/rootCA-key.pem; \
 		else \
 			openssl req -x509 -new -nodes -newkey rsa:2048 \
 				-keyout certs/rootCA-key.pem -out certs/rootCA.pem -days 365 \
-				-subj '/CN=localhost CA' && \
-			openssl req -new -nodes -newkey rsa:2048 \
-				-keyout certs/localhost-key.pem -out certs/localhost.csr \
-				-subj '/CN=localhost' && \
-			printf '%s\n' \
-				'basicConstraints=CA:FALSE' \
-				'keyUsage=critical,digitalSignature,keyEncipherment' \
-				'extendedKeyUsage=serverAuth' \
-				"subjectAltName=DNS:localhost,DNS:$$(uname -n),DNS:nginx,IP:127.0.0.1,IP:::1" | \
-				openssl x509 -req -in certs/localhost.csr \
-					-CA certs/rootCA.pem -CAkey certs/rootCA-key.pem -CAcreateserial \
-					-out certs/localhost.pem -days 365 -extfile /dev/stdin && \
-			rm certs/rootCA-key.pem certs/localhost.csr certs/rootCA.srl; \
+				-subj '/CN=localhost CA' \
+				-addext 'basicConstraints=critical,CA:TRUE' \
+				-addext 'keyUsage=critical,keyCertSign,cRLSign'; \
 		fi; \
-		chmod 644 certs/rootCA.pem certs/localhost.pem certs/localhost-key.pem; \
-	fi
-
-.env:
-	$(MAKE) env
+	fi; \
+	chmod 0644 certs/rootCA.pem certs/rootCA-key.pem
 
 .PHONY: env
 env:
-	touch .env
-	chmod 600 .env
-	printf 'POSTGRES_PASSWORD=%s\n' "$$(openssl rand -hex 32)" > .env
-	printf 'POSTGRES_VAULT_PASSWORD=%s\n' "$$(openssl rand -hex 32)" >> .env
-	printf 'BOOTSTRAP_ROLE_ID=%s\n' "$$(cat /proc/sys/kernel/random/uuid)" >> .env
-	printf 'BACKEND_ROLE_ID=%s\n' "$$(cat /proc/sys/kernel/random/uuid)" >> .env
-	printf 'MIGRATE_ROLE_ID=%s\n' "$$(cat /proc/sys/kernel/random/uuid)" >> .env
-	printf 'PGWEB_ROLE_ID=%s\n' "$$(cat /proc/sys/kernel/random/uuid)" >> .env
+	@umask 077; touch .env; \
+	grep -q "^HOST_NAME=" .env || printf 'HOST_NAME=%s\n' "$$(uname -n)" >> .env; \
+	for v in $(PASSWORD_VARS); do \
+		grep -q "^$$v=" .env || printf '%s=%s\n' "$$v" "$$(openssl rand -hex 32)" >> .env; \
+	done; \
+	for v in $(ROLE_VARS); do \
+		grep -q "^$$v=" .env || printf '%s=%s\n' "$$v" "$$(cat /proc/sys/kernel/random/uuid)" >> .env; \
+	done
 
 .PHONY: down
-down: .env
+down: env
 	$(COMPOSE) -f compose.yml -f compose.prod.yml -f compose.dev.yml down
 
 .PHONY: downv
-downv: .env
+downv: env
 	$(COMPOSE) -f compose.yml -f compose.prod.yml -f compose.dev.yml down -v
 
 .PHONY: ps
-ps: .env
+ps: env
 	$(COMPOSE) -f compose.yml -f compose.prod.yml -f compose.dev.yml ps
 
 .PHONY: logs
-logs: .env
+logs: env
 	$(COMPOSE) -f compose.yml -f compose.prod.yml -f compose.dev.yml logs -f

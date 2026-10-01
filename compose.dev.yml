@@ -39,6 +39,7 @@ services:
       - 127.0.0.1:8081:8081
     volumes:
       - vault-pgweb-credentials:/credentials:ro,z
+      - ./certs/rootCA.pem:/etc/ssl/certs/rootCA.pem:ro,Z
     environment:
       PGWEB_ROLE_ID: ${PGWEB_ROLE_ID:?PGWEB_ROLE_ID is required}
     networks:

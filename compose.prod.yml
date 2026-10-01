@@ -21,11 +21,16 @@ services:
     volumes:
       - vault-migrate-credentials:/credentials:ro,z
       - ./backend/migrations:/migrations:Z
+      - ./certs/rootCA.pem:/etc/ssl/certs/rootCA.pem:ro,Z
     environment:
       VAULT_ADDR: http://vault:8200
       MIGRATE_ROLE_ID: ${MIGRATE_ROLE_ID:?MIGRATE_ROLE_ID is required}
       MIGRATE_SECRET_ID_PATH: /credentials/secret_id
-      DATABASE_DSN: postgres://{{user-passwd}}@postgres:5432/postgres?sslmode=disable&role=app_migrate
+      DATABASE_DSN: "\
+        postgres://{{user-passwd}}@postgres:5432/postgres?\
+        sslmode=verify-full&\
+        sslrootcert=/etc/ssl/certs/rootCA.pem&\
+        role=app_migrate"
       MIGRATIONS_DIR: /migrations
     command: ["/usr/local/bin/api", "migrate", "up"]
     networks:
