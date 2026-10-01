@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:41 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/09/30 12:35:31 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/01 08:07:14 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,11 @@ void Simulation::update(float delta_seconds, int width, int height)
         auto &position = registry_.get<Position>(entity);
         auto &velocity = registry_.get<Velocity>(entity);
         position += velocity * delta_seconds;
+    }
+
+    for (const auto entity : registry_.view<Position, Velocity, Projectile>()) {
+        auto &position = registry_.get<Position>(entity);
+        auto &velocity = registry_.get<Velocity>(entity);
 
         if (position.x < 0.0F || position.x > max_x) {
             position.x = std::clamp(position.x, 0.0F, max_x);
@@ -49,11 +54,6 @@ void Simulation::update(float delta_seconds, int width, int height)
             position.y = std::clamp(position.y, 0.0F, max_y);
             velocity.y = -velocity.y;
         }
-    }
-    for (const auto entity : registry_.view<Position, Velocity, Tank>()) {
-        auto &position = registry_.get<Position>(entity);
-        auto &velocity = registry_.get<Velocity>(entity);
-        position += velocity * delta_seconds;
     }
 }
 void Simulation::create_player_tank(Tank &tank, Position pos, Color col)
@@ -79,6 +79,22 @@ Direction *Simulation::get_player_direction()
 Position *Simulation::get_player_position()
 {
     return &registry_.get<Position>(player_tank);
+}
+
+void Simulation::fire_player_tank()
+{
+    const entt::entity bullet = registry_.create();
+    auto &player_pos = registry_.get<Position>(player_tank);
+    auto &player_dir = registry_.get<Direction>(player_tank);
+    auto &player_col = registry_.get<Color>(player_tank);
+    // auto &tank = registry_.get<Tank>(player_tank);
+    const float bullet_speed = 1000.F;
+    glm::vec2 bullet_vel = -player_dir * bullet_speed;
+
+    registry_.emplace<Position>(bullet, player_pos);
+    registry_.emplace<Velocity>(bullet, bullet_vel);
+    registry_.emplace<Color>(bullet, player_col);
+    registry_.emplace<Projectile>(bullet, 10.F);
 }
 
 Ball Simulation::ball() const
