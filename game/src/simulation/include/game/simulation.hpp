@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:34 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/09/30 12:35:14 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/01 08:00:17 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,6 +57,10 @@ struct Ball {
     float size;
 };
 
+struct Projectile {
+    float size;
+};
+
 struct Tank {
     std::string name;
     float size;
@@ -72,6 +76,8 @@ public:
     Velocity *get_player_velocity();
     Direction *get_player_direction();
     Position *get_player_position();
+    Tank *get_player_tank();
+    void fire_player_tank();
     entt::registry *get_registry() { return &registry_; };
 
 private:

@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 00:00:00 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/09/30 12:25:01 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/01 08:02:50 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,7 +94,7 @@ bool Platform::initialize()
 bool Platform::should_quit() { return WindowShouldClose(); }
 
 double Platform::delta_seconds() { return GetFrameTime(); }
-
+double Platform::get_time() { return GetTime(); }
 int Platform::width() { return GetRenderWidth(); }
 
 int Platform::height() { return GetRenderHeight(); }
@@ -119,22 +119,24 @@ void Platform::update_inputs()
         }
     }
 
-    // std::array<MouseButton, keys::KEY_COUNT> checked_mouse({
-    //     MouseButton::MOUSE_BUTTON_LEFT,
-    //     MouseButton::MOUSE_BUTTON_RIGHT,
-    // });
-    //
-    // for (size_t i = keys::KEYBOARD_KEY_COUNT; i < keys::MOUSE_KEY_COUNT; ++i)
-    // {
-    //     if (IsKeyDown(checked_mouse[i]) && !state_.keys[i]) {
-    //         state_.keys[i] = true;
-    //         state_.keys_first[i] = true;
-    //     }
-    //     if (IsKeyReleased(checked_mouse[i])) {
-    //         state_.keys[i] = false;
-    //         state_.keys_first[i] = false;
-    //     }
-    // }
+    if (IsMouseButtonDown(MouseButton::MOUSE_BUTTON_LEFT)
+        && !state_.keys[keys::MOUSE_BUTTON_LEFT]) {
+        state_.keys[keys::MOUSE_BUTTON_LEFT] = true;
+        state_.keys_first[keys::MOUSE_BUTTON_LEFT] = true;
+    }
+    if (IsMouseButtonReleased(MouseButton::MOUSE_BUTTON_LEFT)) {
+        state_.keys[keys::MOUSE_BUTTON_LEFT] = false;
+        state_.keys_first[keys::MOUSE_BUTTON_LEFT] = false;
+    }
+    if (IsMouseButtonDown(MouseButton::MOUSE_BUTTON_RIGHT)
+        && !state_.keys[keys::MOUSE_BUTTON_RIGHT]) {
+        state_.keys[keys::MOUSE_BUTTON_RIGHT] = true;
+        state_.keys_first[keys::MOUSE_BUTTON_RIGHT] = true;
+    }
+    if (IsMouseButtonReleased(MouseButton::MOUSE_BUTTON_RIGHT)) {
+        state_.keys[keys::MOUSE_BUTTON_RIGHT] = false;
+        state_.keys_first[keys::MOUSE_BUTTON_RIGHT] = false;
+    }
 
     state_.mouse_pos.x = GetMouseX();
     state_.mouse_pos.y = GetMouseY();

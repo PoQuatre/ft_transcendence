@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:38 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/09/30 08:18:16 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/01 08:02:31 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,6 @@ enum keys : uint8_t {
     KEYBOARD_KEY_COUNT,
     MOUSE_BUTTON_LEFT,
     MOUSE_BUTTON_RIGHT,
-    MOUSE_KEY_COUNT,
     KEY_COUNT,
 };
 
@@ -48,6 +47,7 @@ public:
     bool initialize();
     [[nodiscard]] static bool should_quit();
     static double delta_seconds();
+    static double get_time();
     [[nodiscard]] static int width();
     [[nodiscard]] static int height();
     void update_inputs();
