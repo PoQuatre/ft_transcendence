@@ -9,6 +9,9 @@ services:
     volumes:
       - ./vault/vault.hcl:/vault/config/vault.hcl:ro,Z
       - vault-data:/vault/data:Z
+      - ./certs/rootCA.pem:/etc/ssl/certs/rootCA.pem:ro,Z
+    environment:
+      PGSSLROOTCERT: /etc/ssl/certs/rootCA.pem
     networks:
       vault-bootstrap:
       vault-backend:
@@ -24,7 +27,7 @@ services:
     depends_on:
       - vault
     healthcheck:
-      test: ["CMD", "test", "-f", "/tmp/vault-bootstrap-healthy"]
+      test: [CMD-SHELL, test -f /tmp/vault-bootstrap-healthy]
       timeout: 3s
       interval: 15s
       start_period: 30s
@@ -35,6 +38,7 @@ services:
       - vault-backend-credentials:/credentials/backend:z
       - vault-migrate-credentials:/credentials/migrate:z
       - vault-nginx-pki-credentials:/credentials/nginx-pki:z
+      - vault-postgres-pki-credentials:/credentials/postgres-pki:z
       - ./certs/rootCA.pem:/certs/rootCA.pem:ro,Z
       - ./certs/rootCA-key.pem:/certs/rootCA-key.pem:ro,Z
     environment:
@@ -51,18 +55,45 @@ services:
       MIGRATE_ROLE_POLICIES: migrate
       NGINX_PKI_ROLE_ID: ${NGINX_PKI_ROLE_ID:?NGINX_PKI_ROLE_ID is required}
       NGINX_PKI_ROLE_POLICIES: nginx-pki
+      POSTGRES_PKI_ROLE_ID: ${POSTGRES_PKI_ROLE_ID:?POSTGRES_PKI_ROLE_ID is required}
+      POSTGRES_PKI_ROLE_POLICIES: postgres-pki
     networks:
       vault-bootstrap:
       postgres-bootstrap:
 
   postgres:
     restart: unless-stopped
-    image: docker.io/library/postgres:18.6-alpine3.24
-    command: [postgres, -c, hba_file=/etc/postgres/pg_hba.conf]
+    build:
+      context: ./postgres
+      dockerfile: ./Containerfile
+    command:
+      [
+        postgres,
+        -c,
+        hba_file=/etc/postgres/pg_hba.conf,
+        -c,
+        ssl=on,
+        -c,
+        ssl_cert_file=/run/postgres-tls/server.crt,
+        -c,
+        ssl_key_file=/run/postgres-tls/server.key,
+      ]
+    depends_on:
+      vault-bootstrap:
+        condition: service_healthy
     healthcheck:
       test:
         - CMD-SHELL
-        - pg_isready -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-$${POSTGRES_USER:-postgres}}"
+        - >-
+          test -s /run/postgres-tls/server.crt &&
+          test -s /run/postgres-tls/server.key &&
+          test -s /run/postgres-tls/revision &&
+          ! test -e /run/postgres-tls/renewal-failed &&
+          test -s /run/postgres-tls/agent.pid &&
+          kill -0 "$$(cat /run/postgres-tls/agent.pid)" &&
+          pg_isready -h /var/run/postgresql
+          -U "$${POSTGRES_USER:-postgres}"
+          -d "$${POSTGRES_DB:-$${POSTGRES_USER:-postgres}}"
       interval: 10s
       timeout: 5s
       retries: 5
@@ -71,8 +102,10 @@ services:
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_VAULT_PASSWORD: ${POSTGRES_VAULT_PASSWORD:?POSTGRES_VAULT_PASSWORD is required}
+      POSTGRES_PKI_ROLE_ID: ${POSTGRES_PKI_ROLE_ID:?POSTGRES_PKI_ROLE_ID is required}
     volumes:
       - postgres-data:/var/lib/postgresql:Z
+      - vault-postgres-pki-credentials:/credentials:ro,z
       - ./postgres/init:/docker-entrypoint-initdb.d:ro,Z
       - ./postgres/pg_hba.conf:/etc/postgres/pg_hba.conf:ro,Z
     networks:
@@ -91,10 +124,11 @@ services:
         condition: service_healthy
     healthcheck:
       test:
-        [
-          "CMD-SHELL",
-          "test -s /run/nginx-tls/server.crt && test -s /run/nginx-tls/server.key && test -s /run/nginx-tls/revision",
-        ]
+        - CMD-SHELL
+        - >-
+          test -s /run/nginx-tls/server.crt &&
+          test -s /run/nginx-tls/server.key &&
+          test -s /run/nginx-tls/revision
       interval: 10s
       timeout: 3s
       retries: 3
@@ -161,13 +195,20 @@ services:
     depends_on:
       vault-bootstrap:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     volumes:
       - vault-backend-credentials:/credentials:ro,z
+      - ./certs/rootCA.pem:/etc/ssl/certs/rootCA.pem:ro,Z
     environment:
       VAULT_ADDR: http://vault:8200
       BACKEND_ROLE_ID: ${BACKEND_ROLE_ID:?BACKEND_ROLE_ID is required}
       BACKEND_SECRET_ID_PATH: /credentials/secret_id
-      DATABASE_DSN: postgres://{{user-passwd}}@postgres:5432/postgres?sslmode=disable&role=app_readwrite
+      DATABASE_DSN: "\
+        postgres://{{user-passwd}}@postgres:5432/postgres?\
+        sslmode=verify-full&\
+        sslrootcert=/etc/ssl/certs/rootCA.pem&\
+        role=app_readwrite"
     networks:
       nginx-backend:
       vault-backend:
@@ -180,6 +221,7 @@ volumes:
   vault-backend-credentials:
   vault-migrate-credentials:
   vault-nginx-pki-credentials:
+  vault-postgres-pki-credentials:
   nginx-tls:
 
 networks:

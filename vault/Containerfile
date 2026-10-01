@@ -47,10 +47,10 @@ FROM docker.io/hashicorp/vault:${VAULT_VERSION} AS bootstrap-base
 # These are the targets of the bootstrap and credential named volumes.
 USER 0
 RUN apk add --no-cache bash=5.3.9-r1 curl=8.22.0-r0 jq=1.8.2-r0 && \
-	mkdir -p /bootstrap /certs /credentials/backend /credentials/migrate /credentials/nginx-pki /credentials/pgweb && \
-	chown 1000:1000 /bootstrap /certs /credentials /credentials/backend /credentials/migrate /credentials/nginx-pki /credentials/pgweb && \
+	mkdir -p /bootstrap /certs /credentials/backend /credentials/migrate /credentials/nginx-pki /credentials/postgres-pki /credentials/pgweb && \
+	chown 1000:1000 /bootstrap /certs /credentials /credentials/backend /credentials/migrate /credentials/nginx-pki /credentials/postgres-pki /credentials/pgweb && \
 	chmod 0700 /bootstrap && \
-	chmod 0750 /credentials /credentials/backend /credentials/migrate /credentials/nginx-pki /credentials/pgweb
+	chmod 0750 /credentials /credentials/backend /credentials/migrate /credentials/nginx-pki /credentials/postgres-pki /credentials/pgweb
 USER 1000:1000
 
 

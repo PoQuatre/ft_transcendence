@@ -171,19 +171,33 @@ enable_features() {
 		vault write pki/config/ca pem_bundle=@"$bundle"
 		rm -f "$bundle"
 	fi
+}
 
-	if ! vault read database/config/postgres >/dev/null 2>&1; then
-		echo "Configuring PostgreSQL database connection..."
-		vault write database/config/postgres \
-			plugin_name="postgresql-database-plugin" \
-			allowed_roles="app-readonly,app-readwrite,app-migrate,app-admin" \
-			connection_url="postgres://{{username}}:{{password}}@$POSTGRES_HOST/$POSTGRES_DB" \
-			username="vault_admin" \
-			password="$POSTGRES_VAULT_PASSWORD" \
-			password_authentication="scram-sha-256"
+configure_database() {
+	local connection_url current_config current_connection_url
+	connection_url="postgres://{{username}}:{{password}}@$POSTGRES_HOST/$POSTGRES_DB?sslmode=verify-full"
 
-		vault write -force database/rotate-root/postgres
+	if current_config=$(vault read -format=json database/config/postgres 2>/dev/null); then
+		current_connection_url=$(jq -r '.data.connection_details.connection_url // empty' <<<"$current_config")
+		if [[ "$current_connection_url" == "$connection_url" ]]; then
+			return
+		fi
 	fi
+
+	echo "Configuring PostgreSQL database connection..."
+	until vault write database/config/postgres \
+		plugin_name="postgresql-database-plugin" \
+		allowed_roles="app-readonly,app-readwrite,app-migrate,app-admin" \
+		connection_url="$connection_url" \
+		username="vault_admin" \
+		password="$POSTGRES_VAULT_PASSWORD" \
+		password_authentication="scram-sha-256"; do
+		sleep 1
+	done
+
+	until vault write -force database/rotate-root/postgres; do
+		sleep 1
+	done
 }
 
 register_policies() {
@@ -391,6 +405,23 @@ register_pki_roles() {
 			ttl=24h \
 			max_ttl=72h
 	fi
+
+	if ! vault read pki/roles/postgres >/dev/null 2>&1; then
+		printf "Registering pki role 'postgres'...\n"
+
+		vault write pki/roles/postgres \
+			allowed_domains="postgres" \
+			allow_bare_domains=true \
+			allow_subdomains=false \
+			allow_wildcard_certificates=false \
+			allow_ip_sans=false \
+			server_flag=true \
+			client_flag=false \
+			key_type=rsa \
+			key_bits=2048 \
+			ttl=24h \
+			max_ttl=72h
+	fi
 }
 
 main() {
@@ -408,6 +439,7 @@ main() {
 		save_managed_state
 
 		touch "$HEALTHCHECK_FILE"
+		configure_database
 		first_boot=false
 
 		sleep 10 &
