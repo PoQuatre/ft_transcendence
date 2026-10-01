@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/01 07:47:15 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/01 11:59:34 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,18 +51,31 @@ void Renderer::draw(const entt::registry *registry)
             Color { .r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF });
     }
     for (const auto entity : registry->view<simulation::Color,
-             simulation::Position, simulation::Projectile>()) {
+             simulation::Position, simulation::ShapeType>()) {
         const auto &position = registry->get<simulation::Position>(entity);
         const auto &color = registry->get<simulation::Color>(entity);
-        const auto &projectile = registry->get<simulation::Projectile>(entity);
+        const auto &shape_type = registry->get<simulation::ShapeType>(entity);
 
-        DrawCircleV(
-            Vector2 {
-                .x = position.x + (projectile.size / 2.0F),
-                .y = position.y + (projectile.size / 2.0F),
-            },
-            projectile.size / 2.0F,
-            Color { .r = color.r, .g = color.g, .b = color.b, .a = color.a });
+        const auto &shape = registry->get<simulation::Shape>(entity);
+
+        switch (shape_type) {
+        case simulation::ShapeType::SHAPE_RECT:
+            DrawRectangle(position.x, position.y, shape.rect.width,
+                shape.rect.height,
+                Color {
+                    .r = color.r, .g = color.g, .b = color.b, .a = color.a });
+            break;
+        case simulation::ShapeType::SHAPE_CIRCLE:
+            DrawCircleV(
+                Vector2 {
+                    .x = position.x + (shape.circle.size / 2.0F),
+                    .y = position.y + (shape.circle.size / 2.0F),
+                },
+                shape.circle.size / 2.0F,
+                Color {
+                    .r = color.r, .g = color.g, .b = color.b, .a = color.a });
+            break;
+        }
     }
     DrawFPS(8, 8);
     EndDrawing();
