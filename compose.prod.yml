@@ -1,12 +1,4 @@
 services:
-  postgres:
-    networks:
-      postgres-migrate:
-
-  vault:
-    networks:
-      vault-migrate:
-
   migrate:
     restart: "no"
     build:
@@ -36,9 +28,3 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-
-networks:
-  vault-migrate:
-    internal: true
-  postgres-migrate:
-    internal: true

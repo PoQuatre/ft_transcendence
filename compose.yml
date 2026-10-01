@@ -22,6 +22,7 @@ services:
     networks:
       postgres-bootstrap:
       postgres-backend:
+      postgres-migrate:
       vault-postgres:
 
   nginx:
@@ -57,6 +58,7 @@ services:
     networks:
       vault-bootstrap:
       vault-backend:
+      vault-migrate:
       vault-postgres:
 
   vault-bootstrap:
@@ -149,4 +151,8 @@ networks:
   postgres-bootstrap:
     internal: true
   postgres-backend:
+    internal: true
+  vault-migrate:
+    internal: true
+  postgres-migrate:
     internal: true
