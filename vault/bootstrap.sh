@@ -7,6 +7,8 @@ POLICIES_DIR=${POLICIES_DIR:-/bootstrap/policies}
 STATE_FILE=${STATE_FILE:-/bootstrap/managed.json}
 HEALTHCHECK_FILE=${HEALTHCHECK_FILE:-/tmp/vault-bootstrap-healthy}
 DEFAULT_POLICIES=${DEFAULT_POLICIES:-}
+PKI_CA_CERT=${PKI_CA_CERT:-/certs/rootCA.pem}
+PKI_CA_KEY=${PKI_CA_KEY:-/certs/rootCA-key.pem}
 
 declare -a MANAGED_POLICIES=()
 declare -a MANAGED_ROLES=()
@@ -132,22 +134,45 @@ unseal_vault() {
 }
 
 enable_features() {
-	if ! vault secrets list -format=json | jq -e 'has("secret/")' >/dev/null; then
-		echo "Enabling KV v2 secrets engine..."
-		vault secrets enable -path=secret/ kv-v2
-	fi
+	local secrets auth
+	secrets=$(vault secrets list -format=json)
+	auth=$(vault auth list -format=json)
 
-	if ! vault auth list -format=json | jq -e 'has("approle/")' >/dev/null; then
+	if ! jq -e 'has("approle/")' <<<"$auth" >/dev/null; then
 		echo "Enabling AppRole auth method..."
 		vault auth enable approle
 	fi
 
-	if ! vault secrets list -format=json | jq -e 'has("database/")' >/dev/null; then
+	if ! jq -e 'has("secret/")' <<<"$secrets" >/dev/null; then
+		echo "Enabling KV v2 secrets engine..."
+		vault secrets enable -path=secret/ kv-v2
+	fi
+
+	if ! jq -e 'has("database/")' <<<"$secrets" >/dev/null; then
 		echo "Enabling Database Secrets Engine..."
 		vault secrets enable database
 	fi
 
-	if ! vault read -format=json database/config/postgres >/dev/null 2>&1; then
+	if ! jq -e 'has("pki/")' <<<"$secrets" >/dev/null; then
+		echo "Enabling PKI Secrets Engine..."
+		vault secrets enable pki
+	fi
+
+	if ! vault read -field=certificate pki/cert/ca >/dev/null 2>&1; then
+		if [[ ! -r "$PKI_CA_CERT" ]] || [[ ! -r "$PKI_CA_KEY" ]]; then
+			echo "ERROR: PKI source files are missing or unreadable. Run 'make certs' before starting Vault."
+			exit 1
+		fi
+
+		echo "Enrolling the local certificate authority in Vault PKI..."
+		local bundle
+		bundle=$(mktemp)
+		cat "$PKI_CA_CERT" "$PKI_CA_KEY" >"$bundle"
+		vault write pki/config/ca pem_bundle=@"$bundle"
+		rm -f "$bundle"
+	fi
+
+	if ! vault read database/config/postgres >/dev/null 2>&1; then
 		echo "Configuring PostgreSQL database connection..."
 		vault write database/config/postgres \
 			plugin_name="postgresql-database-plugin" \
@@ -329,7 +354,7 @@ register_roles() {
 
 register_db_roles() {
 	for role in "app-readonly" "app-readwrite" "app-migrate" "app-admin"; do
-		if ! vault read -format=json database/roles/"$role" >/dev/null 2>&1; then
+		if ! vault read database/roles/"$role" >/dev/null 2>&1; then
 			printf "Registering database role '%s'...\n" "$role"
 
 			vault write database/roles/"$role" \
@@ -349,6 +374,25 @@ register_db_roles() {
 	done
 }
 
+register_pki_roles() {
+	if ! vault read pki/roles/nginx >/dev/null 2>&1; then
+		printf "Registering pki role 'nginx'...\n"
+
+		vault write pki/roles/nginx \
+			allowed_domains="localhost,nginx${HOST_NAME:+,$HOST_NAME}" \
+			allow_bare_domains=true \
+			allow_subdomains=true \
+			allow_wildcard_certificates=true \
+			allow_ip_sans=true \
+			server_flag=true \
+			client_flag=false \
+			key_type=rsa \
+			key_bits=2048 \
+			ttl=24h \
+			max_ttl=72h
+	fi
+}
+
 main() {
 	rm -f "$HEALTHCHECK_FILE"
 	load_managed_state
@@ -360,6 +404,7 @@ main() {
 		register_policies
 		register_roles
 		register_db_roles
+		register_pki_roles
 		save_managed_state
 
 		touch "$HEALTHCHECK_FILE"

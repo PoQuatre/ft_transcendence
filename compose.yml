@@ -1,4 +1,60 @@
 services:
+  vault:
+    restart: unless-stopped
+    build:
+      context: ./vault
+      dockerfile: ./Containerfile
+      target: server
+    command: server
+    volumes:
+      - ./vault/vault.hcl:/vault/config/vault.hcl:ro,Z
+      - vault-data:/vault/data:Z
+    networks:
+      vault-bootstrap:
+      vault-backend:
+      vault-nginx:
+      vault-postgres:
+
+  vault-bootstrap:
+    restart: unless-stopped
+    build:
+      context: ./vault
+      dockerfile: ./Containerfile
+      target: prod
+    depends_on:
+      - vault
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/vault-bootstrap-healthy"]
+      timeout: 3s
+      interval: 15s
+      start_period: 30s
+      start_interval: 1s
+      retries: 3
+    volumes:
+      - vault-bootstrap:/bootstrap:Z
+      - vault-backend-credentials:/credentials/backend:z
+      - vault-migrate-credentials:/credentials/migrate:z
+      - vault-nginx-pki-credentials:/credentials/nginx-pki:z
+      - ./certs/rootCA.pem:/certs/rootCA.pem:ro,Z
+      - ./certs/rootCA-key.pem:/certs/rootCA-key.pem:ro,Z
+    environment:
+      VAULT_ADDR: http://vault:8200
+      HOST_NAME: ${HOST_NAME:?HOST_NAME is required}
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_VAULT_PASSWORD: ${POSTGRES_VAULT_PASSWORD:?POSTGRES_VAULT_PASSWORD is required}
+      BOOTSTRAP_ROLE_ID: ${BOOTSTRAP_ROLE_ID:?BOOTSTRAP_ROLE_ID is required}
+      BOOTSTRAP_ROLE_POLICIES: admin
+      BACKEND_ROLE_ID: ${BACKEND_ROLE_ID:?BACKEND_ROLE_ID is required}
+      BACKEND_ROLE_POLICIES: backend
+      MIGRATE_ROLE_ID: ${MIGRATE_ROLE_ID:?MIGRATE_ROLE_ID is required}
+      MIGRATE_ROLE_POLICIES: migrate
+      NGINX_PKI_ROLE_ID: ${NGINX_PKI_ROLE_ID:?NGINX_PKI_ROLE_ID is required}
+      NGINX_PKI_ROLE_POLICIES: nginx-pki
+    networks:
+      vault-bootstrap:
+      postgres-bootstrap:
+
   postgres:
     restart: unless-stopped
     image: docker.io/library/postgres:18.6-alpine3.24
@@ -24,74 +80,63 @@ services:
       postgres-backend:
       vault-postgres:
 
+  nginx-agent:
+    restart: unless-stopped
+    build:
+      context: ./vault
+      dockerfile: ./Containerfile
+      target: nginx-agent
+    depends_on:
+      vault-bootstrap:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "test -s /run/nginx-tls/server.crt && test -s /run/nginx-tls/server.key && test -s /run/nginx-tls/revision",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+      start_interval: 1s
+    volumes:
+      - vault-nginx-pki-credentials:/credentials:ro,z
+      - nginx-tls:/run/nginx-tls:z
+    environment:
+      HOST_NAME: ${HOST_NAME:?HOST_NAME is required}
+      NGINX_PKI_ROLE_ID: ${NGINX_PKI_ROLE_ID:?NGINX_PKI_ROLE_ID is required}
+    networks:
+      vault-nginx:
+
   nginx:
     restart: unless-stopped
     image: docker.io/owasp/modsecurity-crs:4.29.0-nginx-202609111209
+    entrypoint: ["/bin/sh", "/usr/local/bin/tls-reload-entrypoint.sh"]
+    command: ["nginx", "-g", "daemon off;"]
     depends_on:
-      - frontend
-      - backend
+      nginx-agent:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_started
     ports:
       - 127.0.0.1:8443:8443
     environment:
       BLOCKING_PARANOIA: "2"
       DETECTION_PARANOIA: "2"
       MODSEC_RULE_ENGINE: "On"
+      SSL_OCSP_STAPLING: "off"
+      SSL_CERT_FILE: /run/nginx-tls/server.crt
+      SSL_CERT_KEY_FILE: /run/nginx-tls/server.key
     volumes:
       - ./nginx/default.conf.template:/etc/nginx/templates/conf.d/default.conf.template:ro,Z
-      - ./certs/localhost.pem:/etc/nginx/conf/server.crt:ro,Z
-      - ./certs/localhost-key.pem:/etc/nginx/conf/server.key:ro,Z
+      - ./nginx/tls-reload-entrypoint.sh:/usr/local/bin/tls-reload-entrypoint.sh:ro,Z
+      - nginx-tls:/run/nginx-tls:ro,z
     networks:
       nginx-frontend:
       nginx-backend:
-
-  vault:
-    restart: unless-stopped
-    build:
-      context: ./vault
-      dockerfile: ./Containerfile
-      target: server
-    command: server
-    volumes:
-      - ./vault/vault.hcl:/vault/config/vault.hcl:ro,Z
-      - vault-data:/vault/data:Z
-    networks:
-      vault-bootstrap:
-      vault-backend:
-      vault-postgres:
-
-  vault-bootstrap:
-    restart: unless-stopped
-    build:
-      context: ./vault
-      dockerfile: ./Containerfile
-      target: prod
-    depends_on:
-      - vault
-    healthcheck:
-      test: ["CMD", "test", "-f", "/tmp/vault-bootstrap-healthy"]
-      timeout: 3s
-      interval: 15s
-      start_period: 30s
-      start_interval: 1s
-      retries: 3
-    volumes:
-      - vault-bootstrap:/bootstrap:Z
-      - vault-backend-credentials:/credentials/backend:z
-      - vault-migrate-credentials:/credentials/migrate:z
-    environment:
-      VAULT_ADDR: http://vault:8200
-      POSTGRES_HOST: postgres
-      POSTGRES_DB: postgres
-      POSTGRES_VAULT_PASSWORD: ${POSTGRES_VAULT_PASSWORD:?POSTGRES_VAULT_PASSWORD is required}
-      BOOTSTRAP_ROLE_ID: ${BOOTSTRAP_ROLE_ID:?BOOTSTRAP_ROLE_ID is required}
-      BOOTSTRAP_ROLE_POLICIES: admin
-      BACKEND_ROLE_ID: ${BACKEND_ROLE_ID:?BACKEND_ROLE_ID is required}
-      BACKEND_ROLE_POLICIES: backend
-      MIGRATE_ROLE_ID: ${MIGRATE_ROLE_ID:?MIGRATE_ROLE_ID is required}
-      MIGRATE_ROLE_POLICIES: migrate
-    networks:
-      vault-bootstrap:
-      postgres-bootstrap:
 
   frontend:
     restart: unless-stopped
@@ -134,6 +179,8 @@ volumes:
   vault-bootstrap:
   vault-backend-credentials:
   vault-migrate-credentials:
+  vault-nginx-pki-credentials:
+  nginx-tls:
 
 networks:
   nginx-frontend:
@@ -143,6 +190,8 @@ networks:
   vault-bootstrap:
     internal: true
   vault-backend:
+    internal: true
+  vault-nginx:
     internal: true
   vault-postgres:
     internal: true
