@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:46 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/01 08:07:38 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/01 12:38:45 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,37 @@ bool App::initialize()
     simulation_.create_player_tank(tank, simulation::Position { 100.F, 100.F },
         simulation::Color { .r = 38, .g = 217, .b = 191, .a = 255 });
 
+    simulation_.create_ressource({ 50, 50 }, { 100 },
+        { .rect = { .width = 30, .height = 30 } }, simulation::SHAPE_RECT,
+        { .r = 255, .g = 0, .b = 0, .a = 255 });
+    simulation_.create_ressource({ 150, 50 }, { 100 }, { .circle = { 30.F } },
+        simulation::SHAPE_CIRCLE, { .r = 255, .g = 0, .b = 0, .a = 255 });
+    simulation_.create_ressource({ 50, 150 }, { 100 }, { .circle = { 30.F } },
+        simulation::SHAPE_CIRCLE, { .r = 255, .g = 0, .b = 0, .a = 255 });
+
+    simulation_.create_obstacle({ 0, 0 },
+        { .rect = { .width = 20,
+              .height
+              = static_cast<float>(game::platform::Platform::height()) } },
+        simulation::SHAPE_RECT, { .r = 255, .g = 0, .b = 0, .a = 255 });
+    simulation_.create_obstacle({ 0, 0 },
+        { .rect
+            = { .width = static_cast<float>(game::platform::Platform::width()),
+                .height = 20 } },
+        simulation::SHAPE_RECT, { .r = 255, .g = 0, .b = 0, .a = 255 });
+    simulation_.create_obstacle(
+        { static_cast<float>(game::platform::Platform::width()) - 40, 0 },
+        { .rect = { .width = 20,
+              .height
+              = static_cast<float>(game::platform::Platform::height()) } },
+        simulation::SHAPE_RECT, { .r = 255, .g = 0, .b = 0, .a = 255 });
+    simulation_.create_obstacle(
+        { 0, static_cast<float>(game::platform::Platform::height()) - 40 },
+        { .rect
+            = { .width = static_cast<float>(game::platform::Platform::width()),
+                .height = 20 } },
+        simulation::SHAPE_RECT, { .r = 255, .g = 0, .b = 0, .a = 255 });
+
     spdlog::info("Created an EnTT ball. Press Escape to quit.");
     return true;
 }
@@ -45,10 +76,9 @@ bool App::should_quit()
 
 void App::update_player()
 {
-    auto *player_vel = simulation_.get_player_velocity();
+    auto *player_acc = simulation_.get_player_acceleration();
     glm::vec2 dir;
     float speed = 5000.F;
-    const double delta_seconds = platform::Platform::delta_seconds();
     auto &state = platform_.get_input();
 
     if (state.keys[platform::keys::KEY_W]) {
@@ -64,10 +94,9 @@ void App::update_player()
         dir.x += 1;
     }
     if (glm::length(dir) > 0) {
-        *player_vel
-            = glm::normalize(dir) * static_cast<float>((speed * delta_seconds));
+        *player_acc = glm::normalize(dir) * speed;
     } else {
-        *player_vel = glm::vec2(0);
+        *player_acc = glm::vec2(0);
     }
 
     auto *player_dir = simulation_.get_player_direction();
@@ -90,11 +119,11 @@ void App::iterate()
     const double delta_seconds = platform::Platform::delta_seconds();
     platform_.update_inputs();
     update_player();
-    auto &state = platform_.get_input();
-    SPDLOG_INFO("input state, a {}, w {}, d {}, s {} mouse pos {}",
-        state.keys[platform::keys::KEY_A], state.keys[platform::keys::KEY_W],
-        state.keys[platform::keys::KEY_D], state.keys[platform::keys::KEY_S],
-        state.mouse_pos);
+    // auto &state = platform_.get_input();
+    // SPDLOG_INFO("input state, a {}, w {}, d {}, s {} mouse pos {}",
+    //     state.keys[platform::keys::KEY_A], state.keys[platform::keys::KEY_W],
+    //     state.keys[platform::keys::KEY_D], state.keys[platform::keys::KEY_S],
+    //     state.mouse_pos);
 
     simulation_.update(delta_seconds, platform::Platform::width(),
         platform::Platform::height());
