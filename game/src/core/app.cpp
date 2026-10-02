@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:46 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/02 09:53:40 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/02 10:41:53 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,8 +96,17 @@ void App::update_player()
     if (state.keys[platform::keys::KEY_D]) {
         dir.x += 1;
     }
+
+    static double last_dash = platform::Platform::get_time();
+    const double dash_rate = 0.5F;
+
     if (glm::length(dir) > 0) {
         *player_acc = glm::normalize(dir) * speed;
+        if (state.keys[platform::keys::KEY_LEFT_SHIFT]
+            && platform::Platform::get_time() - last_dash > 1.F / dash_rate) {
+            last_dash = platform::Platform::get_time();
+            *player_acc += glm::normalize(dir) * (speed * 10);
+        }
     } else {
         *player_acc = glm::vec2(0);
     }
@@ -106,7 +115,7 @@ void App::update_player()
     auto *player_pos = simulation_.get_player_position();
     *player_dir = glm::normalize(*player_pos - state.mouse_pos);
 
-    static double last_fire = 0;
+    static double last_fire = platform::Platform::get_time();
     const double fire_rate = 3.F; // per second
 
     if (state.keys[platform::keys::MOUSE_BUTTON_LEFT]
