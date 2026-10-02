@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"time"
+	"unicode"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v5"
@@ -23,7 +24,6 @@ func (cv *CustomValidator) Validate(i any) error {
 
 func NewCustomValidator() (*CustomValidator, error) {
 	v := validator.New()
-
 	err := v.RegisterValidation("password_complexity", func(fl validator.FieldLevel) bool {
 		pass := fl.Field().String()
 		var hasNum, hasUpper, hasLower, hasSpecial bool
@@ -35,7 +35,7 @@ func NewCustomValidator() (*CustomValidator, error) {
 				hasLower = true
 			case 'A' <= r && r <= 'Z':
 				hasUpper = true
-			case r == '!' || r == '@' || r == '#' || r == '$' || r == '%' || r == '&' || r == '*':
+			case unicode.IsPunct(r) || unicode.IsSymbol(r):
 				hasSpecial = true
 			}
 		}
@@ -44,7 +44,6 @@ func NewCustomValidator() (*CustomValidator, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &CustomValidator{validator: v}, nil
 }
 
@@ -80,10 +79,13 @@ func apiError(err error) error {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	case errors.Is(err, ErrInvalidCredentials):
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	case errors.Is(err, ErrAlreadyExists):
+	case errors.Is(err, ErrAlreadyExists),
+		errors.Is(err, ErrEmailAlreadyExists),
+		errors.Is(err, ErrUsernameAlreadyExists):
 		return echo.NewHTTPError(http.StatusConflict, err.Error())
-	case errors.Is(err, ErrSessionExpired):
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+	case errors.Is(err, ErrSessionNotFound),
+		errors.Is(err, ErrSessionExpired):
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	default:
 		return err
 	}

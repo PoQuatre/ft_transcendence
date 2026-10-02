@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
@@ -11,8 +12,11 @@ import (
 )
 
 var (
-	ErrNotFound      = errors.New("user not found")
-	ErrAlreadyExists = errors.New("email or username already used")
+	ErrNotFound              = errors.New("user not found")
+	ErrSessionNotFound       = errors.New("session not found")
+	ErrAlreadyExists         = errors.New("email or username already used")
+	ErrUsernameAlreadyExists = errors.New("username already used")
+	ErrEmailAlreadyExists    = errors.New("email already used")
 )
 
 type Repository interface {
@@ -40,7 +44,15 @@ func (r *bunRepository) CreateUser(ctx context.Context, user *User) (*User, erro
 	if _, err := r.db.NewInsert().Model(user).Exec(ctx); err != nil {
 		var pgErr pgdriver.Error
 		if errors.As(err, &pgErr) && pgErr.Field('C') == "23505" {
-			return nil, ErrAlreadyExists
+			detail := pgErr.Field('D')
+			switch {
+			case strings.Contains(detail, "username"):
+				return nil, ErrUsernameAlreadyExists
+			case strings.Contains(detail, "email"):
+				return nil, ErrEmailAlreadyExists
+			default:
+				return nil, ErrAlreadyExists
+			}
 		}
 		return nil, err
 	}
