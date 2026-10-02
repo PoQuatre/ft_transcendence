@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:38 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/01 08:02:31 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/02 10:33:29 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@ enum keys : uint8_t {
     KEY_S,
     KEY_D,
     KEY_W,
+    KEY_LEFT_SHIFT,
     KEYBOARD_KEY_COUNT,
     MOUSE_BUTTON_LEFT,
     MOUSE_BUTTON_RIGHT,

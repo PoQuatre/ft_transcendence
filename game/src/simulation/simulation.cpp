@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:41 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/02 09:48:41 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/02 10:43:23 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -296,8 +296,8 @@ void Simulation::create_ressource(
     registry_.emplace<Shape>(ressource, shape);
     registry_.emplace<PhysicalObject>(ressource,
         PhysicalObject {
-            .mass = 10.0F,
-            .drag = 5.0F,
+            .mass = 50.0F,
+            .drag = 15.0F,
             .restitution = 1.F,
             .is_static = false,
             .mask = COLLISION_LAYER_PLAYER | COLLISION_LAYER_OBSTACLE

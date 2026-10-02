@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 00:00:00 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/01 13:29:42 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/02 10:33:49 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,6 +106,7 @@ void Platform::update_inputs()
         KeyboardKey::KEY_S,
         KeyboardKey::KEY_D,
         KeyboardKey::KEY_W,
+        KeyboardKey::KEY_LEFT_SHIFT,
     });
 
     for (size_t i = 0; i < keys::KEYBOARD_KEY_COUNT; ++i) {
