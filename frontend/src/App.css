@@ -1,9 +1,60 @@
 @import 'tailwindcss';
 
 @theme {
+  --font-sans: 'Space Grotesk', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+
+  /* Palette Cybercore Arena */
+  --color-surface-lowest: #0b0e18;
+  --color-surface-low: #191b26;
+  --color-surface: #10131e;
+  --color-surface-high: #272935;
+  --color-surface-highest: #323440;
+
   --color-neon-cyan: #00f0ff;
-  --color-neon-pink: #ff007f;
-  --color-dark-bg: #050510;
+  --color-neon-pink: #ff4a8d;
+  --color-neon-purple: #dcb8ff;
+  --color-neon-green: #39ff14;
+  --color-neon-amber: #ffb703;
+
+  --color-text-main: #e1e1f1;
+  --color-text-muted: #b9cacb;
+  --color-text-dim: #849495;
+
+  /* Mappage Solidcn sur la palette Cybercore Arena */
+  --color-background: var(--color-surface-lowest);
+  --color-foreground: var(--color-text-main);
+  --color-primary: var(--color-neon-cyan);
+  --color-primary-foreground: #000000;
+  --color-secondary: var(--color-surface-high);
+  --color-secondary-foreground: var(--color-text-main);
+  --color-destructive: var(--color-neon-pink);
+  --color-destructive-foreground: #ffffff;
+  --color-muted: var(--color-surface-low);
+  --color-muted-foreground: var(--color-text-muted);
+  --color-border: var(--color-surface-high);
+  --color-input: var(--color-surface-high);
+  --color-ring: var(--color-neon-cyan);
+}
+
+/* Effets scanlines et CRT */
+.scanlines {
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background-size: 100% 3px, 6px 100%;
+}
+
+/* Lueur et ombres portées du Design System */
+.glow-cyan {
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.35), inset 0 0 8px rgba(0, 240, 255, 0.1);
+}
+
+.glow-cyan-lg {
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.5);
+}
+
+.glow-pink {
+  box-shadow: 0 0 16px rgba(255, 74, 141, 0.35), inset 0 0 8px rgba(255, 74, 141, 0.1);
 }
 
 .text-glow-cyan {
@@ -14,10 +65,11 @@
   text-shadow: 0 0 8px var(--color-neon-pink), 0 0 20px var(--color-neon-pink);
 }
 
-.box-glow-cyan {
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.2);
+/* Coins biseautés (chamfered edges) du style brutaliste */
+.clip-chamfer {
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
 }
 
-.box-glow-pink {
-  box-shadow: 0 0 15px rgba(255, 0, 127, 0.4), inset 0 0 15px rgba(255, 0, 127, 0.2);
+.clip-chamfer-btn {
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
 }
