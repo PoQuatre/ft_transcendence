@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:34 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/01 12:40:40 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/02 09:53:08 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,36 +28,60 @@ struct CollisionHit {
 struct Position : glm::vec2 {
     using glm::vec2::vec2;
 
-    Position(const glm::vec2 &value)
+    explicit Position(const glm::vec2 &value)
         : glm::vec2(value)
     {
+    }
+    Position &operator=(const glm::vec2 &val)
+    {
+        this->x = val.x;
+        this->y = val.y;
+        return *this;
     }
 };
 
 struct Velocity : glm::vec2 {
     using glm::vec2::vec2;
 
-    Velocity(const glm::vec2 &value)
+    explicit Velocity(const glm::vec2 &value)
         : glm::vec2(value)
     {
+    }
+    Velocity &operator=(const glm::vec2 &val)
+    {
+        this->x = val.x;
+        this->y = val.y;
+        return *this;
     }
 };
 
 struct Direction : glm::vec2 {
     using glm::vec2::vec2;
 
-    Direction(const glm::vec2 &value)
+    explicit Direction(const glm::vec2 &value)
         : glm::vec2(value)
     {
+    }
+    Direction &operator=(const glm::vec2 &val)
+    {
+        this->x = val.x;
+        this->y = val.y;
+        return *this;
     }
 };
 
 struct Acceleration : glm::vec2 {
     using glm::vec2::vec2;
 
-    Acceleration(const glm::vec2 &value)
+    explicit Acceleration(const glm::vec2 &value)
         : glm::vec2(value)
     {
+    }
+    Acceleration &operator=(const glm::vec2 &val)
+    {
+        this->x = val.x;
+        this->y = val.y;
+        return *this;
     }
 };
 
@@ -91,6 +115,7 @@ union Shape {
 
 struct Ressource {
     float health;
+    float max_health;
 };
 
 struct Tank {
@@ -98,8 +123,14 @@ struct Tank {
     float size;
 };
 
+enum State : uint8_t {
+    STATE_DESTROYED,
+    STATE_OK,
+};
+
 #define COLLISION_LAYER_PLAYER 1 << 0
 #define COLLISION_LAYER_OBSTACLE 1 << 1
+#define COLLISION_LAYER_RESSOURCE 1 << 2
 
 struct PhysicalObject {
     float mass;

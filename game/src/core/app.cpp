@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:46 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/01 12:38:45 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/02 09:53:40 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,17 +24,20 @@ bool App::initialize()
     if (!platform_.initialize()) {
         return false;
     }
-    tank_name_ = "test";
+    this->tank_name_ = "test";
     simulation::Tank tank { .name = tank_name_, .size = 20 };
     simulation_.create_player_tank(tank, simulation::Position { 100.F, 100.F },
         simulation::Color { .r = 38, .g = 217, .b = 191, .a = 255 });
 
-    simulation_.create_ressource({ 50, 50 }, { 100 },
+    simulation_.create_ressource({ 50, 50 },
+        { .health = 100, .max_health = 100 },
         { .rect = { .width = 30, .height = 30 } }, simulation::SHAPE_RECT,
         { .r = 255, .g = 0, .b = 0, .a = 255 });
-    simulation_.create_ressource({ 150, 50 }, { 100 }, { .circle = { 30.F } },
+    simulation_.create_ressource({ 150, 50 },
+        { .health = 100, .max_health = 100 }, { .circle = { 30.F } },
         simulation::SHAPE_CIRCLE, { .r = 255, .g = 0, .b = 0, .a = 255 });
-    simulation_.create_ressource({ 50, 150 }, { 100 }, { .circle = { 30.F } },
+    simulation_.create_ressource({ 50, 150 },
+        { .health = 100, .max_health = 100 }, { .circle = { 30.F } },
         simulation::SHAPE_CIRCLE, { .r = 255, .g = 0, .b = 0, .a = 255 });
 
     simulation_.create_obstacle({ 0, 0 },
@@ -76,7 +79,7 @@ bool App::should_quit()
 
 void App::update_player()
 {
-    auto *player_acc = simulation_.get_player_acceleration();
+    auto *player_acc = this->simulation_.get_player_acceleration();
     glm::vec2 dir;
     float speed = 5000.F;
     auto &state = platform_.get_input();

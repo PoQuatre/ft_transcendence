@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 00:00:00 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/01 08:02:50 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/01 13:29:42 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,8 +110,8 @@ void Platform::update_inputs()
 
     for (size_t i = 0; i < keys::KEYBOARD_KEY_COUNT; ++i) {
         if (IsKeyDown(checked_keys[i]) && !state_.keys[i + 1]) {
-            state_.keys[i + 1] = true;
-            state_.keys_first[i + 1] = true;
+            this->state_.keys[i + 1] = true;
+            this->state_.keys_first[i + 1] = true;
         }
         if (IsKeyReleased(checked_keys[i])) {
             state_.keys[i + 1] = false;
