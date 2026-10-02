@@ -4,37 +4,134 @@
   --font-sans: 'Space Grotesk', sans-serif;
   --font-mono: 'Space Mono', monospace;
 
-  /* Palette Cybercore Arena */
-  --color-surface-lowest: #0b0e18;
-  --color-surface-low: #191b26;
-  --color-surface: #10131e;
-  --color-surface-high: #272935;
-  --color-surface-highest: #323440;
+  /* Typographies nommées du Design System */
+  --font-display-hero: 'Space Grotesk', sans-serif;
+  --font-headline-xl: 'Space Grotesk', sans-serif;
+  --font-headline-md: 'Space Grotesk', sans-serif;
+  --font-body-lg: 'Space Grotesk', sans-serif;
+  --font-body-sm: 'Space Grotesk', sans-serif;
+  --font-label-mono-caps: 'Space Mono', monospace;
+  --font-label-data: 'Space Mono', monospace;
+  --font-stat-counter: 'Space Mono', monospace;
 
+  /* Tailles et interlignes du Design System */
+  --text-display-hero: 56px;
+  --text-display-hero--line-height: 60px;
+  --text-display-hero--letter-spacing: -0.04em;
+  --text-display-hero-mobile: 36px;
+  --text-display-hero-mobile--line-height: 40px;
+  --text-display-hero-mobile--letter-spacing: -0.03em;
+  --text-headline-xl: 32px;
+  --text-headline-xl--line-height: 36px;
+  --text-headline-xl--letter-spacing: -0.02em;
+  --text-headline-xl-mobile: 24px;
+  --text-headline-xl-mobile--line-height: 28px;
+  --text-headline-xl-mobile--letter-spacing: -0.02em;
+  --text-headline-md: 20px;
+  --text-headline-md--line-height: 24px;
+  --text-headline-md--letter-spacing: 0.02em;
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 22px;
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 18px;
+  --text-label-mono-caps: 12px;
+  --text-label-mono-caps--line-height: 14px;
+  --text-label-mono-caps--letter-spacing: 0.14em;
+  --text-label-data: 11px;
+  --text-label-data--line-height: 14px;
+  --text-label-data--letter-spacing: 0.05em;
+  --text-stat-counter: 22px;
+  --text-stat-counter--line-height: 22px;
+  --text-stat-counter--letter-spacing: -0.02em;
+
+  /* Espacements tactiques du Design System */
+  --spacing-space-xs: 0.25rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-space-md: 1rem;
+  --spacing-space-lg: 1.5rem;
+  --spacing-space-xl: 2.5rem;
+  --spacing-gutter: 1rem;
+  --spacing-gutter-sm: 0.5rem;
+  --spacing-gutter-lg: 1.5rem;
+  --spacing-margin: 1.5rem;
+  --spacing-margin-mobile: 0.75rem;
+
+  /* Palette Cybercore Arena Complète */
+  --color-surface-container-lowest: #0b0e18;
+  --color-surface-container-low: #191b26;
+  --color-surface-container: #1d1f2a;
+  --color-surface-container-high: #272935;
+  --color-surface-container-highest: #323440;
+  --color-surface: #10131e;
+  --color-surface-dim: #10131e;
+  --color-surface-bright: #363945;
+  --color-surface-variant: #323440;
+  --color-surface-tint: #00dbe9;
+
+  --color-on-surface: #e1e1f1;
+  --color-on-surface-variant: #b9cacb;
+  --color-inverse-surface: #e1e1f1;
+  --color-inverse-on-surface: #2d303c;
+  --color-outline: #849495;
+  --color-outline-variant: #3b494b;
+
+  --color-primary: #dbfcff;
+  --color-on-primary: #00363a;
+  --color-primary-container: #00f0ff;
+  --color-on-primary-container: #006970;
+  --color-inverse-primary: #006970;
+  --color-primary-fixed: #7df4ff;
+  --color-primary-fixed-dim: #00dbe9;
+  --color-on-primary-fixed: #002022;
+  --color-on-primary-fixed-variant: #004f54;
+
+  --color-secondary: #ffb1c4;
+  --color-on-secondary: #65002e;
+  --color-secondary-container: #ff4a8d;
+  --color-on-secondary-container: #590028;
+  --color-secondary-fixed: #ffd9e1;
+  --color-secondary-fixed-dim: #ffb1c4;
+  --color-on-secondary-fixed: #3f001a;
+  --color-on-secondary-fixed-variant: #8f0044;
+
+  --color-tertiary: #fdf3ff;
+  --color-on-tertiary: #480081;
+  --color-tertiary-container: #e9d0ff;
+  --color-on-tertiary-container: #8523dd;
+  --color-tertiary-fixed: #efdbff;
+  --color-tertiary-fixed-dim: #dcb8ff;
+  --color-on-tertiary-fixed: #2c0051;
+  --color-on-tertiary-fixed-variant: #6700b5;
+
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+
+  --color-background: #10131e;
+  --color-on-background: #e1e1f1;
+
+  /* Aliases raccourcis pour le thème Cyberpunk / solidcn */
   --color-neon-cyan: #00f0ff;
   --color-neon-pink: #ff4a8d;
   --color-neon-purple: #dcb8ff;
   --color-neon-green: #39ff14;
   --color-neon-amber: #ffb703;
-
   --color-text-main: #e1e1f1;
   --color-text-muted: #b9cacb;
   --color-text-dim: #849495;
 
-  /* Mappage Solidcn sur la palette Cybercore Arena */
-  --color-background: var(--color-surface-lowest);
+  /* Mappage Solidcn UI */
   --color-foreground: var(--color-text-main);
-  --color-primary: var(--color-neon-cyan);
-  --color-primary-foreground: #000000;
-  --color-secondary: var(--color-surface-high);
+  --color-primary-foreground: #00363a;
   --color-secondary-foreground: var(--color-text-main);
   --color-destructive: var(--color-neon-pink);
   --color-destructive-foreground: #ffffff;
-  --color-muted: var(--color-surface-low);
+  --color-muted: var(--color-surface-container-low);
   --color-muted-foreground: var(--color-text-muted);
-  --color-border: var(--color-surface-high);
-  --color-input: var(--color-surface-high);
-  --color-ring: var(--color-neon-cyan);
+  --color-border: var(--color-surface-container-high);
+  --color-input: var(--color-surface-container-high);
+  --color-ring: var(--color-primary-container);
 }
 
 /* Effets scanlines et CRT */
