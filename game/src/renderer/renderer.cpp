@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/01 11:59:34 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/02 10:30:07 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,9 +54,11 @@ void Renderer::draw(const entt::registry *registry)
              simulation::Position, simulation::ShapeType>()) {
         const auto &position = registry->get<simulation::Position>(entity);
         const auto &color = registry->get<simulation::Color>(entity);
-        const auto &shape_type = registry->get<simulation::ShapeType>(entity);
 
+        const auto &shape_type = registry->get<simulation::ShapeType>(entity);
         const auto &shape = registry->get<simulation::Shape>(entity);
+
+        const auto *res = registry->try_get<simulation::Ressource>(entity);
 
         switch (shape_type) {
         case simulation::ShapeType::SHAPE_RECT:
@@ -64,6 +66,15 @@ void Renderer::draw(const entt::registry *registry)
                 shape.rect.height,
                 Color {
                     .r = color.r, .g = color.g, .b = color.b, .a = color.a });
+            if (res != nullptr) {
+                if (res->health != res->max_health) {
+                    Renderer::draw_progress_bar(
+                        { position.x, position.y + shape.rect.height + 4 },
+                        { 20, 10 }, { .r = 255, .g = 255, .b = 255, .a = 255 },
+                        { .r = 0, .g = 0, .b = 0, .a = 255 }, res->health,
+                        res->max_health);
+                }
+            }
             break;
         case simulation::ShapeType::SHAPE_CIRCLE:
             DrawCircleV(
@@ -74,11 +85,42 @@ void Renderer::draw(const entt::registry *registry)
                 shape.circle.size / 2.0F,
                 Color {
                     .r = color.r, .g = color.g, .b = color.b, .a = color.a });
+            if (res != nullptr) {
+                if (res->health != res->max_health) {
+                    Renderer::draw_progress_bar(
+                        { position.x, position.y + shape.circle.size + 4 },
+                        { 20, 10 }, { .r = 255, .g = 255, .b = 255, .a = 255 },
+                        { .r = 0, .g = 0, .b = 0, .a = 255 }, res->health,
+                        res->max_health);
+                }
+            }
             break;
         }
     }
+
     DrawFPS(8, 8);
     EndDrawing();
+}
+
+void Renderer::draw_progress_bar(glm::vec2 pos, glm::vec2 size,
+    simulation::Color background, simulation::Color foreground, float value,
+    float max_value)
+{
+    DrawRectangle(pos.x, pos.y, size.x, size.y,
+        Color {
+            .r = background.r,
+            .g = background.g,
+            .b = background.b,
+            .a = background.a,
+        });
+    DrawRectangle(pos.x + 2, pos.y + 1, (value / max_value) * (size.x - 2),
+        size.y - 2,
+        Color {
+            .r = foreground.r,
+            .g = foreground.g,
+            .b = foreground.b,
+            .a = foreground.a,
+        });
 }
 
 } // namespace game::renderer

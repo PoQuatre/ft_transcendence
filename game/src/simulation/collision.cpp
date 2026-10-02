@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/01 10:17:29 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/01 11:46:45 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/01 13:31:07 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -168,16 +168,23 @@ CollisionHit circle_to_circle(
     const float radius_sum = a_radius + b_radius;
 
     if (distance_squared >= radius_sum * radius_sum) {
-        return CollisionHit { .penetration = 0.0F,
-            .normal = glm::vec2 { 0, 1 } };
+        return CollisionHit {
+            .penetration = 0.0F,
+            .normal = glm::vec2 { 0, 1 },
+        };
     }
 
     const float distance = std::sqrt(distance_squared);
     if (distance <= 0.0001F) {
-        return { .penetration = radius_sum, .normal = { 1.0F, 0.0F } };
+        return {
+            .penetration = radius_sum,
+            .normal = { 1.0F, 0.0F },
+        };
     }
-    return { .penetration = radius_sum - distance,
-        .normal = difference / distance };
+    return {
+        .penetration = radius_sum - distance,
+        .normal = difference / distance,
+    };
 }
 
 }
