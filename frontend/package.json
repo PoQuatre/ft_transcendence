@@ -16,8 +16,11 @@
     "@solidjs/meta": "^1.0.0-next.2",
     "@solidjs/router": "^2.0.0-next.26",
     "@solidjs/web": "^2.0.0-rc.9",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "sirv": "^3.0.2",
-    "solid-js": "^2.0.0-rc.9"
+    "solid-js": "^2.0.0-rc.9",
+    "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
     "@solidjs/diagnostics": "^2.0.0-rc.9",
