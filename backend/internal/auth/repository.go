@@ -20,16 +20,10 @@ var (
 )
 
 type Repository interface {
-	// Users
 	CreateUser(ctx context.Context, user *User) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
 	GetUserByIdentifier(ctx context.Context, identifier string) (*User, error)
-
-	// Sessions
-	CreateSession(ctx context.Context, session *Session) (*Session, error)
-	GetSessionByID(ctx context.Context, sessionID string) (*Session, error)
-	DeleteSession(ctx context.Context, sessionID string) error
 }
 
 type bunRepository struct {
@@ -96,34 +90,4 @@ func (r *bunRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*User, e
 		return nil, err
 	}
 	return user, nil
-}
-
-// Implémentation des sessions avec Bun
-func (r *bunRepository) CreateSession(ctx context.Context, session *Session) (*Session, error) {
-	if _, err := r.db.NewInsert().Model(session).Exec(ctx); err != nil {
-		return nil, err
-	}
-	return session, nil
-}
-
-func (r *bunRepository) GetSessionByID(ctx context.Context, sessionID string) (*Session, error) {
-	session := new(Session)
-	// On joint directement l'utilisateur associé
-	err := r.db.NewSelect().
-		Model(session).
-		Relation("User").
-		Where("s.id = ?", sessionID).
-		Scan(ctx)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotFound
-		}
-		return nil, err
-	}
-	return session, nil
-}
-
-func (r *bunRepository) DeleteSession(ctx context.Context, sessionID string) error {
-	_, err := r.db.NewDelete().Model((*Session)(nil)).Where("id = ?", sessionID).Exec(ctx)
-	return err
 }

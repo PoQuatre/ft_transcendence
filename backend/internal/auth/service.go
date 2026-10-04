@@ -2,27 +2,19 @@ package auth
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"strings"
-	"time"
 
-	// "hash"
-
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var (
-	ErrInvalidCredentials = errors.New("invalid email or password")
-	ErrSessionExpired     = errors.New("session expired")
-)
+var ErrInvalidCredentials = errors.New("invalid email or password")
 
 type Service interface {
 	SignUp(ctx context.Context, req SignupRequest) (*UserResponse, error)
-	Login(ctx context.Context, req LoginRequest) (*Session, error)
-	GetSession(ctx context.Context, sessionID string) (*UserResponse, error)
-	Logout(ctx context.Context, sessionID string) error
+	Login(ctx context.Context, req LoginRequest) (*UserResponse, error)
+	GetUserByID(ctx context.Context, id uuid.UUID) (*UserResponse, error)
 }
 
 type service struct {
@@ -31,14 +23,6 @@ type service struct {
 
 func NewService(repo Repository) Service {
 	return &service{repo: repo}
-}
-
-func generateSessionID() (string, error) {
-	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
 }
 
 func toUserResponse(user *User) *UserResponse {
@@ -79,7 +63,9 @@ func (s *service) SignUp(ctx context.Context, req SignupRequest) (*UserResponse,
 var dummyHash, _ = bcrypt.GenerateFromPassword(
 	[]byte("dummy-password-for-timing-safety"), bcrypt.DefaultCost)
 
-func (s *service) Login(ctx context.Context, req LoginRequest) (*Session, error) {
+func (s *service) Login(ctx context.Context, req LoginRequest) (
+	*UserResponse, error,
+) {
 	req.Password = strings.TrimSpace(req.Password)
 	req.Identifier = strings.TrimSpace(req.Identifier)
 
@@ -88,7 +74,6 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (*Session, error)
 	}
 	user, err := s.repo.GetUserByIdentifier(ctx, req.Identifier)
 	if err != nil {
-		// NOTE: Void comparison to avoid user enumeration
 		bcrypt.CompareHashAndPassword(dummyHash, []byte(req.Password))
 		return nil, ErrInvalidCredentials
 	}
@@ -97,34 +82,13 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (*Session, error)
 		return nil, ErrInvalidCredentials
 	}
 
-	sessionID, err := generateSessionID()
+	return toUserResponse(user), nil
+}
+
+func (s *service) GetUserByID(ctx context.Context, id uuid.UUID) (*UserResponse, error) {
+	user, err := s.repo.GetUserByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-
-	session := &Session{
-		ID:        sessionID,
-		UserID:    user.ID,
-		ExpiresAt: time.Now().Add(24 * 7 * time.Hour),
-	}
-
-	return s.repo.CreateSession(ctx, session)
-}
-
-func (s *service) GetSession(ctx context.Context, sessionID string) (*UserResponse, error) {
-	session, err := s.repo.GetSessionByID(ctx, sessionID)
-	if err != nil {
-		return nil, err
-	}
-
-	if time.Now().After(session.ExpiresAt) {
-		_ = s.repo.DeleteSession(ctx, sessionID)
-		return nil, ErrSessionExpired
-	}
-
-	return toUserResponse(session.User), nil
-}
-
-func (s *service) Logout(ctx context.Context, sessionID string) error {
-	return s.repo.DeleteSession(ctx, sessionID)
+	return toUserResponse(user), nil
 }

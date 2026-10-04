@@ -4,21 +4,17 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 )
 
-// mockRepository simule la base de données PostgreSQL/Bun en mémoire
 type mockRepository struct {
-	users    map[string]*User
-	sessions map[string]*Session
+	users map[string]*User
 }
 
 func newMockRepository() *mockRepository {
 	return &mockRepository{
-		users:    make(map[string]*User),
-		sessions: make(map[string]*Session),
+		users: make(map[string]*User),
 	}
 }
 
@@ -55,24 +51,7 @@ func (m *mockRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*User, 
 	return nil, ErrNotFound
 }
 
-func (m *mockRepository) CreateSession(ctx context.Context, s *Session) (*Session, error) {
-	m.sessions[s.ID] = s
-	return s, nil
-}
-
-func (m *mockRepository) GetSessionByID(ctx context.Context, id string) (*Session, error) {
-	if s, ok := m.sessions[id]; ok {
-		return s, nil
-	}
-	return nil, ErrNotFound
-}
-
-func (m *mockRepository) DeleteSession(ctx context.Context, id string) error {
-	delete(m.sessions, id)
-	return nil
-}
-
-// --- TESTS DU SERVICE ---
+// --- SERVICE TESTS ---
 
 func TestSignUp_Success(t *testing.T) {
 	repo := newMockRepository()
@@ -123,7 +102,6 @@ func TestLogin_SuccessAndFailure(t *testing.T) {
 	}
 	_, _ = svc.SignUp(context.Background(), signupReq)
 
-	// Test mot de passe incorrect
 	_, err := svc.Login(context.Background(), LoginRequest{
 		Identifier: "bob@example.com",
 		Password:   "WrongPassword!",
@@ -132,33 +110,44 @@ func TestLogin_SuccessAndFailure(t *testing.T) {
 		t.Errorf("expected ErrInvalidCredentials, got %v", err)
 	}
 
-	// Test login réussi
-	sess, err := svc.Login(context.Background(), LoginRequest{
+	userResp, err := svc.Login(context.Background(), LoginRequest{
 		Identifier: "bob@example.com",
 		Password:   "SuperPassword123!",
 	})
 	if err != nil {
 		t.Fatalf("expected login success, got %v", err)
 	}
-	if sess.ID == "" {
-		t.Error("expected non-empty session ID")
+	if userResp.Username != "bob" || userResp.Email != "bob@example.com" {
+		t.Errorf("unexpected user response after login: %+v", userResp)
 	}
 }
 
-func TestGetSession_Expired(t *testing.T) {
+func TestGetUserByID_SuccessAndNotFound(t *testing.T) {
 	repo := newMockRepository()
 	svc := NewService(repo)
 
-	// Inserer une session expiree
-	expiredSession := &Session{
-		ID:        "expired-id",
-		UserID:    uuid.New(),
-		ExpiresAt: time.Now().Add(-1 * time.Hour),
+	signupReq := SignupRequest{
+		Username: "charlie",
+		Email:    "charlie@example.com",
+		Password: "SuperPassword123!",
 	}
-	_, _ = repo.CreateSession(context.Background(), expiredSession)
+	createdUser, _ := svc.SignUp(context.Background(), signupReq)
 
-	_, err := svc.GetSession(context.Background(), "expired-id")
-	if !errors.Is(err, ErrSessionExpired) {
-		t.Errorf("expected ErrSessionExpired, got %v", err)
+	userID, err := uuid.Parse(createdUser.ID)
+	if err != nil {
+		t.Fatalf("failed to parse UUID: %v", err)
+	}
+
+	userResp, err := svc.GetUserByID(context.Background(), userID)
+	if err != nil {
+		t.Fatalf("expected to find user, got %v", err)
+	}
+	if userResp.Username != "charlie" {
+		t.Errorf("expected username 'charlie', got %s", userResp.Username)
+	}
+
+	_, err = svc.GetUserByID(context.Background(), uuid.New())
+	if !errors.Is(err, ErrNotFound) {
+		t.Errorf("expected ErrNotFound, got %v", err)
 	}
 }

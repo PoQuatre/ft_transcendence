@@ -3,9 +3,10 @@ package server
 
 import (
 	"net/http"
+	"time"
 
-	// "github.com/PoQuatre/ft_transcendence/backend/internal/todos"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
+	"github.com/alexedwards/scs/v2"
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
@@ -34,6 +35,12 @@ func New(options ...Option) http.Handler {
 	e.Use(middleware.RequestLogger())
 	e.Use(middleware.Recover())
 
+	sessionManager := scs.New()
+	sessionManager.IdleTimeout = 1 * time.Hour
+	sessionManager.Cookie.Persist = false
+	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
+	sessionManager.Cookie.Secure = true
+
 	e.GET("/healthz", func(c *echo.Context) error {
 		if cfg.database != nil {
 			if err := cfg.database.PingContext(c.Request().Context()); err != nil {
@@ -45,7 +52,7 @@ func New(options ...Option) http.Handler {
 
 	if cfg.database != nil {
 		// todos.RegisterRoutes(e.Group("/api/todos"), todos.NewService(todos.NewRepository(cfg.database)))
-		auth.RegisterRoutes(e.Group("/api/auth"), auth.NewService(auth.NewRepository(cfg.database)))
+		auth.RegisterRoutes(e.Group("/api/auth"), auth.NewService(auth.NewRepository(cfg.database)), sessionManager)
 	}
 
 	return e

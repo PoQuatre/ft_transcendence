@@ -7,6 +7,5 @@ import (
 func Models() []any {
 	return []any{
 		(*auth.User)(nil),
-		(*auth.Session)(nil),
 	}
 }

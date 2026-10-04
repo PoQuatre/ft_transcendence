@@ -4,10 +4,11 @@ package auth
 import (
 	"errors"
 	"net/http"
-	"time"
 	"unicode"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
 )
 
@@ -47,23 +48,25 @@ func NewCustomValidator() (*CustomValidator, error) {
 	return &CustomValidator{validator: v}, nil
 }
 
-const sessionCookieName = "session_id"
-
 type handler struct {
-	service   Service
-	validator *CustomValidator
+	service        Service
+	validator      *CustomValidator
+	sessionManager *scs.SessionManager
 }
 
-func RegisterRoutes(group *echo.Group, service Service) error {
+func RegisterRoutes(group *echo.Group, service Service, sessionManager *scs.SessionManager) error {
 	val, err := NewCustomValidator()
 	if err != nil {
 		return err
 	}
 
 	h := handler{
-		service:   service,
-		validator: val,
+		service:        service,
+		validator:      val,
+		sessionManager: sessionManager,
 	}
+
+	group.Use(echo.WrapMiddleware(sessionManager.LoadAndSave))
 
 	group.POST("/signup", h.signup)
 	group.POST("/login", h.login)
@@ -83,9 +86,6 @@ func apiError(err error) error {
 		errors.Is(err, ErrEmailAlreadyExists),
 		errors.Is(err, ErrUsernameAlreadyExists):
 		return echo.NewHTTPError(http.StatusConflict, err.Error())
-	case errors.Is(err, ErrSessionNotFound),
-		errors.Is(err, ErrSessionExpired):
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	default:
 		return err
 	}
@@ -119,52 +119,40 @@ func (h *handler) login(c *echo.Context) error {
 		return err
 	}
 
-	session, err := h.service.Login(c.Request().Context(), req)
+	userResp, err := h.service.Login(c.Request().Context(), req)
 	if err != nil {
 		return apiError(err)
 	}
 
-	cookie := &http.Cookie{
-		Name:     sessionCookieName,
-		Value:    session.ID,
-		Expires:  session.ExpiresAt,
-		Path:     "/",
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   true, // Theorically we should always be on https
-		// Secure: c.Scheme() == "https",
+	if err := h.sessionManager.RenewToken(c.Request().Context()); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to renew session")
 	}
-	c.SetCookie(cookie)
+
+	h.sessionManager.Put(c.Request().Context(), "user_id", userResp.ID)
 
 	return c.JSON(http.StatusOK, map[string]any{"message": "logged in successfully"})
 }
 
 func (h *handler) logout(c *echo.Context) error {
-	cookie, err := c.Cookie(sessionCookieName)
-	if err == nil && cookie.Value != "" {
-		_ = h.service.Logout(c.Request().Context(), cookie.Value)
+	if err := h.sessionManager.Destroy(c.Request().Context()); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to destroy session")
 	}
-
-	expiredCookie := &http.Cookie{
-		Name:     sessionCookieName,
-		Value:    "",
-		Expires:  time.Unix(0, 0),
-		MaxAge:   -1,
-		Path:     "/",
-		HttpOnly: true,
-	}
-	c.SetCookie(expiredCookie)
 
 	return c.JSON(http.StatusOK, map[string]any{"message": "logged out successfully"})
 }
 
 func (h *handler) me(c *echo.Context) error {
-	cookie, err := c.Cookie(sessionCookieName)
-	if err != nil || cookie.Value == "" {
+	userIDStr := h.sessionManager.GetString(c.Request().Context(), "user_id")
+	if userIDStr == "" {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
 
-	userResp, err := h.service.GetSession(c.Request().Context(), cookie.Value)
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	userResp, err := h.service.GetUserByID(c.Request().Context(), userID)
 	if err != nil {
 		return apiError(err)
 	}

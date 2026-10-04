@@ -5,26 +5,32 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/labstack/echo/v5"
 )
 
-func setupTestServer(t *testing.T) (*echo.Echo, *mockRepository) {
+func setupTestServer(t *testing.T) (*echo.Echo, *mockRepository, *scs.SessionManager) {
 	t.Helper()
 	e := echo.New()
 	repo := newMockRepository()
 	svc := NewService(repo)
 
+	sessionManager := scs.New()
+	sessionManager.IdleTimeout = 1 * time.Hour
+	sessionManager.Cookie.Persist = false
+
 	group := e.Group("/auth")
-	if err := RegisterRoutes(group, svc); err != nil {
+	if err := RegisterRoutes(group, svc, sessionManager); err != nil {
 		t.Fatalf("failed to register routes: %v", err)
 	}
 
-	return e, repo
+	return e, repo, sessionManager
 }
 
 func TestHandler_SignUp(t *testing.T) {
-	e, _ := setupTestServer(t)
+	e, _, _ := setupTestServer(t)
 
 	tests := []struct {
 		name           string
@@ -69,16 +75,18 @@ func TestHandler_SignUp(t *testing.T) {
 }
 
 func TestHandler_LoginAndMeFlow(t *testing.T) {
-	e, _ := setupTestServer(t)
+	e, _, sm := setupTestServer(t)
 
-	// 1. Inscription préalable
 	signupBody := `{"username":"dave","email":"dave@example.com","password":"SuperPassword123!"}`
 	req := httptest.NewRequest(http.MethodPost, "/auth/signup", strings.NewReader(signupBody))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
-	// 2. Connexion pour récupérer le cookie
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("signup failed, expected 201 got %d", rec.Code)
+	}
+
 	loginBody := `{"identifier":"dave@example.com","password":"SuperPassword123!"}`
 	req = httptest.NewRequest(http.MethodPost, "/auth/login", strings.NewReader(loginBody))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -89,22 +97,20 @@ func TestHandler_LoginAndMeFlow(t *testing.T) {
 		t.Fatalf("login failed, expected 200 got %d", rec.Code)
 	}
 
-	// Extraire le cookie de la réponse
 	res := rec.Result()
 	cookies := res.Cookies()
 	var sessionCookie *http.Cookie
 	for _, c := range cookies {
-		if c.Name == sessionCookieName {
+		if c.Name == sm.Cookie.Name {
 			sessionCookie = c
 			break
 		}
 	}
 
 	if sessionCookie == nil || sessionCookie.Value == "" {
-		t.Fatal("expected session cookie to be set")
+		t.Fatal("expected SCS session cookie to be set")
 	}
 
-	// 3. Appel de /me avec le cookie
 	req = httptest.NewRequest(http.MethodGet, "/auth/me", nil)
 	req.AddCookie(sessionCookie)
 	rec = httptest.NewRecorder()
@@ -114,12 +120,29 @@ func TestHandler_LoginAndMeFlow(t *testing.T) {
 		t.Errorf("expected /me to return 200 OK, got %d", rec.Code)
 	}
 
-	// 4. Test /me sans cookie (doit renvoyer 401 Unauthorized)
 	reqUnauthorized := httptest.NewRequest(http.MethodGet, "/auth/me", nil)
 	recUnauthorized := httptest.NewRecorder()
 	e.ServeHTTP(recUnauthorized, reqUnauthorized)
 
 	if recUnauthorized.Code != http.StatusUnauthorized {
 		t.Errorf("expected /me without cookie to return 401, got %d", recUnauthorized.Code)
+	}
+
+	reqLogout := httptest.NewRequest(http.MethodPost, "/auth/logout", nil)
+	reqLogout.AddCookie(sessionCookie)
+	recLogout := httptest.NewRecorder()
+	e.ServeHTTP(recLogout, reqLogout)
+
+	if recLogout.Code != http.StatusOK {
+		t.Errorf("expected logout to return 200 OK, got %d", recLogout.Code)
+	}
+
+	reqAfterLogout := httptest.NewRequest(http.MethodGet, "/auth/me", nil)
+	reqAfterLogout.AddCookie(sessionCookie)
+	recAfterLogout := httptest.NewRecorder()
+	e.ServeHTTP(recAfterLogout, reqAfterLogout)
+
+	if recAfterLogout.Code != http.StatusUnauthorized {
+		t.Errorf("expected /me after logout to return 401, got %d", recAfterLogout.Code)
 	}
 }
