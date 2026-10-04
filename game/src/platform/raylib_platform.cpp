@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 00:00:00 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/02 10:33:49 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/02 13:02:39 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,7 +101,7 @@ int Platform::height() { return GetRenderHeight(); }
 
 void Platform::update_inputs()
 {
-    std::array<KeyboardKey, keys::KEY_COUNT> checked_keys({
+    std::array<KeyboardKey, Keys::KEY_COUNT> checked_keys({
         KeyboardKey::KEY_A,
         KeyboardKey::KEY_S,
         KeyboardKey::KEY_D,
@@ -109,7 +109,7 @@ void Platform::update_inputs()
         KeyboardKey::KEY_LEFT_SHIFT,
     });
 
-    for (size_t i = 0; i < keys::KEYBOARD_KEY_COUNT; ++i) {
+    for (size_t i = 0; i < Keys::KEYBOARD_KEY_COUNT; ++i) {
         if (IsKeyDown(checked_keys[i]) && !state_.keys[i + 1]) {
             this->state_.keys[i + 1] = true;
             this->state_.keys_first[i + 1] = true;
@@ -121,22 +121,22 @@ void Platform::update_inputs()
     }
 
     if (IsMouseButtonDown(MouseButton::MOUSE_BUTTON_LEFT)
-        && !state_.keys[keys::MOUSE_BUTTON_LEFT]) {
-        state_.keys[keys::MOUSE_BUTTON_LEFT] = true;
-        state_.keys_first[keys::MOUSE_BUTTON_LEFT] = true;
+        && !state_.keys[Keys::MOUSE_BUTTON_LEFT]) {
+        state_.keys[Keys::MOUSE_BUTTON_LEFT] = true;
+        state_.keys_first[Keys::MOUSE_BUTTON_LEFT] = true;
     }
     if (IsMouseButtonReleased(MouseButton::MOUSE_BUTTON_LEFT)) {
-        state_.keys[keys::MOUSE_BUTTON_LEFT] = false;
-        state_.keys_first[keys::MOUSE_BUTTON_LEFT] = false;
+        state_.keys[Keys::MOUSE_BUTTON_LEFT] = false;
+        state_.keys_first[Keys::MOUSE_BUTTON_LEFT] = false;
     }
     if (IsMouseButtonDown(MouseButton::MOUSE_BUTTON_RIGHT)
-        && !state_.keys[keys::MOUSE_BUTTON_RIGHT]) {
-        state_.keys[keys::MOUSE_BUTTON_RIGHT] = true;
-        state_.keys_first[keys::MOUSE_BUTTON_RIGHT] = true;
+        && !state_.keys[Keys::MOUSE_BUTTON_RIGHT]) {
+        state_.keys[Keys::MOUSE_BUTTON_RIGHT] = true;
+        state_.keys_first[Keys::MOUSE_BUTTON_RIGHT] = true;
     }
     if (IsMouseButtonReleased(MouseButton::MOUSE_BUTTON_RIGHT)) {
-        state_.keys[keys::MOUSE_BUTTON_RIGHT] = false;
-        state_.keys_first[keys::MOUSE_BUTTON_RIGHT] = false;
+        state_.keys[Keys::MOUSE_BUTTON_RIGHT] = false;
+        state_.keys_first[Keys::MOUSE_BUTTON_RIGHT] = false;
     }
 
     state_.mouse_pos.x = GetMouseX();

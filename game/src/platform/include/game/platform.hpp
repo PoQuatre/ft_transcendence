@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:38 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/02 10:33:29 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/02 13:02:36 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@
 
 namespace game::platform {
 
-enum keys : uint8_t {
+enum Keys : uint8_t {
     KEY_NULL = 0,
     KEY_A,
     KEY_S,
@@ -33,8 +33,8 @@ enum keys : uint8_t {
 };
 
 struct input_state {
-    std::array<bool, keys::KEY_COUNT> keys;
-    std::array<bool, keys::KEY_COUNT> keys_first;
+    std::array<bool, Keys::KEY_COUNT> keys;
+    std::array<bool, Keys::KEY_COUNT> keys_first;
     glm::vec2 mouse_pos;
 };
 

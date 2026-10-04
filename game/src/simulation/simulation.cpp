@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:41 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/02 10:43:23 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/04 16:35:24 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,27 +16,53 @@
 
 #include <algorithm>
 #include <glm/geometric.hpp>
+#include <random>
 
 #include "game/collision.hpp"
 #include "game/platform.hpp"
 
 namespace game::simulation {
 
-namespace {
-
-constexpr float ball_size = 40.0F;
-
-} // namespace
-
-collision::CollisionHit Simulation::collide_objects(
-    entt::entity a, entt::entity b)
+Simulation::Simulation()
 {
-    auto &type_a = this->registry_.get<ShapeType>(a);
-    auto &type_b = registry_.get<ShapeType>(b);
-    auto &shape_a = registry_.get<Shape>(a);
-    auto &shape_b = registry_.get<Shape>(b);
-    auto &pos_a = registry_.get<Position>(a);
-    auto &pos_b = registry_.get<Position>(b);
+    quad_tree_ = Quadtree(map_bounds_);
+    std::random_device rd;
+    std::uniform_real_distribution<float> random_pos(
+        map_bounds_.min_x, map_bounds_.max_x);
+    std::uniform_int_distribution<int> random_col(0, 255);
+    std::uniform_int_distribution<int> random_shape_type(0, 1);
+    std::uniform_int_distribution<int> random_shape_size(0, 100);
+
+    for (int i = 0; i < ressource_count_; ++i) {
+        Shape shape;
+        ShapeType shape_type = random_shape_type(rd) == 0
+            ? ShapeType::SHAPE_CIRCLE
+            : ShapeType::SHAPE_RECT;
+        if (shape_type == ShapeType::SHAPE_CIRCLE) {
+            shape.circle.size = random_shape_size(rd);
+        } else {
+            shape.rect.width = random_shape_size(rd);
+            shape.rect.height = shape.rect.width;
+        }
+
+        Position pos = { random_pos(rd), random_pos(rd) };
+        Color col = { .r = static_cast<unsigned char>(random_col(rd)),
+            .g = static_cast<unsigned char>(random_col(rd)),
+            .b = static_cast<unsigned char>(random_col(rd)),
+            .a = 255 };
+        SPDLOG_INFO("Pos {} {}", pos.x, pos.y);
+        SPDLOG_INFO("Col {} {} {}", col.r, col.g, col.b);
+        SPDLOG_INFO("Shape {}", static_cast<int>(shape_type));
+
+        create_ressource(
+            pos, { .health = 100, .max_health = 100 }, shape, shape_type, col);
+    }
+}
+
+collision::CollisionHit Simulation::collide_objects(Position pos_a,
+    Shape shape_a, ShapeType type_a, Position pos_b, Shape shape_b,
+    ShapeType type_b)
+{
 
     if (type_a == ShapeType::SHAPE_CIRCLE) {
         if (type_b == ShapeType::SHAPE_RECT) {
@@ -128,30 +154,19 @@ void Simulation::resolve_collision(
     }
 }
 
-void Simulation::update(float delta_seconds, int width, int height)
+void Simulation::update_physics(float delta_seconds)
 {
-    (void)this;
-    const float max_x = std::max(0.0F, static_cast<float>(width) - ball_size);
-    const float max_y = std::max(0.0F, static_cast<float>(height) - ball_size);
-    const int simulation_steps = 5;
+
+    const int simulation_steps = 3;
     const float sub_delta = delta_seconds / simulation_steps;
+    const auto &view = registry_.view<Position, Velocity, Acceleration,
+        PhysicalObject, ShapeType>();
 
-    for (int i = 0; i < simulation_steps; ++i) {
+    for (int step = 0; step < simulation_steps; ++step) {
 
-        for (const auto entity : registry_.view<Position, Velocity,
-                 Acceleration, PhysicalObject, ShapeType>()) {
+        quad_tree_.clear();
 
-            for (const auto b : registry_.view<Position, Velocity, Acceleration,
-                     PhysicalObject, ShapeType>()) {
-                auto &physics_a = registry_.get<PhysicalObject>(entity);
-                auto &physics_b = registry_.get<PhysicalObject>(b);
-                if ((physics_b.layer & physics_a.mask) == 0)
-                    continue;
-
-                const auto collision = collide_objects(b, entity);
-                resolve_collision(entity, b, collision);
-            }
-
+        for (const auto entity : view) {
             auto &position = registry_.get<Position>(entity);
             auto &velocity = registry_.get<Velocity>(entity);
             auto &physics = registry_.get<PhysicalObject>(entity);
@@ -163,22 +178,50 @@ void Simulation::update(float delta_seconds, int width, int height)
 
             if (!physics.is_static)
                 position += velocity * sub_delta;
+
+            const AABB bounds = get_aabb(entity);
+            quad_tree_.insert(entity, bounds);
+        }
+
+        std::vector<entt::entity> candidates;
+
+        for (const auto entity : view) {
+            candidates.clear();
+
+            const AABB bounds = get_aabb(entity);
+            quad_tree_.query(bounds, candidates);
+
+            auto &physics = registry_.get<PhysicalObject>(entity);
+            auto &type_a = registry_.get<ShapeType>(entity);
+            auto &shape_a = registry_.get<Shape>(entity);
+            auto &pos_a = registry_.get<Position>(entity);
+
+            for (const auto b : candidates) {
+                if (entity == b)
+                    continue;
+                auto &physics_b = registry_.get<PhysicalObject>(b);
+                if ((physics_b.layer & physics.mask) == 0)
+                    continue;
+
+                auto &type_b = registry_.get<ShapeType>(b);
+                auto &shape_b = registry_.get<Shape>(b);
+                auto &pos_b = registry_.get<Position>(b);
+
+                const auto collision = collide_objects(
+                    pos_a, shape_a, type_a, pos_b, shape_b, type_b);
+                resolve_collision(b, entity, collision);
+            }
         }
     }
+}
+
+void Simulation::update(float delta_seconds)
+{
+    update_physics(delta_seconds);
 
     for (const auto entity : registry_.view<Position, Velocity, Projectile>()) {
-        auto &position = registry_.get<Position>(entity);
-        auto &velocity = registry_.get<Velocity>(entity);
         auto &projectile = registry_.get<Projectile>(entity);
 
-        if (position.x < 0.0F || position.x > max_x) {
-            position.x = std::clamp(position.x, 0.0F, max_x);
-            velocity.x = -velocity.x;
-        }
-        if (position.y < 0.0F || position.y > max_y) {
-            position.y = std::clamp(position.y, 0.0F, max_y);
-            velocity.y = -velocity.y;
-        }
         if (platform::Platform::get_time() - projectile.creation_time
             > projectile.lifetime) {
             auto &state_proj = registry_.get<State>(entity);
@@ -207,14 +250,14 @@ void Simulation::update(float delta_seconds, int width, int height)
 void Simulation::create_player_tank(Tank &tank, Position pos, Color col)
 {
     (void)this;
-    player_tank = registry_.create();
-    registry_.emplace<Position>(player_tank, pos);
-    registry_.emplace<Velocity>(player_tank, Velocity { 0.F, 0.F });
-    registry_.emplace<Acceleration>(player_tank, Acceleration { 0.F, 0.F });
-    registry_.emplace<ShapeType>(player_tank, ShapeType::SHAPE_CIRCLE);
+    player_tank_ = registry_.create();
+    registry_.emplace<Position>(player_tank_, pos);
+    registry_.emplace<Velocity>(player_tank_, Velocity { 0.F, 0.F });
+    registry_.emplace<Acceleration>(player_tank_, Acceleration { 0.F, 0.F });
+    registry_.emplace<ShapeType>(player_tank_, ShapeType::SHAPE_CIRCLE);
     registry_.emplace<Shape>(
-        player_tank, Shape { .circle = { .size = tank.size } });
-    registry_.emplace<PhysicalObject>(player_tank,
+        player_tank_, Shape { .circle = { .size = tank.size } });
+    registry_.emplace<PhysicalObject>(player_tank_,
         PhysicalObject {
             .mass = 5.0F,
             .drag = 10.0F,
@@ -223,39 +266,39 @@ void Simulation::create_player_tank(Tank &tank, Position pos, Color col)
             .mask = COLLISION_LAYER_OBSTACLE | COLLISION_LAYER_RESSOURCE,
             .layer = COLLISION_LAYER_PLAYER,
         });
-    registry_.emplace<Direction>(player_tank, Direction { 0.F, 0.F });
-    registry_.emplace<Color>(player_tank, col);
-    registry_.emplace<Tank>(player_tank, tank);
-    registry_.emplace<State>(player_tank, State::STATE_OK);
+    registry_.emplace<Direction>(player_tank_, Direction { 0.F, 0.F });
+    registry_.emplace<Color>(player_tank_, col);
+    registry_.emplace<Tank>(player_tank_, tank);
+    registry_.emplace<State>(player_tank_, State::STATE_OK);
 }
 
 Velocity *Simulation::get_player_velocity()
 {
-    return &registry_.get<Velocity>(player_tank);
+    return &registry_.get<Velocity>(player_tank_);
 }
 
 Acceleration *Simulation::get_player_acceleration()
 {
-    return &registry_.get<Acceleration>(player_tank);
+    return &registry_.get<Acceleration>(player_tank_);
 }
 
 Direction *Simulation::get_player_direction()
 {
-    return &registry_.get<Direction>(player_tank);
+    return &registry_.get<Direction>(player_tank_);
 }
 
 Position *Simulation::get_player_position()
 {
-    return &registry_.get<Position>(player_tank);
+    return &registry_.get<Position>(player_tank_);
 }
 
 void Simulation::fire_player_tank()
 {
     (void)this;
     const entt::entity bullet = registry_.create();
-    auto &player_pos = registry_.get<Position>(player_tank);
-    auto &player_dir = registry_.get<Direction>(player_tank);
-    auto &player_col = registry_.get<Color>(player_tank);
+    auto &player_pos = registry_.get<Position>(player_tank_);
+    auto &player_dir = registry_.get<Direction>(player_tank_);
+    auto &player_col = registry_.get<Color>(player_tank_);
     // auto &tank = registry_.get<Tank>(player_tank);
     const float bullet_speed = 1000.F;
     glm::vec2 bullet_vel = -player_dir * bullet_speed;
@@ -294,9 +337,11 @@ void Simulation::create_ressource(
     registry_.emplace<ShapeType>(ressource, shape_type);
     registry_.emplace<Ressource>(ressource, res);
     registry_.emplace<Shape>(ressource, shape);
+
     registry_.emplace<PhysicalObject>(ressource,
         PhysicalObject {
-            .mass = 50.0F,
+            .mass = shape_type == ShapeType::SHAPE_CIRCLE ? shape.circle.size
+                                                          : shape.rect.width,
             .drag = 15.0F,
             .restitution = 1.F,
             .is_static = false,
@@ -329,6 +374,28 @@ void Simulation::create_obstacle(
             .layer = COLLISION_LAYER_OBSTACLE,
         });
     registry_.emplace<State>(obstacle, State::STATE_OK);
+}
+
+AABB Simulation::get_aabb(entt::entity entity)
+{
+
+    const auto &position = registry_.get<Position>(entity);
+    const auto &shape_type = registry_.get<ShapeType>(entity);
+
+    const auto &shape = registry_.get<Shape>(entity);
+    switch (shape_type) {
+    case ShapeType::SHAPE_CIRCLE:
+        return { .min_x = position.x - shape.circle.size,
+            .min_y = position.y - shape.circle.size,
+            .max_x = position.x + shape.circle.size,
+            .max_y = position.y + shape.circle.size };
+    case ShapeType::SHAPE_RECT:
+        return { .min_x = position.x - shape.rect.width,
+            .min_y = position.y - shape.rect.height,
+            .max_x = position.x + shape.rect.width,
+            .max_y = position.y + shape.rect.height };
+    }
+    return { .min_x = 0, .min_y = 0, .max_x = 0, .max_y = 0 };
 }
 
 } // namespace game::simulation

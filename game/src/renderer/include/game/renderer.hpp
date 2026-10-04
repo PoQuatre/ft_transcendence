@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:38 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/02 10:00:57 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/04 16:18:58 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@ namespace game::renderer {
 
 class Renderer {
 public:
-    static void draw(const entt::registry *registry);
+    static void draw(simulation::Simulation &simulation);
 
 private:
     static void draw_progress_bar(glm::vec2 pos, glm::vec2 size,

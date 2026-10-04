@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/02 10:30:07 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/04 16:57:08 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,10 +18,26 @@
 
 namespace game::renderer {
 
-void Renderer::draw(const entt::registry *registry)
+void Renderer::draw(simulation::Simulation &sim)
 {
+    auto *registry = sim.get_registry();
+    const float camera_zoom = 1.F;
+    const auto tank = registry->view<simulation::Tank>().begin();
+    const auto &player_pos = registry->get<simulation::Position>(*tank);
+    const auto &player_tank = registry->get<simulation::Tank>(*tank);
+
+    Camera2D camera { };
+    camera.target = { .x = player_pos.x + (player_tank.size / 2),
+        .y = player_pos.y + (player_tank.size / 2) };
+    camera.offset
+        = { .x = GetRenderWidth() / 2.F, .y = GetRenderHeight() / 2.F };
+    camera.rotation = 0;
+    camera.zoom = camera_zoom;
+
     BeginDrawing();
     ClearBackground(Color { .r = 8, .g = 13, .b = 255, .a = 255 });
+    BeginMode2D(camera);
+
     for (const auto entity : registry->view<simulation::Tank, simulation::Color,
              simulation::Position, simulation::Direction>()) {
 
@@ -97,6 +113,10 @@ void Renderer::draw(const entt::registry *registry)
             break;
         }
     }
+    // const auto &quad = sim.get_quad_tree();
+    // quad.render();
+
+    EndMode2D();
 
     DrawFPS(8, 8);
     EndDrawing();
