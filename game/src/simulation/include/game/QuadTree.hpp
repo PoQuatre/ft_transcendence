@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 14:27:52 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/04 16:53:38 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/04 19:44:17 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,7 +49,7 @@ public:
     };
 
     Quadtree() = default;
-    Quadtree(AABB bounds, int max_entities = 8, int max_depth = 8);
+    Quadtree(AABB bounds, int max_entities = 2, int max_depth = 32);
 
     void clear();
     void insert(entt::entity entity, const AABB &box);
@@ -63,7 +63,7 @@ private:
     size_t max_depth_ = 8;
 
     void insert(Node *node, entt::entity entity, const AABB &box, size_t depth);
-    void split(Node *node);
+    void split(Node *node, size_t depth);
     void query(const Node *node, const AABB &area,
         std::vector<entt::entity> &result) const;
     void render(Node *node, int depth) const;

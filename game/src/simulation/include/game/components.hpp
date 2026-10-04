@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 14:29:13 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/04 14:30:02 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/04 19:43:02 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,6 +133,20 @@ struct AABB {
     float min_y;
     float max_x;
     float max_y;
+};
+
+#define COLLISION_LAYER_PLAYER 1 << 0
+#define COLLISION_LAYER_OBSTACLE 1 << 1
+#define COLLISION_LAYER_RESSOURCE 1 << 2
+
+struct PhysicalObject {
+    float mass;
+    float drag;
+    float restitution;
+    bool is_static;
+    int mask;
+    int layer;
+    bool dirty = true;
 };
 
 }

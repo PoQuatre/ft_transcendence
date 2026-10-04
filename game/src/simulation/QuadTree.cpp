@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 15:08:38 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/04 16:55:34 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/04 19:04:48 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,35 +52,23 @@ void Quadtree::insert(
                 return;
             }
         }
+        node->entities.emplace_back(entity, box);
+        return;
     }
 
     node->entities.emplace_back(entity, box);
 
-    if (node->children[0] == nullptr && node->entities.size() > max_entities_
-        && depth < max_depth_) {
+    if (node->entities.size() <= max_entities_)
+        return;
 
-        split(node);
-        auto old_entities = std::move(node->entities);
-        node->entities.clear();
+    if (depth >= max_depth_)
+        return;
 
-        for (const auto e : old_entities) {
-            bool inserted = false;
-            for (int i = 0; i < 4; ++i) {
-                if (aabb_contains(node->children[i]->bounds, e.second)) {
-                    node->children[i]->entities.push_back(e);
-                    inserted = true;
-                    break;
-                }
-            }
-            if (!inserted)
-                node->entities.push_back(e);
-        }
-    }
+    split(node, depth);
 }
 
-void Quadtree::split(Node *node)
+void Quadtree::split(Node *node, size_t depth)
 {
-    (void)this;
     const float mid_x = (node->bounds.min_x + node->bounds.max_x) * 0.5F;
     const float mid_y = (node->bounds.min_y + node->bounds.max_y) * 0.5F;
     const float min_x = node->bounds.min_x;
@@ -107,6 +95,22 @@ void Quadtree::split(Node *node)
     node->children[3] = std::make_unique<Node>();
     node->children[3]->bounds
         = { .min_x = mid_x, .min_y = mid_y, .max_x = max_x, .max_y = max_y };
+
+    auto old_entities = std::move(node->entities);
+    node->entities.clear();
+
+    for (const auto e : old_entities) {
+        bool inserted = false;
+        for (int i = 0; i < 4; ++i) {
+            if (aabb_contains(node->children[i]->bounds, e.second)) {
+                insert(node->children[i].get(), e.first, e.second, depth + 1);
+                inserted = true;
+                break;
+            }
+        }
+        if (!inserted)
+            node->entities.push_back(e);
+    }
 }
 
 void Quadtree::query(
@@ -132,30 +136,23 @@ void Quadtree::render(Node *node, int depth) const
         for (int i = 0; i < 4; ++i) {
             render(node->children[i].get(), depth + 1);
         }
-        return;
+        // return;
     }
 
     auto dim = aabb_dimensions(node->bounds);
 
-    DrawRectangleLines(node->bounds.min_x, node->bounds.max_y, dim.x, dim.y,
-        { .r = 255,
-            .g = static_cast<unsigned char>(30 * depth),
-            .b = static_cast<unsigned char>(30 * depth),
-            .a = 255 });
+    DrawRectangleLines(node->bounds.min_x, node->bounds.min_y, dim.x, dim.y,
+        { .r = 255, .g = 0, .b = 0, .a = 255 });
     std::string count = std::to_string(node->entities.size());
-    DrawText(count.c_str(), node->bounds.min_x, node->bounds.min_y, 32,
-        { .r = 255,
-            .g = static_cast<unsigned char>(30 * depth),
-            .b = static_cast<unsigned char>(30 * depth),
-            .a = 255 });
+    DrawText(count.c_str(), node->bounds.min_x + 10, node->bounds.min_y, 32,
+        { .r = 255, .g = 0, .b = 0, .a = 255 });
     for (const auto &entity : node->entities) {
 
-        auto pos = aabb_position(entity.second);
+        // auto pos = aabb_position(entity.second);
         auto dim = aabb_dimensions(entity.second);
-        dim.x /= 2;
-        dim.y /= 2;
 
-        DrawRectangleLines(pos.x, pos.y, dim.x, dim.y,
+        DrawRectangleLines(entity.second.min_x, entity.second.min_y, dim.x,
+            dim.y,
             { .r = 0,
                 .g = 255,
                 .b = static_cast<unsigned char>(30 * depth),

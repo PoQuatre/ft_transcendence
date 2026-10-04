@@ -1,5 +1,6 @@
 #!/bin/bash
 
 perf record -F 99 -g -- ./build/native-debug/src/game
-stackcollapse-perf.pl out.perf >out.folded
-flamegraph.pl out.folded >out.svg
+perf script >out.perf
+stackcollapse-perf.pl out.perf >out.stack
+flamegraph.pl out.stack >out.svg

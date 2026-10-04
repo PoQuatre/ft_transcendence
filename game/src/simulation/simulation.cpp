@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:41 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/04 16:35:24 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/04 20:06:17 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,28 +27,30 @@ Simulation::Simulation()
 {
     quad_tree_ = Quadtree(map_bounds_);
     std::random_device rd;
+    std::default_random_engine eng(rd());
+
     std::uniform_real_distribution<float> random_pos(
         map_bounds_.min_x, map_bounds_.max_x);
     std::uniform_int_distribution<int> random_col(0, 255);
     std::uniform_int_distribution<int> random_shape_type(0, 1);
-    std::uniform_int_distribution<int> random_shape_size(0, 100);
+    std::uniform_int_distribution<int> random_shape_size(1, 100);
 
     for (int i = 0; i < ressource_count_; ++i) {
         Shape shape;
-        ShapeType shape_type = random_shape_type(rd) == 0
+        ShapeType shape_type = random_shape_type(eng) == 0
             ? ShapeType::SHAPE_CIRCLE
             : ShapeType::SHAPE_RECT;
         if (shape_type == ShapeType::SHAPE_CIRCLE) {
-            shape.circle.size = random_shape_size(rd);
+            shape.circle.size = random_shape_size(eng);
         } else {
-            shape.rect.width = random_shape_size(rd);
+            shape.rect.width = random_shape_size(eng);
             shape.rect.height = shape.rect.width;
         }
 
-        Position pos = { random_pos(rd), random_pos(rd) };
-        Color col = { .r = static_cast<unsigned char>(random_col(rd)),
-            .g = static_cast<unsigned char>(random_col(rd)),
-            .b = static_cast<unsigned char>(random_col(rd)),
+        Position pos = { random_pos(eng), random_pos(eng) };
+        Color col = { .r = static_cast<unsigned char>(random_col(eng)),
+            .g = static_cast<unsigned char>(random_col(eng)),
+            .b = static_cast<unsigned char>(random_col(eng)),
             .a = 255 };
         SPDLOG_INFO("Pos {} {}", pos.x, pos.y);
         SPDLOG_INFO("Col {} {} {}", col.r, col.g, col.b);
@@ -106,13 +108,16 @@ void Simulation::resolve_collision(
     auto &physics_b = registry_.get<PhysicalObject>(b);
 
     const float inverse_mass_a
-        = physics_a.is_static ? 0.0F : 1.0F / physics_a.mass;
+        = physics_a.is_static ? 0.0F : 1.0F / (physics_a.mass + 0.00001F);
     const float inverse_mass_b
-        = physics_b.is_static ? 0.0F : 1.0F / physics_b.mass;
+        = physics_b.is_static ? 0.0F : 1.0F / (physics_b.mass + 0.00001F);
     const float inverse_mass_sum = inverse_mass_a + inverse_mass_b;
 
     if (inverse_mass_sum <= 0.0F)
         return;
+
+    physics_b.dirty = true;
+    physics_a.dirty = true;
 
     const glm::vec2 correction
         = collision.normal * (collision.penetration / inverse_mass_sum);
@@ -156,62 +161,71 @@ void Simulation::resolve_collision(
 
 void Simulation::update_physics(float delta_seconds)
 {
-
-    const int simulation_steps = 3;
+    const int simulation_steps = 4;
     const float sub_delta = delta_seconds / simulation_steps;
     const auto &view = registry_.view<Position, Velocity, Acceleration,
-        PhysicalObject, ShapeType>();
+        PhysicalObject, ShapeType, Shape, State>();
 
     for (int step = 0; step < simulation_steps; ++step) {
 
         quad_tree_.clear();
 
-        for (const auto entity : view) {
-            auto &position = registry_.get<Position>(entity);
-            auto &velocity = registry_.get<Velocity>(entity);
-            auto &physics = registry_.get<PhysicalObject>(entity);
-            auto &acceleration = registry_.get<Acceleration>(entity);
+        for (auto [entity, pos, vel, acc, physics, shape_type, shape, state] :
+            view.each()) {
+            vel += acc * sub_delta;
 
-            velocity += acceleration * sub_delta;
+            vel *= std::max(0.0F, 1.0F - (physics.drag * sub_delta));
 
-            velocity *= std::max(0.0F, 1.0F - (physics.drag * sub_delta));
-
-            if (!physics.is_static)
-                position += velocity * sub_delta;
-
+            if (!physics.is_static) {
+                const auto old_pos = pos;
+                pos += vel * sub_delta;
+                if (pos != old_pos) {
+                    physics.dirty = true;
+                }
+            }
             const AABB bounds = get_aabb(entity);
             quad_tree_.insert(entity, bounds);
         }
 
         std::vector<entt::entity> candidates;
+        float mean_nb_candidates = 0;
+        uint64_t nb_candidates = 0;
+        uint64_t nb_entity = 0;
 
-        for (const auto entity : view) {
+        for (auto [entity, pos, vel, acc, physics, shape_type, shape, state] :
+            view.each()) {
+            nb_entity++;
+            if (!physics.dirty)
+                continue;
+
             candidates.clear();
 
             const AABB bounds = get_aabb(entity);
             quad_tree_.query(bounds, candidates);
+            nb_candidates += candidates.size();
 
-            auto &physics = registry_.get<PhysicalObject>(entity);
-            auto &type_a = registry_.get<ShapeType>(entity);
-            auto &shape_a = registry_.get<Shape>(entity);
-            auto &pos_a = registry_.get<Position>(entity);
-
-            for (const auto b : candidates) {
-                if (entity == b)
+            for (auto entity_b_ : candidates) {
+                if (entity == entity_b_)
                     continue;
-                auto &physics_b = registry_.get<PhysicalObject>(b);
+
+                auto comp = view[entity_b_];
+                auto pos_b = std::get<0>(comp);
+                auto physics_b = std::get<3>(comp);
+                auto shape_type_b = std::get<4>(comp);
+                auto shape_b = std::get<5>(comp);
+
                 if ((physics_b.layer & physics.mask) == 0)
                     continue;
 
-                auto &type_b = registry_.get<ShapeType>(b);
-                auto &shape_b = registry_.get<Shape>(b);
-                auto &pos_b = registry_.get<Position>(b);
-
                 const auto collision = collide_objects(
-                    pos_a, shape_a, type_a, pos_b, shape_b, type_b);
-                resolve_collision(b, entity, collision);
+                    pos, shape, shape_type, pos_b, shape_b, shape_type_b);
+                resolve_collision(entity_b_, entity, collision);
             }
+
+            physics.dirty = false;
         }
+        mean_nb_candidates = static_cast<float>(nb_candidates) / nb_entity;
+        SPDLOG_INFO("MEAN {}", mean_nb_candidates);
     }
 }
 
@@ -385,13 +399,13 @@ AABB Simulation::get_aabb(entt::entity entity)
     const auto &shape = registry_.get<Shape>(entity);
     switch (shape_type) {
     case ShapeType::SHAPE_CIRCLE:
-        return { .min_x = position.x - shape.circle.size,
-            .min_y = position.y - shape.circle.size,
-            .max_x = position.x + shape.circle.size,
-            .max_y = position.y + shape.circle.size };
+        return { .min_x = position.x,
+            .min_y = position.y,
+            .max_x = position.x + (shape.circle.size),
+            .max_y = position.y + (shape.circle.size) };
     case ShapeType::SHAPE_RECT:
-        return { .min_x = position.x - shape.rect.width,
-            .min_y = position.y - shape.rect.height,
+        return { .min_x = position.x,
+            .min_y = position.y,
             .max_x = position.x + shape.rect.width,
             .max_y = position.y + shape.rect.height };
     }

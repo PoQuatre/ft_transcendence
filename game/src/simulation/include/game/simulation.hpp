@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:34 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/04 16:18:47 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/04 20:07:10 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,19 +20,6 @@
 #include "components.hpp"
 
 namespace game::simulation {
-
-#define COLLISION_LAYER_PLAYER 1 << 0
-#define COLLISION_LAYER_OBSTACLE 1 << 1
-#define COLLISION_LAYER_RESSOURCE 1 << 2
-
-struct PhysicalObject {
-    float mass;
-    float drag;
-    float restitution;
-    bool is_static;
-    int mask;
-    int layer;
-};
 
 class Simulation {
 public:
@@ -67,7 +54,7 @@ private:
     entt::entity player_tank_;
     Quadtree quad_tree_;
 
-    const int ressource_count_ = 400;
+    const int ressource_count_ = 1000;
     const AABB map_bounds_
         = AABB { .min_x = -4000, .min_y = -4000, .max_x = 4000, .max_y = 4000 };
 };
