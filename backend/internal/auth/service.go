@@ -61,8 +61,16 @@ func (s *service) SignUp(ctx context.Context, req SignupRequest) (*UserResponse,
 	return toUserResponse(createdUser), nil
 }
 
-var dummyHash, _ = bcrypt.GenerateFromPassword(
-	[]byte("dummy-password-for-timing-safety"), bcrypt.DefaultCost)
+var dummyHash, dummyHashErr = bcrypt.GenerateFromPassword([]byte("dummy-password-for-timing-safety"), bcrypt.DefaultCost)
+
+func dummyCompare(password string) {
+	if dummyHashErr != nil || len(dummyHash) == 0 {
+		return
+	}
+	if err := bcrypt.CompareHashAndPassword(dummyHash, []byte(password)); err != nil {
+		return
+	}
+}
 
 func (s *service) Login(ctx context.Context, req LoginRequest) (
 	*UserResponse, error,
@@ -76,7 +84,7 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (
 	}
 	user, err := s.repo.GetUserByEmail(ctx, req.Email)
 	if err != nil {
-		bcrypt.CompareHashAndPassword(dummyHash, []byte(req.Password))
+		dummyCompare(req.Password)
 		return nil, ErrInvalidCredentials
 	}
 

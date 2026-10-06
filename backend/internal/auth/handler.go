@@ -119,6 +119,11 @@ func (h *handler) signup(c *echo.Context) error {
 }
 
 func (h *handler) login(c *echo.Context) error {
+	ctx := c.Request().Context()
+	if h.sessionManager.Exists(ctx, "user_id") {
+		return echo.NewHTTPError(http.StatusBadRequest, "already logged in")
+	}
+
 	var req LoginRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -143,10 +148,13 @@ func (h *handler) login(c *echo.Context) error {
 }
 
 func (h *handler) logout(c *echo.Context) error {
+	ctx := c.Request().Context()
+	if !h.sessionManager.Exists(ctx, "user_id") {
+		return echo.NewHTTPError(http.StatusBadRequest, "not logged in")
+	}
 	if err := h.sessionManager.Destroy(c.Request().Context()); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to destroy session")
 	}
-
 	return c.JSON(http.StatusOK, map[string]any{"message": "logged out successfully"})
 }
 

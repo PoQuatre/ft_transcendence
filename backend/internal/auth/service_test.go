@@ -76,8 +76,11 @@ func TestSignUp_Duplicate(t *testing.T) {
 		Password: "SuperPassword123!",
 	}
 
-	_, _ = svc.SignUp(context.Background(), req)
 	_, err := svc.SignUp(context.Background(), req)
+	if err != nil {
+		t.Errorf("SignUp Failed : %v", err)
+	}
+	_, err = svc.SignUp(context.Background(), req)
 
 	if !errors.Is(err, ErrAlreadyExists) {
 		t.Errorf("expected ErrAlreadyExists, got %v", err)
@@ -93,9 +96,11 @@ func TestLogin_SuccessAndFailure(t *testing.T) {
 		Email:    "bob@example.com",
 		Password: "SuperPassword123!",
 	}
-	_, _ = svc.SignUp(context.Background(), signupReq)
-
-	_, err := svc.Login(context.Background(), LoginRequest{
+	_, err := svc.SignUp(context.Background(), signupReq)
+	if err != nil {
+		t.Errorf("SignUp Failed : %v", err)
+	}
+	_, err = svc.Login(context.Background(), LoginRequest{
 		Email:    "bob@example.com",
 		Password: "WrongPassword!",
 	})
@@ -124,8 +129,10 @@ func TestGetUserByID_SuccessAndNotFound(t *testing.T) {
 		Email:    "charlie@example.com",
 		Password: "SuperPassword123!",
 	}
-	createdUser, _ := svc.SignUp(context.Background(), signupReq)
-
+	createdUser, err := svc.SignUp(context.Background(), signupReq)
+	if err != nil {
+		t.Errorf("SignUp failed : %v", err)
+	}
 	userID, err := uuid.Parse(createdUser.ID)
 	if err != nil {
 		t.Fatalf("failed to parse UUID: %v", err)

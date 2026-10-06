@@ -2,15 +2,16 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
 	"github.com/alexedwards/scs/v2"
-
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 	"github.com/uptrace/bun"
+
+	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
 )
 
 type config struct {
@@ -23,7 +24,7 @@ func WithDatabase(database *bun.DB) Option {
 	return func(config *config) { config.database = database }
 }
 
-func New(options ...Option) http.Handler {
+func New(options ...Option) (http.Handler, error) {
 	cfg := config{}
 	for _, option := range options {
 		option(&cfg)
@@ -51,9 +52,11 @@ func New(options ...Option) http.Handler {
 	})
 
 	if cfg.database != nil {
-		// todos.RegisterRoutes(e.Group("/api/todos"), todos.NewService(todos.NewRepository(cfg.database)))
-		auth.RegisterRoutes(e.Group("/api/auth"), auth.NewService(auth.NewRepository(cfg.database)), sessionManager)
+		err := auth.RegisterRoutes(e.Group("/api/auth"), auth.NewService(auth.NewRepository(cfg.database)), sessionManager)
+		if err != nil {
+			return nil, fmt.Errorf("auth register routes: %w", err)
+		}
 	}
 
-	return e
+	return e, nil
 }

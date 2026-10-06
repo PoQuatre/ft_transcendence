@@ -11,7 +11,7 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-func setupTestServer(t *testing.T) (*echo.Echo, *mockRepository, *scs.SessionManager) {
+func setupTestServer(t *testing.T) (*echo.Echo, *scs.SessionManager) {
 	t.Helper()
 	e := echo.New()
 	repo := newMockRepository()
@@ -26,11 +26,11 @@ func setupTestServer(t *testing.T) (*echo.Echo, *mockRepository, *scs.SessionMan
 		t.Fatalf("failed to register routes: %v", err)
 	}
 
-	return e, repo, sessionManager
+	return e, sessionManager
 }
 
 func TestHandler_SignUp(t *testing.T) {
-	e, _, _ := setupTestServer(t)
+	e, _ := setupTestServer(t)
 
 	tests := []struct {
 		name           string
@@ -61,7 +61,7 @@ func TestHandler_SignUp(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPost, "/auth/signup", strings.NewReader(tt.body))
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/auth/signup", strings.NewReader(tt.body))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 
@@ -75,10 +75,10 @@ func TestHandler_SignUp(t *testing.T) {
 }
 
 func TestHandler_LoginAndMeFlow(t *testing.T) {
-	e, _, sm := setupTestServer(t)
+	e, sm := setupTestServer(t)
 
 	signupBody := `{"username":"dave","email":"dave@example.com","password":"SuperPassword123!"}`
-	req := httptest.NewRequest(http.MethodPost, "/auth/signup", strings.NewReader(signupBody))
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/auth/signup", strings.NewReader(signupBody))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -88,7 +88,7 @@ func TestHandler_LoginAndMeFlow(t *testing.T) {
 	}
 
 	loginBody := `{"email":"dave@example.com","password":"SuperPassword123!"}`
-	req = httptest.NewRequest(http.MethodPost, "/auth/login", strings.NewReader(loginBody))
+	req = httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/auth/login", strings.NewReader(loginBody))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -111,7 +111,7 @@ func TestHandler_LoginAndMeFlow(t *testing.T) {
 		t.Fatal("expected SCS session cookie to be set")
 	}
 
-	req = httptest.NewRequest(http.MethodGet, "/auth/me", nil)
+	req = httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/auth/me", nil)
 	req.AddCookie(sessionCookie)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -120,7 +120,7 @@ func TestHandler_LoginAndMeFlow(t *testing.T) {
 		t.Errorf("expected /me to return 200 OK, got %d", rec.Code)
 	}
 
-	reqUnauthorized := httptest.NewRequest(http.MethodGet, "/auth/me", nil)
+	reqUnauthorized := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/auth/me", nil)
 	recUnauthorized := httptest.NewRecorder()
 	e.ServeHTTP(recUnauthorized, reqUnauthorized)
 
@@ -128,7 +128,7 @@ func TestHandler_LoginAndMeFlow(t *testing.T) {
 		t.Errorf("expected /me without cookie to return 401, got %d", recUnauthorized.Code)
 	}
 
-	reqLogout := httptest.NewRequest(http.MethodPost, "/auth/logout", nil)
+	reqLogout := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/auth/logout", nil)
 	reqLogout.AddCookie(sessionCookie)
 	recLogout := httptest.NewRecorder()
 	e.ServeHTTP(recLogout, reqLogout)
@@ -137,7 +137,7 @@ func TestHandler_LoginAndMeFlow(t *testing.T) {
 		t.Errorf("expected logout to return 200 OK, got %d", recLogout.Code)
 	}
 
-	reqAfterLogout := httptest.NewRequest(http.MethodGet, "/auth/me", nil)
+	reqAfterLogout := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/auth/me", nil)
 	reqAfterLogout.AddCookie(sessionCookie)
 	recAfterLogout := httptest.NewRecorder()
 	e.ServeHTTP(recAfterLogout, reqAfterLogout)
