@@ -38,6 +38,7 @@ func toUserResponse(user *User) *UserResponse {
 
 func (s *service) SignUp(ctx context.Context, req SignupRequest) (*UserResponse, error) {
 	req.Email = strings.TrimSpace(req.Email)
+	req.Email = strings.ToLower(req.Email)
 	req.Username = strings.TrimSpace(req.Username)
 	if req.Email == "" || req.Password == "" || req.Username == "" {
 		return nil, ErrInvalidCredentials
@@ -67,12 +68,13 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (
 	*UserResponse, error,
 ) {
 	req.Password = strings.TrimSpace(req.Password)
-	req.Identifier = strings.TrimSpace(req.Identifier)
+	req.Email = strings.TrimSpace(req.Email)
+	req.Email = strings.ToLower(req.Email)
 
-	if req.Identifier == "" || req.Password == "" {
+	if req.Email == "" || req.Password == "" {
 		return nil, ErrInvalidCredentials
 	}
-	user, err := s.repo.GetUserByIdentifier(ctx, req.Identifier)
+	user, err := s.repo.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		bcrypt.CompareHashAndPassword(dummyHash, []byte(req.Password))
 		return nil, ErrInvalidCredentials

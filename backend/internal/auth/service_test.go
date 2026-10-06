@@ -35,13 +35,6 @@ func (m *mockRepository) CreateUser(ctx context.Context, u *User) (*User, error)
 	return u, nil
 }
 
-func (m *mockRepository) GetUserByIdentifier(ctx context.Context, identifier string) (*User, error) {
-	if u, ok := m.users[identifier]; ok {
-		return u, nil
-	}
-	return nil, ErrNotFound
-}
-
 func (m *mockRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	for _, u := range m.users {
 		if u.ID == id {
@@ -103,16 +96,16 @@ func TestLogin_SuccessAndFailure(t *testing.T) {
 	_, _ = svc.SignUp(context.Background(), signupReq)
 
 	_, err := svc.Login(context.Background(), LoginRequest{
-		Identifier: "bob@example.com",
-		Password:   "WrongPassword!",
+		Email:    "bob@example.com",
+		Password: "WrongPassword!",
 	})
 	if !errors.Is(err, ErrInvalidCredentials) {
 		t.Errorf("expected ErrInvalidCredentials, got %v", err)
 	}
 
 	userResp, err := svc.Login(context.Background(), LoginRequest{
-		Identifier: "bob@example.com",
-		Password:   "SuperPassword123!",
+		Email:    "bob@example.com",
+		Password: "SuperPassword123!",
 	})
 	if err != nil {
 		t.Fatalf("expected login success, got %v", err)

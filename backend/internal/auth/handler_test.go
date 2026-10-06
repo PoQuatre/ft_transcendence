@@ -87,7 +87,7 @@ func TestHandler_LoginAndMeFlow(t *testing.T) {
 		t.Fatalf("signup failed, expected 201 got %d", rec.Code)
 	}
 
-	loginBody := `{"identifier":"dave@example.com","password":"SuperPassword123!"}`
+	loginBody := `{"email":"dave@example.com","password":"SuperPassword123!"}`
 	req = httptest.NewRequest(http.MethodPost, "/auth/login", strings.NewReader(loginBody))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec = httptest.NewRecorder()

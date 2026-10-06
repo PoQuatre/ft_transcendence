@@ -23,7 +23,6 @@ type Repository interface {
 	CreateUser(ctx context.Context, user *User) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
-	GetUserByIdentifier(ctx context.Context, identifier string) (*User, error)
 }
 
 type bunRepository struct {
@@ -56,21 +55,6 @@ func (r *bunRepository) CreateUser(ctx context.Context, user *User) (*User, erro
 func (r *bunRepository) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	user := new(User)
 	err := r.db.NewSelect().Model(user).Where("email = ?", email).Scan(ctx)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotFound
-		}
-		return nil, err
-	}
-	return user, nil
-}
-
-func (r *bunRepository) GetUserByIdentifier(ctx context.Context, identifier string) (*User, error) {
-	user := new(User)
-	err := r.db.NewSelect().
-		Model(user).
-		Where("email = ? OR username = ?", identifier, identifier).
-		Scan(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
