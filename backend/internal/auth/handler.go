@@ -4,6 +4,7 @@ package auth
 import (
 	"errors"
 	"net/http"
+	"regexp"
 	"unicode"
 
 	"github.com/alexedwards/scs/v2"
@@ -23,6 +24,8 @@ func (cv *CustomValidator) Validate(i any) error {
 	return nil
 }
 
+var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
+
 func NewCustomValidator() (*CustomValidator, error) {
 	v := validator.New()
 	err := v.RegisterValidation("password_complexity", func(fl validator.FieldLevel) bool {
@@ -41,6 +44,12 @@ func NewCustomValidator() (*CustomValidator, error) {
 			}
 		}
 		return hasNum && hasUpper && hasLower && hasSpecial
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = v.RegisterValidation("username_chars", func(fl validator.FieldLevel) bool {
+		return usernameRegex.MatchString(fl.Field().String())
 	})
 	if err != nil {
 		return nil, err
