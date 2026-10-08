@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 14:29:13 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/08 02:08:00 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/08 23:19:11 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,9 @@ struct CollisionHit {
     glm::vec2 normal;
 };
 };
+// FIXME:
+// using Position = glm::vec2
+// casse entt tres tres bizarre
 
 struct Position : glm::vec2 {
     using glm::vec2::vec2;
@@ -70,21 +73,26 @@ struct Direction : glm::vec2 {
     }
 };
 
-using Acceleration = glm::vec2;
-// struct Acceleration : glm::vec2 {
-//     using glm::vec2::vec2;
-//
-//     explicit Acceleration(const glm::vec2 &value)
-//         : glm::vec2(value)
-//     {
-//     }
-//     Acceleration &operator=(const glm::vec2 &val)
-//     {
-//         this->x = val.x;
-//         this->y = val.y;
-//         return *this;
-//     }
-// };
+struct Acceleration : glm::vec2 {
+    using glm::vec2::vec2;
+
+    explicit Acceleration(const glm::vec2 &value)
+        : glm::vec2(value)
+    {
+    }
+    Acceleration &operator=(const glm::vec2 &val)
+    {
+        this->x = val.x;
+        this->y = val.y;
+        return *this;
+    }
+};
+
+struct Transform {
+    Position pos;
+    Velocity vel;
+    Acceleration acc;
+};
 
 struct Color {
     unsigned char r;
@@ -136,9 +144,12 @@ struct AABB {
     float max_y;
 };
 
-#define COLLISION_LAYER_PLAYER 1 << 0
-#define COLLISION_LAYER_OBSTACLE 1 << 1
-#define COLLISION_LAYER_RESSOURCE 1 << 2
+#define COLLISION_LAYER_PLAYER                                                 \
+    static_cast<uint32_t>(1) << static_cast<uint32_t>(0)
+#define COLLISION_LAYER_OBSTACLE                                               \
+    static_cast<uint32_t>(1) << static_cast<uint32_t>(1)
+#define COLLISION_LAYER_RESSOURCE                                              \
+    static_cast<uint32_t>(1) << static_cast<uint32_t>(2)
 
 struct PhysicalObject {
     float mass;

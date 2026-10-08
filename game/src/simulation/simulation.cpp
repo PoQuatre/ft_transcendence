@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:41 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/08 00:11:53 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/08 23:13:33 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ namespace game::simulation {
 
 Simulation::Simulation()
 {
-    quad_tree_ = Quadtree(map_bounds_);
+    quad_tree_ = SpatialGrid(map_bounds_);
     std::random_device rd;
     std::default_random_engine eng(rd());
 
@@ -48,10 +48,12 @@ Simulation::Simulation()
         }
 
         Position pos = { random_pos(eng), random_pos(eng) };
-        Color col = { .r = static_cast<unsigned char>(random_col(eng)),
+        Color col = {
+            .r = static_cast<unsigned char>(random_col(eng)),
             .g = static_cast<unsigned char>(random_col(eng)),
             .b = static_cast<unsigned char>(random_col(eng)),
-            .a = 255 };
+            .a = 255,
+        };
         SPDLOG_INFO("Pos {} {}", pos.x, pos.y);
         SPDLOG_INFO("Col {} {} {}", col.r, col.g, col.b);
         SPDLOG_INFO("Shape {}", static_cast<int>(shape_type));
@@ -167,7 +169,6 @@ void Simulation::update_physics(float delta_seconds)
         PhysicalObject, ShapeType, Shape, State>();
 
     for (int step = 0; step < simulation_steps; ++step) {
-
         quad_tree_.clear();
 
         for (auto [entity, pos, vel, acc, physics, shape_type, shape, state] :
@@ -178,32 +179,21 @@ void Simulation::update_physics(float delta_seconds)
             vel *= std::max(0.0F, 1.0F - (physics.drag * sub_delta));
 
             if (!physics.is_static) {
-                const auto old_pos = pos;
                 pos += vel * sub_delta;
-                if (pos != old_pos) {
-                    physics.dirty = true;
-                }
             }
-            const AABB bounds = get_aabb(entity);
+            const AABB bounds = get_aabb(pos, shape_type, shape);
             quad_tree_.insert(entity, bounds);
         }
 
         std::vector<entt::entity> candidates;
-        float mean_nb_candidates = 0;
-        uint64_t nb_candidates = 0;
-        uint64_t nb_entity = 0;
 
         for (auto [entity, pos, vel, acc, physics, shape_type, shape, state] :
             view.each()) {
-            nb_entity++;
-            if (!physics.dirty)
-                continue;
 
             candidates.clear();
 
-            const AABB bounds = get_aabb(entity);
+            const AABB bounds = get_aabb(pos, shape_type, shape);
             quad_tree_.query(bounds, candidates);
-            nb_candidates += candidates.size();
 
             for (auto entity_b_ : candidates) {
                 if (entity == entity_b_)
@@ -225,8 +215,6 @@ void Simulation::update_physics(float delta_seconds)
 
             physics.dirty = false;
         }
-        mean_nb_candidates = static_cast<float>(nb_candidates) / nb_entity;
-        SPDLOG_INFO("MEAN {}", mean_nb_candidates);
     }
 }
 
@@ -341,13 +329,12 @@ void Simulation::fire_player_tank()
 void Simulation::create_ressource(
     Position pos, Ressource res, Shape shape, ShapeType shape_type, Color color)
 {
-    (void)this;
-    const entt::entity ressource = registry_.create();
+    entt::entity ressource = registry_.create();
     // auto &tank = registry_.get<Tank>(player_tank);
 
+    registry_.emplace<Color>(ressource, color);
     registry_.emplace<Position>(ressource, pos);
     registry_.emplace<Velocity>(ressource, glm::vec2 { 0, 0 });
-    registry_.emplace<Color>(ressource, color);
     registry_.emplace<Acceleration>(ressource, Acceleration { 0.F, 0.F });
     registry_.emplace<ShapeType>(ressource, shape_type);
     registry_.emplace<Ressource>(ressource, res);
@@ -372,9 +359,9 @@ void Simulation::create_obstacle(
 {
     (void)this;
     const entt::entity obstacle = registry_.create();
+    registry_.emplace<Color>(obstacle, color);
     registry_.emplace<Position>(obstacle, pos);
     registry_.emplace<Velocity>(obstacle, glm::vec2 { 0, 0 });
-    registry_.emplace<Color>(obstacle, color);
     registry_.emplace<Acceleration>(obstacle, Acceleration { 0.F, 0.F });
     registry_.emplace<Shape>(obstacle, shape);
     registry_.emplace<ShapeType>(obstacle, shape_type);
@@ -391,24 +378,24 @@ void Simulation::create_obstacle(
     registry_.emplace<State>(obstacle, State::STATE_OK);
 }
 
-AABB Simulation::get_aabb(entt::entity entity)
+AABB Simulation::get_aabb(Position pos, ShapeType shape_type, Shape shape)
 {
 
-    const auto &position = registry_.get<Position>(entity);
-    const auto &shape_type = registry_.get<ShapeType>(entity);
-
-    const auto &shape = registry_.get<Shape>(entity);
     switch (shape_type) {
     case ShapeType::SHAPE_CIRCLE:
-        return { .min_x = position.x,
-            .min_y = position.y,
-            .max_x = position.x + (shape.circle.size),
-            .max_y = position.y + (shape.circle.size) };
+        return {
+            .min_x = pos.x,
+            .min_y = pos.y,
+            .max_x = pos.x + shape.circle.size,
+            .max_y = pos.y + shape.circle.size,
+        };
     case ShapeType::SHAPE_RECT:
-        return { .min_x = position.x,
-            .min_y = position.y,
-            .max_x = position.x + shape.rect.width,
-            .max_y = position.y + shape.rect.height };
+        return {
+            .min_x = pos.x,
+            .min_y = pos.y,
+            .max_x = pos.x + shape.rect.width,
+            .max_y = pos.y + shape.rect.height,
+        };
     }
     return { .min_x = 0, .min_y = 0, .max_x = 0, .max_y = 0 };
 }

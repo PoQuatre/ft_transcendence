@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:34 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/07 23:41:09 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/08 22:54:37 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 #include <glm/ext/vector_float2.hpp>
 #include <glm/ext/vector_float4.hpp>
 
-#include "QuadTree.hpp"
+#include "SpatialGrid.hpp"
 #include "components.hpp"
 
 namespace game::simulation {
@@ -39,7 +39,7 @@ public:
         ShapeType shape_type, Color color);
     void create_obstacle(
         Position pos, Shape shape, ShapeType shape_type, Color color);
-    const Quadtree &get_quad_tree() { return quad_tree_; }
+    const SpatialGrid &get_quad_tree() { return quad_tree_; }
 
 private:
     static collision::CollisionHit collide_objects(Position pos_a,
@@ -47,12 +47,12 @@ private:
         ShapeType type_b);
     void resolve_collision(entt::entity a, entt::entity b,
         const collision::CollisionHit &collision);
-    AABB get_aabb(entt::entity entity);
+    static AABB get_aabb(Position pos, ShapeType shape_type, Shape shape);
     void update_physics(float delta_seconds);
 
     entt::registry registry_;
     entt::entity player_tank_;
-    Quadtree quad_tree_;
+    SpatialGrid quad_tree_;
 
     const int ressource_count_ = 1000;
     const AABB map_bounds_

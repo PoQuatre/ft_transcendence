@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   QuadTree.hpp                                       :+:      :+:    :+:   */
+/*   SpatialGrid.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 14:27:52 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/08 02:11:38 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/08 22:55:17 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,16 +40,15 @@ inline glm::vec2 aabb_dimensions(const AABB box)
     return { box.max_x - box.min_x, box.max_y - box.min_y };
 }
 
-class Quadtree {
+class SpatialGrid {
 public:
-    struct Node {
+    struct Chunk {
         AABB bounds;
         std::vector<std::pair<entt::entity, AABB>> entities;
-        std::array<std::unique_ptr<Node>, 4> children;
     };
 
-    Quadtree() = default;
-    Quadtree(AABB bounds, int max_entities = 2, int max_depth = 32);
+    SpatialGrid() = default;
+    explicit SpatialGrid(AABB bounds);
 
     void clear();
     void insert(entt::entity entity, const AABB &box);
@@ -57,16 +56,14 @@ public:
     void render() const;
 
 private:
-    std::unique_ptr<Node> root_;
+    static constexpr int32_t chunk_count_ = 100;
+    AABB map_bounds_;
+    float chunk_width_ = 0;
+    float chunk_height_ = 0;
+    uint32_t chunk_count_x_ = 0;
+    uint32_t chunk_count_y_ = 0;
 
-    size_t max_entities_ = 8;
-    size_t max_depth_ = 8;
-
-    void insert(Node *node, entt::entity entity, const AABB &box, size_t depth);
-    void split(Node *node, size_t depth);
-    void query(const Node *node, const AABB &area,
-        std::vector<entt::entity> &result) const;
-    void render(Node *node, int depth) const;
+    std::array<Chunk, chunk_count_> chunks_;
 };
 
 }
