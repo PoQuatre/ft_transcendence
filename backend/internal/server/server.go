@@ -43,6 +43,13 @@ func New(options ...Option) (http.Handler, error) {
 	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
 	sessionManager.Cookie.Secure = true
 
+	e.Use(echo.WrapMiddleware(sessionManager.LoadAndSave))
+
+	validat, err := helpers.NewCustomValidator()
+	if err != nil {
+		return nil, fmt.Errorf("custom validator : %w", err)
+	}
+
 	e.GET("/healthz", func(c *echo.Context) error {
 		if cfg.database != nil {
 			if err := cfg.database.PingContext(c.Request().Context()); err != nil {
@@ -53,13 +60,7 @@ func New(options ...Option) (http.Handler, error) {
 	})
 
 	if cfg.database != nil {
-		validat, err := helpers.NewCustomValidator()
-		if err != nil {
-			return nil, fmt.Errorf("custom validator : %w", err)
-		}
-		group := e.Group("/api/auth")
-		group.Use(echo.WrapMiddleware(sessionManager.LoadAndSave))
-		auth.RegisterRoutes(group, *auth.NewService(auth.NewRepository(cfg.database)), sessionManager, validat)
+		auth.RegisterRoutes(e.Group("/api/auth"), *auth.NewService(auth.NewRepository(cfg.database)), sessionManager, validat)
 	}
 
 	return e, nil
