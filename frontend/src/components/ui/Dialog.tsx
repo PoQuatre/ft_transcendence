@@ -1,7 +1,8 @@
-import type { ComponentProps, JSX } from "@solidjs/web";
-import { Portal } from "@solidjs/web";
-import { type Component, Show, omit } from "solid-js";
-import { cn } from "~/lib/utils";
+import type { ComponentProps, JSX } from '@solidjs/web';
+import { Portal } from '@solidjs/web';
+import { type Component, Show, omit } from 'solid-js';
+
+import { cn } from '~/lib/utils';
 
 export type DialogProps = {
   open: boolean;
@@ -18,7 +19,7 @@ export const Dialog: Component<DialogProps> = (props) => {
           <button
             type="button"
             aria-label="Fermer la boîte de dialogue"
-            tabIndex={-1}
+            tabindex={-1}
             class="fixed inset-0 bg-surface-container-lowest/80 backdrop-blur-md transition-opacity cursor-pointer border-0 p-0"
             onClick={() => props.onOpenChange(false)}
           />
@@ -32,11 +33,14 @@ export const Dialog: Component<DialogProps> = (props) => {
   );
 };
 
-export const DialogHeader: Component<ComponentProps<"div">> = (props) => {
-  const rest = omit(props, "class", "children");
+export const DialogHeader: Component<ComponentProps<'div'>> = (props) => {
+  const rest = omit(props, 'class', 'children');
   return (
     <div
-      class={cn("flex flex-col gap-1.5 pb-4 border-b border-surface-container-high/40", props.class)}
+      class={cn(
+        'flex flex-col gap-1.5 pb-4 border-b border-surface-container-high/40',
+        props.class,
+      )}
       {...rest}
     >
       {props.children}
@@ -44,11 +48,14 @@ export const DialogHeader: Component<ComponentProps<"div">> = (props) => {
   );
 };
 
-export const DialogTitle: Component<ComponentProps<"h3">> = (props) => {
-  const rest = omit(props, "class", "children");
+export const DialogTitle: Component<ComponentProps<'h3'>> = (props) => {
+  const rest = omit(props, 'class', 'children');
   return (
     <h3
-      class={cn("font-headline-md text-headline-md text-white font-bold tracking-wide", props.class)}
+      class={cn(
+        'font-headline-md text-headline-md text-white font-bold tracking-wide',
+        props.class,
+      )}
       {...rest}
     >
       {props.children}
@@ -56,11 +63,14 @@ export const DialogTitle: Component<ComponentProps<"h3">> = (props) => {
   );
 };
 
-export const DialogDescription: Component<ComponentProps<"p">> = (props) => {
-  const rest = omit(props, "class", "children");
+export const DialogDescription: Component<ComponentProps<'p'>> = (props) => {
+  const rest = omit(props, 'class', 'children');
   return (
     <p
-      class={cn("font-body-sm text-body-sm text-on-surface-variant", props.class)}
+      class={cn(
+        'font-body-sm text-body-sm text-on-surface-variant',
+        props.class,
+      )}
       {...rest}
     >
       {props.children}
@@ -68,12 +78,12 @@ export const DialogDescription: Component<ComponentProps<"p">> = (props) => {
   );
 };
 
-export const DialogFooter: Component<ComponentProps<"div">> = (props) => {
-  const rest = omit(props, "class", "children");
+export const DialogFooter: Component<ComponentProps<'div'>> = (props) => {
+  const rest = omit(props, 'class', 'children');
   return (
     <div
       class={cn(
-        "flex items-center justify-end gap-space-sm pt-4 border-t border-surface-container-high/40",
+        'flex items-center justify-end gap-space-sm pt-4 border-t border-surface-container-high/40',
         props.class,
       )}
       {...rest}
