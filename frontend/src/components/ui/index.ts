@@ -3,3 +3,7 @@ export * from "./Badge";
 export * from "./Card";
 export * from "./Input";
 export * from "./Progress";
+export * from "./Kbd";
+export * from "./Separator";
+export * from "./Avatar";
+export * from "./Switch";
