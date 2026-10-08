@@ -11,18 +11,12 @@ import (
 
 var ErrInvalidCredentials = errors.New("invalid email or password")
 
-type Service interface {
-	SignUp(ctx context.Context, req SignupRequest) (*UserResponse, error)
-	Login(ctx context.Context, req LoginRequest) (*UserResponse, error)
-	GetUserByID(ctx context.Context, id uuid.UUID) (*UserResponse, error)
-}
-
-type service struct {
+type Service struct {
 	repo Repository
 }
 
-func NewService(repo Repository) Service {
-	return &service{repo: repo}
+func NewService(repo Repository) *Service {
+	return &Service{repo: repo}
 }
 
 func toUserResponse(user *User) *UserResponse {
@@ -36,9 +30,8 @@ func toUserResponse(user *User) *UserResponse {
 	}
 }
 
-func (s *service) SignUp(ctx context.Context, req SignupRequest) (*UserResponse, error) {
-	req.Email = strings.TrimSpace(req.Email)
-	req.Email = strings.ToLower(req.Email)
+func (s *Service) SignUp(ctx context.Context, req SignupRequest) (*UserResponse, error) {
+	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	req.Username = strings.TrimSpace(req.Username)
 	if req.Email == "" || req.Password == "" || req.Username == "" {
 		return nil, ErrInvalidCredentials
@@ -72,12 +65,11 @@ func dummyCompare(password string) {
 	}
 }
 
-func (s *service) Login(ctx context.Context, req LoginRequest) (
+func (s *Service) Login(ctx context.Context, req LoginRequest) (
 	*UserResponse, error,
 ) {
 	req.Password = strings.TrimSpace(req.Password)
-	req.Email = strings.TrimSpace(req.Email)
-	req.Email = strings.ToLower(req.Email)
+	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 
 	if req.Email == "" || req.Password == "" {
 		return nil, ErrInvalidCredentials
@@ -95,7 +87,7 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (
 	return toUserResponse(user), nil
 }
 
-func (s *service) GetUserByID(ctx context.Context, id uuid.UUID) (*UserResponse, error) {
+func (s *Service) GetUserByID(ctx context.Context, id uuid.UUID) (*UserResponse, error) {
 	user, err := s.repo.GetUserByID(ctx, id)
 	if err != nil {
 		return nil, err

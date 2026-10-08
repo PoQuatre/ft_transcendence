@@ -9,6 +9,8 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/labstack/echo/v5"
+
+	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
 )
 
 func setupTestServer(t *testing.T) (*echo.Echo, *scs.SessionManager) {
@@ -22,9 +24,15 @@ func setupTestServer(t *testing.T) (*echo.Echo, *scs.SessionManager) {
 	sessionManager.Cookie.Persist = false
 
 	group := e.Group("/auth")
-	if err := RegisterRoutes(group, svc, sessionManager); err != nil {
-		t.Fatalf("failed to register routes: %v", err)
+
+	validat, err := helpers.NewCustomValidator()
+	if err != nil {
+		t.Fatalf("failed to create custom validator : %v", err)
+		return nil, nil
 	}
+	group.Use(echo.WrapMiddleware(sessionManager.LoadAndSave))
+
+	RegisterRoutes(group, *svc, sessionManager, validat)
 
 	return e, sessionManager
 }

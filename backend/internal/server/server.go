@@ -12,6 +12,7 @@ import (
 	"github.com/uptrace/bun"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
+	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
 )
 
 type config struct {
@@ -52,10 +53,13 @@ func New(options ...Option) (http.Handler, error) {
 	})
 
 	if cfg.database != nil {
-		err := auth.RegisterRoutes(e.Group("/api/auth"), auth.NewService(auth.NewRepository(cfg.database)), sessionManager)
+		validat, err := helpers.NewCustomValidator()
 		if err != nil {
-			return nil, fmt.Errorf("auth register routes: %w", err)
+			return nil, fmt.Errorf("custom validator : %w", err)
 		}
+		group := e.Group("/api/auth")
+		group.Use(echo.WrapMiddleware(sessionManager.LoadAndSave))
+		auth.RegisterRoutes(group, *auth.NewService(auth.NewRepository(cfg.database)), sessionManager, validat)
 	}
 
 	return e, nil
