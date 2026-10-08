@@ -13,7 +13,11 @@ import (
 )
 
 func TestNewHealthzWithoutDatabase(t *testing.T) {
-	response := serve(t, New(), http.MethodGet, "/healthz")
+	srv, err := New()
+	if err != nil {
+		t.Fatalf("failed to create server : %v", err)
+	}
+	response := serve(t, srv, http.MethodGet, "/healthz")
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("GET /healthz status = %d, want %d", response.Code, http.StatusOK)
@@ -23,7 +27,11 @@ func TestNewHealthzWithoutDatabase(t *testing.T) {
 
 func TestNewHealthzWithUnavailableDatabase(t *testing.T) {
 	database := unavailableDatabase(t)
-	response := serve(t, New(WithDatabase(database)), http.MethodGet, "/healthz")
+	srv, err := New(WithDatabase(database))
+	if err != nil {
+		t.Fatalf("failed to create server : %v", err)
+	}
+	response := serve(t, srv, http.MethodGet, "/healthz")
 
 	if response.Code != http.StatusServiceUnavailable {
 		t.Fatalf("GET /healthz status = %d, want %d", response.Code, http.StatusServiceUnavailable)
@@ -31,11 +39,15 @@ func TestNewHealthzWithUnavailableDatabase(t *testing.T) {
 	assertStatusResponse(t, response, "unavailable")
 }
 
-func TestNewDoesNotRegisterTodoRoutesWithoutDatabase(t *testing.T) {
-	response := serve(t, New(), http.MethodGet, "/api/todos")
+func TestNewDoesNotRegisterAuthRoutesWithoutDatabase(t *testing.T) {
+	srv, err := New()
+	if err != nil {
+		t.Fatalf("failed to create server : %v", err)
+	}
+	response := serve(t, srv, http.MethodGet, "/api/auth")
 
 	if response.Code != http.StatusNotFound {
-		t.Errorf("GET /api/todos status = %d, want %d", response.Code, http.StatusNotFound)
+		t.Errorf("GET /api/auth status = %d, want %d", response.Code, http.StatusNotFound)
 	}
 }
 

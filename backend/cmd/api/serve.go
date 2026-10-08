@@ -43,13 +43,18 @@ func newServeCmd() *cobra.Command {
 				return fmt.Errorf("connect database: %w", err)
 			}
 			defer func() {
-				if err := db.Close(); err != nil {
+				if err = db.Close(); err != nil {
 					slog.Error("close database", "error", err)
 				}
 			}()
 
+			srv, err := server.New(server.WithDatabase(db))
+			if err != nil {
+				return fmt.Errorf("initialize server: %w", err)
+			}
+
 			return serve(ctx, net.JoinHostPort(host, strconv.Itoa(port)),
-				server.New(server.WithDatabase(db)))
+				srv)
 		},
 	}
 

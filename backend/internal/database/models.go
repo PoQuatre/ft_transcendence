@@ -1,11 +1,11 @@
 package database
 
 import (
-	"github.com/PoQuatre/ft_transcendence/backend/internal/todos"
+	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
 )
 
 func Models() []any {
 	return []any{
-		(*todos.Todo)(nil),
+		(*auth.User)(nil),
 	}
 }

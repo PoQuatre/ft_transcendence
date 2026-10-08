@@ -1,10 +1,12 @@
 SET statement_timeout = 0;
-
-CREATE TABLE todos (
+CREATE TABLE users (
     id uuid NOT NULL DEFAULT uuidv7(),
-    title varchar NOT NULL,
-    completed boolean NOT NULL DEFAULT false,
+    username varchar NOT NULL,
+    email varchar NOT NULL,
+    password_hash varchar NOT NULL,
     created_at timestamptz NOT NULL DEFAULT current_timestamp,
     updated_at timestamptz NOT NULL DEFAULT current_timestamp,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    UNIQUE (username),
+    UNIQUE (email)
 );
