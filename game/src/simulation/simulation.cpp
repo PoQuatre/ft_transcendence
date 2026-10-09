@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:41 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/04 20:06:17 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/08 00:11:53 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -172,6 +172,7 @@ void Simulation::update_physics(float delta_seconds)
 
         for (auto [entity, pos, vel, acc, physics, shape_type, shape, state] :
             view.each()) {
+
             vel += acc * sub_delta;
 
             vel *= std::max(0.0F, 1.0F - (physics.drag * sub_delta));
@@ -275,7 +276,7 @@ void Simulation::create_player_tank(Tank &tank, Position pos, Color col)
         PhysicalObject {
             .mass = 5.0F,
             .drag = 10.0F,
-            .restitution = 1.F,
+            .restitution = 0.2F,
             .is_static = false,
             .mask = COLLISION_LAYER_OBSTACLE | COLLISION_LAYER_RESSOURCE,
             .layer = COLLISION_LAYER_PLAYER,

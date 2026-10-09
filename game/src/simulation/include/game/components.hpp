@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 14:29:13 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/04 19:43:02 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/08 02:08:00 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,20 +70,21 @@ struct Direction : glm::vec2 {
     }
 };
 
-struct Acceleration : glm::vec2 {
-    using glm::vec2::vec2;
-
-    explicit Acceleration(const glm::vec2 &value)
-        : glm::vec2(value)
-    {
-    }
-    Acceleration &operator=(const glm::vec2 &val)
-    {
-        this->x = val.x;
-        this->y = val.y;
-        return *this;
-    }
-};
+using Acceleration = glm::vec2;
+// struct Acceleration : glm::vec2 {
+//     using glm::vec2::vec2;
+//
+//     explicit Acceleration(const glm::vec2 &value)
+//         : glm::vec2(value)
+//     {
+//     }
+//     Acceleration &operator=(const glm::vec2 &val)
+//     {
+//         this->x = val.x;
+//         this->y = val.y;
+//         return *this;
+//     }
+// };
 
 struct Color {
     unsigned char r;

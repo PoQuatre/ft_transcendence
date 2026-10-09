@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:38 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/02 13:02:36 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/08 07:58:20 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,6 @@
 namespace game::platform {
 
 enum Keys : uint8_t {
-    KEY_NULL = 0,
     KEY_A,
     KEY_S,
     KEY_D,

@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 00:00:00 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/02 13:02:39 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/07 19:02:22 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -95,6 +95,7 @@ bool Platform::should_quit() { return WindowShouldClose(); }
 
 double Platform::delta_seconds() { return GetFrameTime(); }
 double Platform::get_time() { return GetTime(); }
+
 int Platform::width() { return GetRenderWidth(); }
 
 int Platform::height() { return GetRenderHeight(); }
@@ -109,14 +110,18 @@ void Platform::update_inputs()
         KeyboardKey::KEY_LEFT_SHIFT,
     });
 
-    for (size_t i = 0; i < Keys::KEYBOARD_KEY_COUNT; ++i) {
-        if (IsKeyDown(checked_keys[i]) && !state_.keys[i + 1]) {
-            this->state_.keys[i + 1] = true;
-            this->state_.keys_first[i + 1] = true;
+    for (bool &key : state_.keys) {
+        key = false;
+    }
+
+    for (size_t i = 0; i < checked_keys.size(); ++i) {
+        if (IsKeyDown(checked_keys[i]) && !state_.keys[i]) {
+            state_.keys[i] = true;
+            state_.keys_first[i] = true;
         }
         if (IsKeyReleased(checked_keys[i])) {
-            state_.keys[i + 1] = false;
-            state_.keys_first[i + 1] = false;
+            state_.keys[i] = false;
+            state_.keys_first[i] = false;
         }
     }
 

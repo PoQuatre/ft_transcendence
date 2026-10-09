@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 15:08:38 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/04 19:04:48 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/08 02:11:45 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -141,7 +141,7 @@ void Quadtree::render(Node *node, int depth) const
 
     auto dim = aabb_dimensions(node->bounds);
 
-    DrawRectangleLines(node->bounds.min_x, node->bounds.min_y, dim.x, dim.y,
+    DrawRectangleLines(node->bounds.min_x, node->bounds.max_y, dim.x, dim.y,
         { .r = 255, .g = 0, .b = 0, .a = 255 });
     std::string count = std::to_string(node->entities.size());
     DrawText(count.c_str(), node->bounds.min_x + 10, node->bounds.min_y, 32,

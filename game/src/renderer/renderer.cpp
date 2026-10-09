@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/04 20:08:23 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/08 08:02:35 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -113,6 +113,11 @@ void Renderer::draw(simulation::Simulation &sim)
             break;
         }
     }
+
+    // DrawLine((int)camera.target.x, -GetRenderHeight() * 10,
+    //     (int)camera.target.x, GetRenderHeight() * 10, GREEN);
+    // DrawLine(-GetRenderWidth() * 10, (int)camera.target.y,
+    //     GetRenderWidth() * 10, (int)camera.target.y, GREEN);
     // const auto &quad = sim.get_quad_tree();
     // quad.render();
 
