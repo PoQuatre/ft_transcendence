@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 00:00:00 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/09/20 01:09:04 by mle-flem         ###   ########.fr       */
+/*   Updated: 2026/10/07 19:02:22 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -93,16 +93,59 @@ bool Platform::initialize()
 
 bool Platform::should_quit() { return WindowShouldClose(); }
 
-double Platform::delta_seconds()
-{
-    const double now = GetTime();
-    const double delta_seconds = now - last_time_;
-    last_time_ = now;
-    return delta_seconds;
-}
+double Platform::delta_seconds() { return GetFrameTime(); }
+double Platform::get_time() { return GetTime(); }
 
 int Platform::width() { return GetRenderWidth(); }
 
 int Platform::height() { return GetRenderHeight(); }
+
+void Platform::update_inputs()
+{
+    std::array<KeyboardKey, Keys::KEY_COUNT> checked_keys({
+        KeyboardKey::KEY_A,
+        KeyboardKey::KEY_S,
+        KeyboardKey::KEY_D,
+        KeyboardKey::KEY_W,
+        KeyboardKey::KEY_LEFT_SHIFT,
+    });
+
+    for (bool &key : state_.keys) {
+        key = false;
+    }
+
+    for (size_t i = 0; i < checked_keys.size(); ++i) {
+        if (IsKeyDown(checked_keys[i]) && !state_.keys[i]) {
+            state_.keys[i] = true;
+            state_.keys_first[i] = true;
+        }
+        if (IsKeyReleased(checked_keys[i])) {
+            state_.keys[i] = false;
+            state_.keys_first[i] = false;
+        }
+    }
+
+    if (IsMouseButtonDown(MouseButton::MOUSE_BUTTON_LEFT)
+        && !state_.keys[Keys::MOUSE_BUTTON_LEFT]) {
+        state_.keys[Keys::MOUSE_BUTTON_LEFT] = true;
+        state_.keys_first[Keys::MOUSE_BUTTON_LEFT] = true;
+    }
+    if (IsMouseButtonReleased(MouseButton::MOUSE_BUTTON_LEFT)) {
+        state_.keys[Keys::MOUSE_BUTTON_LEFT] = false;
+        state_.keys_first[Keys::MOUSE_BUTTON_LEFT] = false;
+    }
+    if (IsMouseButtonDown(MouseButton::MOUSE_BUTTON_RIGHT)
+        && !state_.keys[Keys::MOUSE_BUTTON_RIGHT]) {
+        state_.keys[Keys::MOUSE_BUTTON_RIGHT] = true;
+        state_.keys_first[Keys::MOUSE_BUTTON_RIGHT] = true;
+    }
+    if (IsMouseButtonReleased(MouseButton::MOUSE_BUTTON_RIGHT)) {
+        state_.keys[Keys::MOUSE_BUTTON_RIGHT] = false;
+        state_.keys_first[Keys::MOUSE_BUTTON_RIGHT] = false;
+    }
+
+    state_.mouse_pos.x = GetMouseX();
+    state_.mouse_pos.y = GetMouseY();
+}
 
 } // namespace game::platform

@@ -4,7 +4,6 @@ lockfile = true
 [tools]
 "vfox:jdx/vfox-emsdk" = "6.0.9"
 cmake = "4.4.3"
-"conda:clang-tools" = "23.1.0"
 go = "1.27.0"
 golangci-lint = "2.13.2"
 node = "26.8.1"
@@ -16,6 +15,5 @@ mkcert = "1.4.4"
 _.path = { path = [
 	"{{tools['node'].path}}/bin",
 	"{{tools['cmake'].path}}/bin",
-	"{{tools['conda:clang-tools'].path}}/bin",
 	"{{tools['vfox:jdx/vfox-emsdk'].path}}/bin",
 ], tools = true }
