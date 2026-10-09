@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/01 10:17:29 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/07 18:07:31 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/09 04:48:06 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,22 +16,22 @@
 
 namespace game::simulation::collision {
 
-CollisionHit circle_to_rect(
-    Position a_pos, Shape::circle_t a, Position b_pos, Shape::rect_t b)
+CollisionHit circle_to_rect(Transform transform_a, Shape::circle_t a,
+    Transform transform_b, Shape::rect_t b)
 {
     const float radius = a.size / 2.0F;
 
     const glm::vec2 circle_center {
-        a_pos.x + radius,
-        a_pos.y + radius,
+        transform_a.pos.x + radius,
+        transform_a.pos.y + radius,
     };
     const glm::vec2 rect_min {
-        b_pos.x,
-        b_pos.y,
+        transform_b.pos.x,
+        transform_b.pos.y,
     };
     const glm::vec2 rect_max {
-        b_pos.x + b.width,
-        b_pos.y + b.height,
+        transform_b.pos.x + b.width,
+        transform_b.pos.y + b.height,
     };
 
     const glm::vec2 closest {
@@ -97,18 +97,18 @@ CollisionHit circle_to_rect(
     };
 }
 
-CollisionHit rect_to_rect(
-    Position a_pos, Shape::rect_t a, Position b_pos, Shape::rect_t b)
+CollisionHit rect_to_rect(Transform transform_a, Shape::rect_t a,
+    Transform transform_b, Shape::rect_t b)
 {
-    const float a_left = a_pos.x;
-    const float a_right = a_pos.x + a.width;
-    const float a_top = a_pos.y;
-    const float a_bottom = a_pos.y + a.height;
+    const float a_left = transform_a.pos.x;
+    const float a_right = transform_a.pos.x + a.width;
+    const float a_top = transform_a.pos.y;
+    const float a_bottom = transform_a.pos.y + a.height;
 
-    const float b_left = b_pos.x;
-    const float b_right = b_pos.x + b.width;
-    const float b_top = b_pos.y;
-    const float b_bottom = b_pos.y + b.height;
+    const float b_left = transform_b.pos.x;
+    const float b_right = transform_b.pos.x + b.width;
+    const float b_top = transform_b.pos.y;
+    const float b_bottom = transform_b.pos.y + b.height;
 
     const float overlap_x
         = std::min(a_right, b_right) - std::max(a_left, b_left);
@@ -124,13 +124,13 @@ CollisionHit rect_to_rect(
     }
 
     const glm::vec2 a_center {
-        a_pos.x + (a.width / 2.0F),
-        a_pos.y + (a.height / 2.0F),
+        transform_a.pos.x + (a.width / 2.0F),
+        transform_a.pos.y + (a.height / 2.0F),
     };
 
     const glm::vec2 b_center {
-        b_pos.x + (b.width / 2.0F),
-        b_pos.y + (b.height / 2.0F),
+        transform_b.pos.x + (b.width / 2.0F),
+        transform_b.pos.y + (b.height / 2.0F),
     };
 
     const glm::vec2 center_difference = b_center - a_center;
@@ -154,14 +154,16 @@ CollisionHit rect_to_rect(
     };
 }
 
-CollisionHit circle_to_circle(
-    Position a_pos, Shape::circle_t a, Position b_pos, Shape::circle_t b)
+CollisionHit circle_to_circle(Transform transform_a, Shape::circle_t a,
+    Transform transform_b, Shape::circle_t b)
 {
     const float a_radius = a.size / 2.0F;
     const float b_radius = b.size / 2.0F;
 
-    const glm::vec2 a_center { a_pos.x + a_radius, a_pos.y + a_radius };
-    const glm::vec2 b_center { b_pos.x + b_radius, b_pos.y + b_radius };
+    const glm::vec2 a_center { transform_a.pos.x + a_radius,
+        transform_a.pos.y + a_radius };
+    const glm::vec2 b_center { transform_b.pos.x + b_radius,
+        transform_b.pos.y + b_radius };
     const glm::vec2 difference = a_center - b_center;
 
     const float distance_squared = glm::dot(difference, difference);

@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 14:27:52 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/08 22:55:17 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/09 04:25:11 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,7 +56,7 @@ public:
     void render() const;
 
 private:
-    static constexpr int32_t chunk_count_ = 100;
+    static constexpr int32_t chunk_count_ = 400;
     AABB map_bounds_;
     float chunk_width_ = 0;
     float chunk_height_ = 0;

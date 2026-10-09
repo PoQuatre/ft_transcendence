@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:46 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/08 08:01:38 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/09 06:44:48 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,8 +30,18 @@ bool App::initialize()
         return false;
     }
     this->tank_name_ = "test";
-    simulation::Tank tank { .name = tank_name_, .size = 20 };
-    simulation_.create_player_tank(tank, simulation::Position { 100.F, 100.F },
+    simulation::Tank tank {
+        .name = tank_name_,
+        .size = 20,
+        .dir = glm::vec2(0),
+    };
+    simulation_.create_player_tank(tank,
+        simulation::Transform {
+            .pos = { 100.F, 100.F },
+            .vel = glm::vec2(0),
+            .acc = glm::vec2(0),
+            .rotation = 0,
+        },
         simulation::Color { .r = 38, .g = 217, .b = 191, .a = 255 });
 
     return true;
@@ -49,7 +59,8 @@ bool App::should_quit()
 
 void App::update_player()
 {
-    auto *player_acc = this->simulation_.get_player_acceleration();
+    auto *player_transform = this->simulation_.get_player_transform();
+    auto &player_acc = player_transform->acc;
     glm::vec2 dir(0);
     float speed = 5000.F;
     auto &state = platform_.get_input();
@@ -79,18 +90,18 @@ void App::update_player()
     const double dash_rate = 0.5F;
 
     if (glm::length(dir) > 0) {
-        *player_acc = glm::normalize(dir) * speed;
+        player_acc = glm::normalize(dir) * speed;
         if (state.keys_first[platform::Keys::KEY_LEFT_SHIFT]
             && platform::Platform::get_time() - last_dash > 1.F / dash_rate) {
             last_dash = platform::Platform::get_time();
-            *player_acc += glm::normalize(dir) * (speed * 20);
+            player_acc += glm::normalize(dir) * (speed * 20);
         }
     } else {
-        *player_acc = glm::vec2(0);
+        player_acc = glm::vec2(0);
     }
 
-    auto *player_dir = simulation_.get_player_direction();
-    *player_dir
+    auto &player_dir = simulation_.get_player_tank()->dir;
+    player_dir
         = glm::normalize((glm::vec2 { game::platform::Platform::width() / 2.F,
                               game::platform::Platform::height() / 2.F }
             - glm::vec2 { state.mouse_pos.x, state.mouse_pos.y }));

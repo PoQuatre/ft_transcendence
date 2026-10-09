@@ -21,6 +21,7 @@ Checks: >
   -readability-identifier-length,
   -readability-identifier-naming,
   -readability-magic-numbers,
+  -readability-suspicious-call-argument,
 
 WarningsAsErrors: "*"
 HeaderFilterRegex: ".*/game/(src|tests)/.*"

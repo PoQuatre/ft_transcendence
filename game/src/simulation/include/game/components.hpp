@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 14:29:13 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/08 23:19:11 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/09 06:49:55 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,70 +28,11 @@ struct CollisionHit {
 // using Position = glm::vec2
 // casse entt tres tres bizarre
 
-struct Position : glm::vec2 {
-    using glm::vec2::vec2;
-
-    explicit Position(const glm::vec2 &value)
-        : glm::vec2(value)
-    {
-    }
-    Position &operator=(const glm::vec2 &val)
-    {
-        this->x = val.x;
-        this->y = val.y;
-        return *this;
-    }
-};
-
-struct Velocity : glm::vec2 {
-    using glm::vec2::vec2;
-
-    explicit Velocity(const glm::vec2 &value)
-        : glm::vec2(value)
-    {
-    }
-    Velocity &operator=(const glm::vec2 &val)
-    {
-        this->x = val.x;
-        this->y = val.y;
-        return *this;
-    }
-};
-
-struct Direction : glm::vec2 {
-    using glm::vec2::vec2;
-
-    explicit Direction(const glm::vec2 &value)
-        : glm::vec2(value)
-    {
-    }
-    Direction &operator=(const glm::vec2 &val)
-    {
-        this->x = val.x;
-        this->y = val.y;
-        return *this;
-    }
-};
-
-struct Acceleration : glm::vec2 {
-    using glm::vec2::vec2;
-
-    explicit Acceleration(const glm::vec2 &value)
-        : glm::vec2(value)
-    {
-    }
-    Acceleration &operator=(const glm::vec2 &val)
-    {
-        this->x = val.x;
-        this->y = val.y;
-        return *this;
-    }
-};
-
 struct Transform {
-    Position pos;
-    Velocity vel;
-    Acceleration acc;
+    glm::vec2 pos;
+    glm::vec2 vel;
+    glm::vec2 acc;
+    float rotation;
 };
 
 struct Color {
@@ -130,6 +71,7 @@ struct Ressource {
 struct Tank {
     std::string name;
     float size;
+    glm::vec2 dir;
 };
 
 enum State : uint8_t {
@@ -156,8 +98,8 @@ struct PhysicalObject {
     float drag;
     float restitution;
     bool is_static;
-    int mask;
-    int layer;
+    uint32_t mask;
+    uint32_t layer;
     bool dirty = true;
 };
 
