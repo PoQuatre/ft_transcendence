@@ -1,4 +1,4 @@
-import type { Component } from "solid-js";
+import type { Component } from 'solid-js';
 
 export const Ticker: Component = () => {
   return (
@@ -26,10 +26,6 @@ export const Ticker: Component = () => {
 
       <div class="flex items-center gap-space-md min-w-max">
         <div class="flex items-center gap-space-xs font-label-data text-label-data">
-          <span class="text-outline">TICKRATE:</span>
-          <span class="text-primary-container font-mono font-bold">64.0 Hz</span>
-        </div>
-        <div class="flex items-center gap-space-xs font-label-data text-label-data">
           <span class="text-outline">GLOBAL THREAT:</span>
           <span class="text-secondary-fixed-dim font-bold">CODE OMEGA</span>
         </div>
@@ -37,5 +33,3 @@ export const Ticker: Component = () => {
     </div>
   );
 };
-
-

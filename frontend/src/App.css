@@ -136,14 +136,24 @@
 
 /* Effets scanlines et CRT */
 .scanlines {
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-  background-size: 100% 3px, 6px 100%;
+  background:
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.03),
+      rgba(0, 255, 0, 0.01),
+      rgba(0, 0, 255, 0.03)
+    );
+  background-size:
+    100% 3px,
+    6px 100%;
 }
 
 /* Lueur et ombres portées du Design System */
 .glow-cyan {
-  box-shadow: 0 0 16px rgba(0, 240, 255, 0.35), inset 0 0 8px rgba(0, 240, 255, 0.1);
+  box-shadow:
+    0 0 16px rgba(0, 240, 255, 0.35),
+    inset 0 0 8px rgba(0, 240, 255, 0.1);
 }
 
 .glow-cyan-lg {
@@ -151,15 +161,21 @@
 }
 
 .glow-pink {
-  box-shadow: 0 0 16px rgba(255, 74, 141, 0.35), inset 0 0 8px rgba(255, 74, 141, 0.1);
+  box-shadow:
+    0 0 16px rgba(255, 74, 141, 0.35),
+    inset 0 0 8px rgba(255, 74, 141, 0.1);
 }
 
 .text-glow-cyan {
-  text-shadow: 0 0 8px var(--color-neon-cyan), 0 0 20px var(--color-neon-cyan);
+  text-shadow:
+    0 0 8px var(--color-neon-cyan),
+    0 0 20px var(--color-neon-cyan);
 }
 
 .text-glow-pink {
-  text-shadow: 0 0 8px var(--color-neon-pink), 0 0 20px var(--color-neon-pink);
+  text-shadow:
+    0 0 8px var(--color-neon-pink),
+    0 0 20px var(--color-neon-pink);
 }
 
 /* Coins biseautés (chamfered edges) du style brutaliste */
@@ -168,5 +184,12 @@
 }
 
 .clip-chamfer-btn {
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  clip-path: polygon(
+    8px 0,
+    100% 0,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    0 100%,
+    0 8px
+  );
 }
