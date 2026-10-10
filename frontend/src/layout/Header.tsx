@@ -1,5 +1,6 @@
-import type { Component } from "solid-js";
-import { paths } from "~/router";
+import type { Component } from 'solid-js';
+
+import { paths } from '~/router';
 
 export const Header: Component = () => {
   return (
@@ -13,14 +14,51 @@ export const Header: Component = () => {
             class="flex items-center gap-space-md no-underline"
           >
             <div class="w-8 h-8 flex items-center justify-center text-primary-container">
-              <svg viewBox="0 0 100 100" class="w-8 h-8 drop-shadow-[0_0_8px_#00f0ff]">
-                <circle cx="50" cy="50" r="42" fill="none" stroke="#00f0ff" stroke-width="6" />
+              <svg
+                viewBox="0 0 100 100"
+                class="w-8 h-8 drop-shadow-[0_0_8px_#00f0ff]"
+              >
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  stroke="#00f0ff"
+                  stroke-width="6"
+                />
                 <circle cx="50" cy="50" r="24" fill="#00f0ff" opacity="0.3" />
                 <circle cx="50" cy="50" r="10" fill="#00f0ff" />
-                <line x1="50" y1="8" x2="50" y2="24" stroke="#00f0ff" stroke-width="6" />
-                <line x1="50" y1="76" x2="50" y2="92" stroke="#00f0ff" stroke-width="6" />
-                <line x1="8" y1="50" x2="24" y2="50" stroke="#00f0ff" stroke-width="6" />
-                <line x1="76" y1="50" x2="92" stroke="#00f0ff" stroke-width="6" />
+                <line
+                  x1="50"
+                  y1="8"
+                  x2="50"
+                  y2="24"
+                  stroke="#00f0ff"
+                  stroke-width="6"
+                />
+                <line
+                  x1="50"
+                  y1="76"
+                  x2="50"
+                  y2="92"
+                  stroke="#00f0ff"
+                  stroke-width="6"
+                />
+                <line
+                  x1="8"
+                  y1="50"
+                  x2="24"
+                  y2="50"
+                  stroke="#00f0ff"
+                  stroke-width="6"
+                />
+                <line
+                  x1="76"
+                  y1="50"
+                  x2="92"
+                  stroke="#00f0ff"
+                  stroke-width="6"
+                />
               </svg>
             </div>
             <div class="hidden sm:flex flex-col">
@@ -32,13 +70,6 @@ export const Header: Component = () => {
               </span>
             </div>
           </a>
-
-          <div class="hidden lg:flex items-center gap-space-xs px-space-sm py-space-xs bg-surface-container-low border border-surface-container-high/40">
-            <span class="w-1.5 h-1.5 bg-primary-container animate-pulse" />
-            <span class="font-label-mono-caps text-label-mono-caps text-on-surface-variant">
-              14MS // US-EAST
-            </span>
-          </div>
         </div>
 
         {/* Navigation */}
@@ -83,6 +114,18 @@ export const Header: Component = () => {
 
         {/* Actions utilisateur */}
         <div class="flex items-center gap-space-sm">
+          <a
+            href="/login"
+            class="px-space-md py-space-xs font-label-mono-caps text-label-mono-caps text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all no-underline"
+          >
+            LOG IN
+          </a>
+          <a
+            href="/signup"
+            class="px-space-md py-space-xs font-label-mono-caps text-label-mono-caps text-primary hover:bg-surface-container-high transition-all no-underline"
+          >
+            SIGN UP
+          </a>
           <button
             type="button"
             aria-label="Discord Relay"

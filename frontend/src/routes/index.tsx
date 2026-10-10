@@ -3,8 +3,8 @@ import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
 import { createSignal, onSettled, For } from 'solid-js';
 
-import { Ticker } from '~/layout/Ticker';
 import { Badge, Button, Card, Input, Kbd, Progress } from '~/components/ui';
+import { Ticker } from '~/layout/Ticker';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -22,16 +22,32 @@ export default function Home() {
     248391, 221840, 198204, 183991, 162400, 149110, 138550, 124090,
   ]);
 
-  // Références Canvas
-  let arenaCanvasRef: HTMLCanvasElement | undefined;
+  // Référence Canvas
   let tankCanvasRef: HTMLCanvasElement | undefined;
-  let bgAnimId: number;
   let tankAnimId: number;
 
   // --- Générateur de callsign aléatoire ---
   const handleRandomCallsign = () => {
-    const prefixes = ['NEXUS', 'VORTEX', 'CYBER', 'VOID', 'PHANTOM', 'ZERO', 'NEON', 'TITAN'];
-    const suffixes = ['VIPER', 'WRAITH', 'STRIKE', 'PULSE', 'SHADOW', 'PRIME', 'CORE', 'GHOST'];
+    const prefixes = [
+      'NEXUS',
+      'VORTEX',
+      'CYBER',
+      'VOID',
+      'PHANTOM',
+      'ZERO',
+      'NEON',
+      'TITAN',
+    ];
+    const suffixes = [
+      'VIPER',
+      'WRAITH',
+      'STRIKE',
+      'PULSE',
+      'SHADOW',
+      'PRIME',
+      'CORE',
+      'GHOST',
+    ];
     const p = prefixes[Math.floor(Math.random() * prefixes.length)];
     const s = suffixes[Math.floor(Math.random() * suffixes.length)];
     const n = Math.floor(Math.random() * 99);
@@ -75,74 +91,7 @@ export default function Home() {
       });
     }, 1400);
 
-    // 3. Canvas d'arrière-plan (simulation radar)
-    if (arenaCanvasRef) {
-      const ctx = arenaCanvasRef.getContext('2d');
-      if (ctx) {
-        let w = (arenaCanvasRef.width = window.innerWidth);
-        let h = (arenaCanvasRef.height = window.innerHeight);
-
-        const onResize = () => {
-          if (!arenaCanvasRef) return;
-          w = arenaCanvasRef.width = window.innerWidth;
-          h = arenaCanvasRef.height = window.innerHeight;
-        };
-        window.addEventListener('resize', onResize);
-
-        const shapes = Array.from({ length: 35 }, () => ({
-          x: Math.random() * w,
-          y: Math.random() * h,
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: (Math.random() - 0.5) * 0.5,
-          angle: Math.random() * Math.PI * 2,
-          vRot: (Math.random() - 0.5) * 0.02,
-          size: 8 + Math.random() * 12,
-          color: ['#00f0ff', '#ff4a8d', '#39ff14', '#dcb8ff', '#ffb703'][
-            Math.floor(Math.random() * 5)
-          ],
-        }));
-
-        const loopBg = () => {
-          ctx.fillStyle = '#070a14';
-          ctx.fillRect(0, 0, w, h);
-
-          // Grille radar
-          ctx.strokeStyle = 'rgba(0, 240, 255, 0.035)';
-          ctx.lineWidth = 1;
-          for (let x = 0; x < w; x += 60) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, h);
-            ctx.stroke();
-          }
-          for (let y = 0; y < h; y += 60) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(w, y);
-            ctx.stroke();
-          }
-
-          // Particules
-          for (const s of shapes) {
-            s.x = (s.x + s.vx + w) % w;
-            s.y = (s.y + s.vy + h) % h;
-            s.angle += s.vRot;
-
-            ctx.save();
-            ctx.translate(s.x, s.y);
-            ctx.rotate(s.angle);
-            ctx.strokeStyle = s.color ?? '#00f0ff';
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(-s.size / 2, -s.size / 2, s.size, s.size);
-            ctx.restore();
-          }
-          bgAnimId = requestAnimationFrame(loopBg);
-        };
-        loopBg();
-      }
-    }
-
-    // 4. Canvas d'aperçu du tank (orientation souris fluide)
+    // 3. Canvas d'aperçu du tank (orientation souris fluide)
     let handleMouseMove: ((e: MouseEvent) => void) | undefined;
     if (tankCanvasRef) {
       const pCtx = tankCanvasRef.getContext('2d');
@@ -239,26 +188,13 @@ export default function Home() {
         window.removeEventListener('mousemove', handleMouseMove);
       }
       clearInterval(scoreInterval);
-      cancelAnimationFrame(bgAnimId);
       cancelAnimationFrame(tankAnimId);
     };
   });
 
   return (
-    <div class="flex flex-col w-full relative overflow-hidden bg-surface-container-lowest text-on-surface">
+    <div class="flex flex-col w-full relative overflow-hidden bg-[#0a0e17] text-on-surface">
       <Title>CYBERCORE // ARENA LOBBY</Title>
-
-      {/* Fond Canvas Radar animé */}
-      <canvas
-        ref={(el) => {
-          arenaCanvasRef = el;
-        }}
-        class="absolute inset-0 w-full h-full pointer-events-none z-0 opacity-80"
-      />
-
-      {/* Halos de lumière néon */}
-      <div class="absolute -top-32 left-1/4 w-[500px] h-[500px] bg-primary-container/10 blur-[130px] rounded-full pointer-events-none z-0" />
-      <div class="absolute top-1/2 -right-40 w-[600px] h-[600px] bg-secondary-container/10 blur-[140px] rounded-full pointer-events-none z-0" />
 
       {/* Ticker télémétrique horizontal */}
       <Ticker />
@@ -274,7 +210,9 @@ export default function Home() {
                 <Badge variant="default">SEASON 04: OVERDRIVE</Badge>
                 <Badge variant="secondary">RANKED ARENA V2.8.4</Badge>
                 <span class="flex items-center gap-1 font-label-data text-label-data text-outline">
-                  <span class="material-symbols-outlined text-[14px] text-primary">sensors</span>{' '}
+                  <span class="material-symbols-outlined text-[14px] text-primary">
+                    sensors
+                  </span>{' '}
                   US-CENTRAL
                 </span>
               </div>
@@ -285,15 +223,22 @@ export default function Home() {
                 </span>
               </h1>
               <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
-                High-density real-time tactical geometry. Neutralize hostiles, assimilate radiant cores, and mutate combat chassis along live evolution trees.
+                High-density real-time tactical geometry. Neutralize hostiles,
+                assimilate radiant cores, and mutate combat chassis along live
+                evolution trees.
               </p>
             </div>
 
             {/* Panneau Opérateur */}
-            <Card variant="default" class="p-space-lg flex flex-col gap-space-md">
+            <Card
+              variant="default"
+              class="p-space-lg flex flex-col gap-space-md"
+            >
               <div class="flex items-center justify-between pb-space-xs">
                 <div class="flex items-center gap-space-xs font-label-mono-caps text-label-mono-caps text-primary">
-                  <span class="material-symbols-outlined text-[16px]">terminal</span>
+                  <span class="material-symbols-outlined text-[16px]">
+                    terminal
+                  </span>
                   <span>OPERATOR PILOT PROTOCOL</span>
                 </div>
                 <div class="flex items-center gap-2">
@@ -326,7 +271,9 @@ export default function Home() {
                     title="Générer un pseudo"
                     class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
                   >
-                    <span class="material-symbols-outlined text-[20px]">casino</span>
+                    <span class="material-symbols-outlined text-[20px]">
+                      casino
+                    </span>
                   </button>
                 </div>
 
@@ -337,9 +284,14 @@ export default function Home() {
                   disabled={deploying()}
                   class="font-headline-md tracking-widest gap-space-sm font-bold shadow-[0_0_24px_rgba(0,240,255,0.45)]"
                 >
-                  <span class="material-symbols-outlined text-[24px]">radar</span>
+                  <span class="material-symbols-outlined text-[24px]">
+                    radar
+                  </span>
                   <span>{deployText()}</span>
-                  <Kbd size="sm" class="hidden sm:inline-flex bg-black/30 border-white/20 text-white">
+                  <Kbd
+                    size="sm"
+                    class="hidden sm:inline-flex bg-black/30 border-white/20 text-white"
+                  >
                     ENTER
                   </Kbd>
                 </Button>
@@ -373,7 +325,9 @@ export default function Home() {
                           },
                         ]}
                       >
-                        <span class="material-symbols-outlined text-[18px]">{mode.icon}</span>
+                        <span class="material-symbols-outlined text-[18px]">
+                          {mode.icon}
+                        </span>
                         <span>{mode.label}</span>
                       </button>
                     )}
@@ -381,19 +335,19 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Mini Télémétrie */}
-              <div class="grid grid-cols-3 gap-space-sm pt-space-xs font-label-data text-label-data text-on-surface-variant">
-                <div class="bg-surface-container-lowest/60 p-space-xs rounded flex flex-col">
-                  <span class="text-outline">PING</span>
-                  <span class="text-[#39ff14] font-bold font-mono">14 MS</span>
-                </div>
+              {/* Remplacer grid-cols-3 par grid-cols-2 */}
+              <div class="grid grid-cols-2 gap-space-sm pt-space-xs font-label-data text-label-data text-on-surface-variant">
                 <div class="bg-surface-container-lowest/60 p-space-xs rounded flex flex-col">
                   <span class="text-outline">CHASSIS CLASS</span>
-                  <span class="text-primary font-bold font-mono">{selectedClass()} Mk.IV</span>
+                  <span class="text-primary font-bold font-mono">
+                    {selectedClass()} Mk.IV
+                  </span>
                 </div>
                 <div class="bg-surface-container-lowest/60 p-space-xs rounded flex flex-col">
                   <span class="text-outline">CURRENT LOADOUT</span>
-                  <span class="text-secondary-fixed-dim font-bold font-mono">TWIN-ACCELERATOR</span>
+                  <span class="text-secondary-fixed-dim font-bold font-mono">
+                    TWIN-ACCELERATOR
+                  </span>
                 </div>
               </div>
             </Card>
@@ -401,9 +355,19 @@ export default function Home() {
             {/* Sélecteur de couleur */}
             <div class="flex items-center justify-between bg-surface-container-low/70 backdrop-blur p-space-sm rounded-lg border border-surface-container-high/40">
               <div class="flex items-center gap-space-sm">
-                <span class="font-label-mono-caps text-label-mono-caps text-outline">CORE COLOR:</span>
+                <span class="font-label-mono-caps text-label-mono-caps text-outline">
+                  CORE COLOR:
+                </span>
                 <div class="flex items-center gap-1.5">
-                  <For each={['#00f0ff', '#ff4a8d', '#39ff14', '#ffb703', '#dcb8ff']}>
+                  <For
+                    each={[
+                      '#00f0ff',
+                      '#ff4a8d',
+                      '#39ff14',
+                      '#ffb703',
+                      '#dcb8ff',
+                    ]}
+                  >
                     {(col) => (
                       <button
                         type="button"
@@ -415,7 +379,8 @@ export default function Home() {
                           {
                             'ring-2 ring-primary-container shadow-[0_0_8px_#00f0ff] scale-110':
                               selectedColor() === col,
-                            'opacity-60 hover:opacity-100': selectedColor() !== col,
+                            'opacity-60 hover:opacity-100':
+                              selectedColor() !== col,
                           },
                         ]}
                       />
@@ -428,7 +393,9 @@ export default function Home() {
                 class="font-label-mono-caps text-label-mono-caps text-primary hover:text-primary-fixed flex items-center gap-1 transition-colors no-underline"
               >
                 <span>MUTATION MATRIX</span>
-                <span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+                <span class="material-symbols-outlined text-[16px]">
+                  arrow_downward
+                </span>
               </a>
             </div>
           </div>
@@ -436,7 +403,10 @@ export default function Home() {
           {/* Colonne Droite : Visualiseur Tank & Leaderboard (5 cols) */}
           <div class="lg:col-span-5 flex flex-col gap-space-md">
             {/* Visualiseur Tank */}
-            <Card variant="default" class="p-space-md flex flex-col items-center justify-center min-h-[300px]">
+            <Card
+              variant="default"
+              class="p-space-md flex flex-col items-center justify-center min-h-[300px]"
+            >
               <span class="absolute top-2 left-2 font-mono text-[10px] text-outline">
                 [SYS_DIAG // MK.4]
               </span>
@@ -490,11 +460,19 @@ export default function Home() {
             </Card>
 
             {/* Leaderboard en direct */}
-            <Card variant="default" class="p-space-md flex flex-col gap-space-sm" id="leaderboard">
+            <Card
+              variant="default"
+              class="p-space-md flex flex-col gap-space-sm"
+              id="leaderboard"
+            >
               <div class="flex items-center justify-between pb-space-xs">
                 <div class="flex items-center gap-space-xs">
-                  <span class="material-symbols-outlined text-primary text-[18px]">trophy</span>
-                  <span class="font-headline-md text-headline-md text-white">ARENA APEX</span>
+                  <span class="material-symbols-outlined text-primary text-[18px]">
+                    trophy
+                  </span>
+                  <span class="font-headline-md text-headline-md text-white">
+                    ARENA APEX
+                  </span>
                 </div>
                 <Badge variant="danger" class="animate-pulse">
                   LIVE TELEMETRY
@@ -504,18 +482,60 @@ export default function Home() {
               <div class="flex flex-col gap-1.5">
                 <For
                   each={[
-                    { rank: '01', name: 'NEONVOID', class: 'PHANTOM', variant: 'text-primary-container bg-primary-container/20' },
-                    { rank: '02', name: 'V3X_PILOT', class: 'STRIKER', variant: 'text-secondary bg-secondary-container/20' },
-                    { rank: '03', name: 'KAIROS', class: 'OVERSEER', variant: 'text-tertiary-fixed bg-tertiary-fixed/20' },
-                    { rank: '04', name: 'NULLBYTE', class: 'TITAN', variant: 'text-on-surface bg-surface-container-high/40' },
-                    { rank: '05', name: 'SYNTAX_ERR', class: 'REAPER', variant: 'text-on-surface bg-surface-container-high/40' },
-                    { rank: '06', name: 'AXIOM_9', class: 'PULSE', variant: 'text-on-surface bg-surface-container-high/40' },
-                    { rank: '07', name: 'CYBER_GHOST', class: 'STRIKER', variant: 'text-on-surface bg-surface-container-high/40' },
-                    { rank: '08', name: 'ZERO_COOL', class: 'TITAN', variant: 'text-on-surface bg-surface-container-high/40' },
+                    {
+                      rank: '01',
+                      name: 'NEONVOID',
+                      class: 'PHANTOM',
+                      variant: 'text-primary-container bg-primary-container/20',
+                    },
+                    {
+                      rank: '02',
+                      name: 'V3X_PILOT',
+                      class: 'STRIKER',
+                      variant: 'text-secondary bg-secondary-container/20',
+                    },
+                    {
+                      rank: '03',
+                      name: 'KAIROS',
+                      class: 'OVERSEER',
+                      variant: 'text-tertiary-fixed bg-tertiary-fixed/20',
+                    },
+                    {
+                      rank: '04',
+                      name: 'NULLBYTE',
+                      class: 'TITAN',
+                      variant: 'text-on-surface bg-surface-container-high/40',
+                    },
+                    {
+                      rank: '05',
+                      name: 'SYNTAX_ERR',
+                      class: 'REAPER',
+                      variant: 'text-on-surface bg-surface-container-high/40',
+                    },
+                    {
+                      rank: '06',
+                      name: 'AXIOM_9',
+                      class: 'PULSE',
+                      variant: 'text-on-surface bg-surface-container-high/40',
+                    },
+                    {
+                      rank: '07',
+                      name: 'CYBER_GHOST',
+                      class: 'STRIKER',
+                      variant: 'text-on-surface bg-surface-container-high/40',
+                    },
+                    {
+                      rank: '08',
+                      name: 'ZERO_COOL',
+                      class: 'TITAN',
+                      variant: 'text-on-surface bg-surface-container-high/40',
+                    },
                   ]}
                 >
                   {(player, i) => (
-                    <div class={`flex items-center justify-between p-2 rounded ${player.variant}`}>
+                    <div
+                      class={`flex items-center justify-between p-2 rounded ${player.variant}`}
+                    >
                       <div class="flex items-center gap-space-sm min-w-0">
                         <span class="font-label-mono-caps text-label-mono-caps font-black w-5">
                           {player.rank}
@@ -539,36 +559,59 @@ export default function Home() {
         </div>
 
         {/* Barre de statistiques globales */}
-        <div class="grid grid-cols-2 md:grid-cols-6 gap-space-sm bg-surface-container/60 backdrop-blur p-space-md rounded-xl border border-surface-container-high/40">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-space-sm bg-surface-container/60 backdrop-blur p-space-md rounded-xl border border-surface-container-high/40">
           <div class="flex flex-col items-center justify-center p-space-xs text-center">
-            <span class="font-label-mono-caps text-label-mono-caps text-outline">ARENA COMBATANTS</span>
-            <span class="font-stat-counter text-stat-counter text-primary-container font-mono">12.4K</span>
+            <span class="font-label-mono-caps text-label-mono-caps text-outline">
+              ARENA COMBATANTS
+            </span>
+            <span class="font-stat-counter text-stat-counter text-primary-container font-mono">
+              12.4K
+            </span>
             <span class="text-[10px] text-[#39ff14] font-mono">ONLINE NOW</span>
           </div>
           <div class="flex flex-col items-center justify-center p-space-xs text-center">
-            <span class="font-label-mono-caps text-label-mono-caps text-outline">CORE CONFLICTS</span>
-            <span class="font-stat-counter text-stat-counter text-white font-mono">84.2M</span>
-            <span class="text-[10px] text-outline font-mono">LIFETIME ROUNDS</span>
+            <span class="font-label-mono-caps text-label-mono-caps text-outline">
+              CORE CONFLICTS
+            </span>
+            <span class="font-stat-counter text-stat-counter text-white font-mono">
+              84.2M
+            </span>
+            <span class="text-[10px] text-outline font-mono">
+              LIFETIME ROUNDS
+            </span>
           </div>
           <div class="flex flex-col items-center justify-center p-space-xs text-center">
-            <span class="font-label-mono-caps text-label-mono-caps text-outline">ACTIVE NODES</span>
-            <span class="font-stat-counter text-stat-counter text-secondary font-mono">7 REGIONS</span>
-            <span class="text-[10px] text-[#39ff14] font-mono">LOW PACKET DROP</span>
+            <span class="font-label-mono-caps text-label-mono-caps text-outline">
+              ACTIVE NODES
+            </span>
+            <span class="font-stat-counter text-stat-counter text-secondary font-mono">
+              7 REGIONS
+            </span>
+            <span class="text-[10px] text-[#39ff14] font-mono">
+              LOW PACKET DROP
+            </span>
           </div>
           <div class="flex flex-col items-center justify-center p-space-xs text-center">
-            <span class="font-label-mono-caps text-label-mono-caps text-outline">UPGRADE CHASSIS</span>
-            <span class="font-stat-counter text-stat-counter text-tertiary-fixed font-mono">32 BUILDS</span>
-            <span class="text-[10px] text-outline font-mono">5 TIERS EVOLUTION</span>
+            <span class="font-label-mono-caps text-label-mono-caps text-outline">
+              UPGRADE CHASSIS
+            </span>
+            <span class="font-stat-counter text-stat-counter text-tertiary-fixed font-mono">
+              32 BUILDS
+            </span>
+            <span class="text-[10px] text-outline font-mono">
+              5 TIERS EVOLUTION
+            </span>
           </div>
           <div class="flex flex-col items-center justify-center p-space-xs text-center">
-            <span class="font-label-mono-caps text-label-mono-caps text-outline">NETWORK UPTIME</span>
-            <span class="font-stat-counter text-stat-counter text-white font-mono">99.98%</span>
-            <span class="text-[10px] text-[#39ff14] font-mono">DDoS SHIELDED</span>
-          </div>
-          <div class="flex flex-col items-center justify-center p-space-xs text-center">
-            <span class="font-label-mono-caps text-label-mono-caps text-outline">ARENA TICKRATE</span>
-            <span class="font-stat-counter text-stat-counter text-primary-fixed-dim font-mono">64 HZ</span>
-            <span class="text-[10px] text-outline font-mono">SUB-PIXEL SYNC</span>
+            <span class="font-label-mono-caps text-label-mono-caps text-outline">
+              NETWORK UPTIME
+            </span>
+            <span class="font-stat-counter text-stat-counter text-white font-mono">
+              99.98%
+            </span>
+            <span class="text-[10px] text-[#39ff14] font-mono">
+              DDoS SHIELDED
+            </span>
           </div>
         </div>
 
@@ -576,7 +619,9 @@ export default function Home() {
         <div class="flex flex-col gap-space-lg" id="class-section">
           <div>
             <div class="flex items-center gap-space-xs text-primary font-label-mono-caps text-label-mono-caps">
-              <span class="material-symbols-outlined text-[16px]">account_tree</span>
+              <span class="material-symbols-outlined text-[16px]">
+                account_tree
+              </span>
               <span>CHASSIS ARCHITECTURE</span>
             </div>
             <h2 class="font-headline-xl text-headline-xl text-white font-bold tracking-tight">
@@ -592,7 +637,11 @@ export default function Home() {
                   role: 'ASSAULT // MK.IV',
                   icon: 'bolt',
                   desc: 'High-velocity twin kinetic cannons configured for relentless strafing runs and sustained target lockdown.',
-                  stat1: { label: 'FIREPOWER', val: 92, color: 'cyan' as const },
+                  stat1: {
+                    label: 'FIREPOWER',
+                    val: 92,
+                    color: 'cyan' as const,
+                  },
                   stat2: { label: 'VELOCITY', val: 85, color: 'cyan' as const },
                 },
                 {
@@ -600,7 +649,11 @@ export default function Home() {
                   role: 'STEALTH // INFILTRATOR',
                   icon: 'visibility_off',
                   desc: 'Optical camouflage active cloaking with sudden hyper-damage plasma spikes from behind enemy blind spots.',
-                  stat1: { label: 'BURST DAMAGE', val: 98, color: 'pink' as const },
+                  stat1: {
+                    label: 'BURST DAMAGE',
+                    val: 98,
+                    color: 'pink' as const,
+                  },
                   stat2: { label: 'AGILITY', val: 95, color: 'pink' as const },
                 },
                 {
@@ -608,32 +661,64 @@ export default function Home() {
                   role: 'DRONE SWARM // LOGIC',
                   icon: 'hub',
                   desc: 'Deploys self-guided micro-drone triangles that harass targets, protect flank angles, and breach enemy shields.',
-                  stat1: { label: 'CONTROL RANGE', val: 94, color: 'purple' as const },
-                  stat2: { label: 'UTILITY', val: 90, color: 'purple' as const },
+                  stat1: {
+                    label: 'CONTROL RANGE',
+                    val: 94,
+                    color: 'purple' as const,
+                  },
+                  stat2: {
+                    label: 'UTILITY',
+                    val: 90,
+                    color: 'purple' as const,
+                  },
                 },
                 {
                   id: 'TITAN',
                   role: 'JUGGERNAUT // ARMOR',
                   icon: 'shield',
                   desc: 'Extreme reactive hull plates absorb sustained artillery, crushing opposition via continuous point-blank battery fire.',
-                  stat1: { label: 'DURABILITY', val: 100, color: 'lime' as const },
-                  stat2: { label: 'KNOCKBACK', val: 92, color: 'lime' as const },
+                  stat1: {
+                    label: 'DURABILITY',
+                    val: 100,
+                    color: 'lime' as const,
+                  },
+                  stat2: {
+                    label: 'KNOCKBACK',
+                    val: 92,
+                    color: 'lime' as const,
+                  },
                 },
                 {
                   id: 'REAPER',
                   role: 'SNIPER // RAILGUN',
                   icon: 'filter_center_focus',
                   desc: 'Off-screen projectile range. Pinpoint electromagnetic rail bursts that cleanly puncture nested force shields.',
-                  stat1: { label: 'MAX RANGE', val: 100, color: 'pink' as const },
-                  stat2: { label: 'PIERCE RATIO', val: 96, color: 'pink' as const },
+                  stat1: {
+                    label: 'MAX RANGE',
+                    val: 100,
+                    color: 'pink' as const,
+                  },
+                  stat2: {
+                    label: 'PIERCE RATIO',
+                    val: 96,
+                    color: 'pink' as const,
+                  },
                 },
                 {
                   id: 'PULSE',
                   role: 'DISRUPTOR // AoE',
                   icon: 'radio_button_checked',
                   desc: 'Generates continuous ionic shockwaves that disarm enemy munitions, deflect drones, and overload thrusters.',
-                  stat1: { label: 'DEFLECTION', val: 94, color: 'cyan' as const },
-                  stat2: { label: 'AoE RADIUS', val: 89, color: 'cyan' as const },
+                  stat1: {
+                    label: 'DEFLECTION',
+                    val: 94,
+                    color: 'cyan' as const,
+                  },
+                  stat2: {
+                    label: 'AoE RADIUS',
+                    val: 89,
+                    color: 'cyan' as const,
+                  },
                 },
               ]}
             >
@@ -669,27 +754,41 @@ export default function Home() {
                     <div class="space-y-1.5 font-label-data text-[10px]">
                       <div class="flex justify-between text-outline">
                         <span>{chassis.stat1.label}</span>
-                        <span class="text-white font-mono">{chassis.stat1.val}/100</span>
+                        <span class="text-white font-mono">
+                          {chassis.stat1.val}/100
+                        </span>
                       </div>
-                      <Progress value={chassis.stat1.val} color={chassis.stat1.color} />
+                      <Progress
+                        value={chassis.stat1.val}
+                        color={chassis.stat1.color}
+                      />
 
                       <div class="flex justify-between text-outline">
                         <span>{chassis.stat2.label}</span>
-                        <span class="text-white font-mono">{chassis.stat2.val}/100</span>
+                        <span class="text-white font-mono">
+                          {chassis.stat2.val}/100
+                        </span>
                       </div>
-                      <Progress value={chassis.stat2.val} color={chassis.stat2.color} />
+                      <Progress
+                        value={chassis.stat2.val}
+                        color={chassis.stat2.color}
+                      />
                     </div>
                   </div>
 
                   <Button
-                    variant={selectedClass() === chassis.id ? 'default' : 'secondary'}
+                    variant={
+                      selectedClass() === chassis.id ? 'default' : 'secondary'
+                    }
                     class="mt-space-md w-full"
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedClass(chassis.id);
                     }}
                   >
-                    {selectedClass() === chassis.id ? 'EQUIPPED' : 'EQUIP CHASSIS'}
+                    {selectedClass() === chassis.id
+                      ? 'EQUIPPED'
+                      : 'EQUIP CHASSIS'}
                   </Button>
                 </Card>
               )}
@@ -698,11 +797,19 @@ export default function Home() {
         </div>
 
         {/* Section Patch Notes & Raccourcis Clavier */}
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-stretch" id="patch-notes">
-          <Card variant="default" class="lg:col-span-8 p-space-lg flex flex-col gap-space-md">
+        <div
+          class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-stretch"
+          id="patch-notes"
+        >
+          <Card
+            variant="default"
+            class="lg:col-span-8 p-space-lg flex flex-col gap-space-md"
+          >
             <div class="flex items-center justify-between pb-space-xs">
               <div class="flex items-center gap-space-xs">
-                <span class="material-symbols-outlined text-primary text-[20px]">terminal</span>
+                <span class="material-symbols-outlined text-primary text-[20px]">
+                  terminal
+                </span>
                 <span class="font-headline-md text-headline-md text-white font-bold">
                   SYSTEM // PATCH 2.8.4 [HOTFIX]
                 </span>
@@ -717,10 +824,12 @@ export default function Home() {
                 <Badge variant="default">BALANCE</Badge>
                 <div>
                   <p class="text-on-surface font-medium">
-                    Phantom evolution branch: Phase Dash overdrive module unlocked.
+                    Phantom evolution branch: Phase Dash overdrive module
+                    unlocked.
                   </p>
                   <p class="text-outline text-xs mt-0.5">
-                    Allows 0.8s dimensional rift bypass through hostile kinetic barrages.
+                    Allows 0.8s dimensional rift bypass through hostile kinetic
+                    barrages.
                   </p>
                 </div>
               </div>
@@ -728,7 +837,8 @@ export default function Home() {
                 <Badge variant="secondary">TUNING</Badge>
                 <div>
                   <p class="text-on-surface font-medium">
-                    Striker railgun velocity adjusted +8%; Overseer recall command latency -15%.
+                    Striker railgun velocity adjusted +8%; Overseer recall
+                    command latency -15%.
                   </p>
                   <p class="text-outline text-xs mt-0.5">
                     Optimizes counter-play during sustained midfield dogfights.
@@ -738,10 +848,15 @@ export default function Home() {
             </div>
           </Card>
 
-          <Card variant="default" class="lg:col-span-4 p-space-lg flex flex-col justify-between gap-space-md">
+          <Card
+            variant="default"
+            class="lg:col-span-4 p-space-lg flex flex-col justify-between gap-space-md"
+          >
             <div class="flex flex-col gap-space-xs">
               <div class="flex items-center gap-space-xs text-primary">
-                <span class="material-symbols-outlined text-[18px]">keyboard</span>
+                <span class="material-symbols-outlined text-[18px]">
+                  keyboard
+                </span>
                 <span class="font-headline-md text-headline-md text-white font-bold">
                   KEY MAP TELEMETRY
                 </span>
