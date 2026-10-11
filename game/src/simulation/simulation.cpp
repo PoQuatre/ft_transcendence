@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:41 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/11 09:45:37 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/11 20:43:53 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 #include <random>
 
 #include "game/platform.hpp"
+#include "game/renderer.hpp"
 
 namespace game::simulation {
 
@@ -29,7 +30,7 @@ Simulation::Simulation()
 
     std::uniform_real_distribution<float> random_pos(
         map_bounds_.min_x, map_bounds_.max_x);
-    std::uniform_int_distribution<int> random_col(0, 255);
+    std::uniform_int_distribution<int> random_col(0, 3);
     std::uniform_int_distribution<int> random_shape_type(0, 1);
     std::uniform_int_distribution<int> random_shape_size(1, 100);
 
@@ -51,11 +52,12 @@ Simulation::Simulation()
             .acc = glm::vec2(0),
             .rotation = 0,
         };
+        auto color_tmp = renderer::Colors::colors[1 + random_col(eng)];
         Color col = {
-            .r = static_cast<unsigned char>(random_col(eng)),
-            .g = static_cast<unsigned char>(random_col(eng)),
-            .b = static_cast<unsigned char>(random_col(eng)),
-            .a = 255,
+            .r = color_tmp.r,
+            .g = color_tmp.b,
+            .b = color_tmp.g,
+            .a = color_tmp.a,
         };
         SPDLOG_INFO("Pos {} {}", transform.pos.x, transform.pos.y);
         SPDLOG_INFO("Col {} {} {}", col.r, col.g, col.b);
@@ -121,7 +123,7 @@ void Simulation::create_player_tank(Tank &tank, Transform transform, Color col)
     (void)this;
     player_tank_ = registry_.create();
     registry_.emplace<Transform>(player_tank_, transform);
-    registry_.emplace<ShapeType>(player_tank_, ShapeType::SHAPE_CIRCLE);
+    registry_.emplace<ShapeType>(player_tank_, ShapeType::SHAPE_TANK);
     registry_.emplace<Shape>(
         player_tank_, Shape { .circle = { .size = tank.size } });
     registry_.emplace<PhysicalObject>(player_tank_,
@@ -151,7 +153,7 @@ void Simulation::fire_player_tank()
     auto &player_dir = registry_.get<Tank>(player_tank_).dir;
     auto &player_col = registry_.get<Color>(player_tank_);
     // auto &tank = registry_.get<Tank>(player_tank);
-    const float bullet_speed = 1000.F;
+    const float bullet_speed = 500.F;
     glm::vec2 bullet_vel = -player_dir * bullet_speed;
 
     registry_.emplace<Transform>(bullet,
@@ -162,8 +164,13 @@ void Simulation::fire_player_tank()
             .rotation = 0,
         });
     registry_.emplace<Color>(bullet, player_col);
-    registry_.emplace<Projectile>(
-        bullet, 10.F, 2.F, platform::Platform::get_time());
+    registry_.emplace<Projectile>(bullet,
+        Projectile {
+            .damage = 10.F,
+            .lifetime = 2.F,
+            .creation_time = platform::Platform::get_time(),
+            .type = ProjectileType::PROJECTILE_BASIC,
+        });
     registry_.emplace<ShapeType>(bullet, ShapeType::SHAPE_CIRCLE);
     registry_.emplace<Shape>(bullet, Shape { .circle = { .size = 10.F } });
     registry_.emplace<PhysicalObject>(bullet,

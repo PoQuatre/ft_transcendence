@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:46 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/11 16:35:02 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/11 19:32:33 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,7 @@ bool App::initialize()
         .name = tank_name_,
         .size = 20,
         .dir = glm::vec2(0),
+        .type = simulation::TankType::TANK_BASIC,
     };
     simulation_.create_player_tank(tank,
         simulation::Transform {

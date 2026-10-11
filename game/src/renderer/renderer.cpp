@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/11 19:12:08 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/11 20:42:53 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,8 +111,19 @@ void Renderer::init()
         const std::string path_copy(path);
         SPDLOG_INFO("loading texture {}", path_copy);
         Image image = LoadImageSVG(path_copy.c_str(), 0, 0);
-        ImageResize(&image, 300, 300);
-        tank_textures[i] = LoadTextureFromImage(image);
+        ImageResize(&image, 0.5 * image.width, 0.5 * image.height);
+        tank_textures_[i] = LoadTextureFromImage(image);
+        UnloadImage(image);
+        ++i;
+    }
+
+    i = 0;
+    for (const auto &path : simulation::ProjectileType::paths) {
+        const std::string path_copy(path);
+        SPDLOG_INFO("loading texture {}", path_copy);
+        Image image = LoadImageSVG(path_copy.c_str(), 0, 0);
+        ImageResize(&image, 0.5 * image.width, 0.5 * image.height);
+        projectile_textures_[i] = LoadTextureFromImage(image);
         UnloadImage(image);
         ++i;
     }
@@ -121,7 +132,7 @@ void Renderer::init()
 void Renderer::draw(simulation::Simulation &sim)
 {
     auto *registry = sim.get_registry();
-    const float camera_zoom = 1.F;
+    const float camera_zoom = 1.5F;
     const auto tank = registry->view<simulation::Tank>().begin();
     const auto &player_transform = registry->get<simulation::Transform>(*tank);
     const auto &player_tank = registry->get<simulation::Tank>(*tank);
@@ -137,7 +148,7 @@ void Renderer::draw(simulation::Simulation &sim)
     camera.zoom = camera_zoom;
 
     BeginDrawing();
-    ClearBackground(Color { .r = 8, .g = 13, .b = 255, .a = 255 });
+    ClearBackground(Colors::colors[Colors::COLOR_BACKGROUND]); // 0B 08 11
     BeginMode2D(camera);
 
     for (const auto entity : registry->view<simulation::Tank, simulation::Color,
@@ -146,33 +157,42 @@ void Renderer::draw(simulation::Simulation &sim)
         const auto &transform = registry->get<simulation::Transform>(entity);
         const auto &tank = registry->get<simulation::Tank>(entity);
         const auto &direction = tank.dir;
-        const auto &color = registry->get<simulation::Color>(entity);
+        // const auto &color = registry->get<simulation::Color>(entity);
 
-        DrawCircleV(
-            Vector2 {
-                .x = transform.pos.x + (tank.size / 2.0F),
-                .y = transform.pos.y + (tank.size / 2.0F),
-            },
-            tank.size / 2.0F,
-            Color { .r = color.r, .g = color.g, .b = color.b, .a = color.a });
+        float rot = (atan2(direction.y, direction.x) + M_PI) * RAD2DEG;
+        Texture texture = tank_textures_[tank.type];
+        Rectangle source = {
+            .x = 0.0F,
+            .y = 0.0F,
+            .width = static_cast<float>(texture.width),
+            .height = static_cast<float>(texture.height),
+        };
 
-        float rot = (atan2(direction.y, direction.x) - (M_PI_2)) * RAD2DEG;
-        DrawRectanglePro(
-            {
-                .x = transform.pos.x + (tank.size / 2.0F),
-                .y = transform.pos.y + (tank.size / 2.0F),
-                .width = 10,
-                .height = 30,
-            },
-            { .x = 5, .y = 30 }, rot,
-            Color { .r = color.r, .g = color.g, .b = color.b, .a = color.a });
+        Rectangle dest = {
+            .x = transform.pos.x,
+            .y = transform.pos.y,
+            .width = static_cast<float>(texture.width),
+            .height = static_cast<float>(texture.height),
+        };
+
+        Vector2 origin {
+            .x = static_cast<float>(
+                simulation::TankType::origins[tank.type].x * 0.5),
+            .y = static_cast<float>(
+                simulation::TankType::origins[tank.type].y * 0.5),
+        };
+
+        DrawTexturePro(texture, source, dest, origin, rot, WHITE);
+
         DrawText(tank.name.c_str(),
             transform.pos.x - ((tank.name.size() / 2.F) + 12),
-            transform.pos.y - ((tank.size / 2) + 12), 24,
+            transform.pos.y + ((texture.height) - 12), 24,
             Color { .r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF });
     }
-    for (const auto entity : registry->view<simulation::Color,
-             simulation::Transform, simulation::ShapeType>()) {
+
+    for (const auto entity :
+        registry->view<simulation::Color, simulation::Transform,
+            simulation::ShapeType>(entt::exclude<simulation::Projectile>)) {
         const auto &transform = registry->get<simulation::Transform>(entity);
         const auto &color = registry->get<simulation::Color>(entity);
 
@@ -183,8 +203,8 @@ void Renderer::draw(simulation::Simulation &sim)
 
         switch (shape_type) {
         case simulation::ShapeType::SHAPE_RECT:
-            DrawRectangle(transform.pos.x, transform.pos.y, shape.rect.width,
-                shape.rect.height,
+            DrawRectangleLines(transform.pos.x, transform.pos.y,
+                shape.rect.width, shape.rect.height,
                 Color {
                     .r = color.r,
                     .g = color.g,
@@ -201,7 +221,7 @@ void Renderer::draw(simulation::Simulation &sim)
             }
             break;
         case simulation::ShapeType::SHAPE_CIRCLE:
-            DrawCircleV(
+            DrawCircleLinesV(
                 Vector2 {
                     .x = transform.pos.x + (shape.circle.size / 2.0F),
                     .y = transform.pos.y + (shape.circle.size / 2.0F),
@@ -222,16 +242,46 @@ void Renderer::draw(simulation::Simulation &sim)
                     res->max_health);
             }
             break;
+        default:
+            break;
         }
+    }
+    for (const auto entity : registry->view<simulation::Color,
+             simulation::Transform, simulation::Projectile>()) {
+        const auto &transform = registry->get<simulation::Transform>(entity);
+        // const auto &color = registry->get<simulation::Color>(entity);
+        const auto &proj = registry->get<simulation::Projectile>(entity);
+
+        float rot = (transform.rotation + M_PI) * RAD2DEG;
+        Texture texture = projectile_textures_[proj.type];
+        Rectangle source = {
+            .x = 0.0F,
+            .y = 0.0F,
+            .width = static_cast<float>(texture.width),
+            .height = static_cast<float>(texture.height),
+        };
+
+        Rectangle dest = {
+            .x = transform.pos.x,
+            .y = transform.pos.y,
+            .width = static_cast<float>(texture.width),
+            .height = static_cast<float>(texture.height),
+        };
+
+        Vector2 origin {
+            .x = static_cast<float>(
+                simulation::ProjectileType::origins[proj.type].x * 0.5),
+            .y = static_cast<float>(
+                simulation::ProjectileType::origins[proj.type].y * 0.5),
+        };
+
+        DrawTexturePro(texture, source, dest, origin, rot, WHITE);
     }
 
     // DrawLine((int)camera.target.x, -GetRenderHeight() * 10,
     //     (int)camera.target.x, GetRenderHeight() * 10, GREEN);
     // DrawLine(-GetRenderWidth() * 10, (int)camera.target.y,
     //     GetRenderWidth() * 10, (int)camera.target.y, GREEN);
-    for (size_t i = 0; i < simulation::TankType::TANK_TYPE_MAX; ++i) {
-        DrawTexture(tank_textures[i], i * 300, 100, WHITE);
-    }
 
     EndMode2D();
 
