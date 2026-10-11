@@ -346,3 +346,8 @@
     0 0 10px color-mix(in oklab, var(--color-accent-secondary) 75%, transparent),
     0 0 20px color-mix(in oklab, var(--color-accent-secondary) 35%, transparent);
 }
+
+.scrolled {
+    position: fixed;
+    top: 100px;
+}
