@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:41 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/09 06:49:45 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/11 09:45:37 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,14 +18,12 @@
 #include <glm/geometric.hpp>
 #include <random>
 
-#include "game/collision.hpp"
 #include "game/platform.hpp"
 
 namespace game::simulation {
 
 Simulation::Simulation()
 {
-    quad_tree_ = SpatialGrid(map_bounds_);
     std::random_device rd;
     std::default_random_engine eng(rd());
 
@@ -68,160 +66,20 @@ Simulation::Simulation()
     }
 }
 
-collision::CollisionHit Simulation::collide_objects(Transform transform_a,
-    Shape shape_a, ShapeType type_a, Transform transform_b, Shape shape_b,
-    ShapeType type_b)
-{
-
-    if (type_a == ShapeType::SHAPE_CIRCLE) {
-        if (type_b == ShapeType::SHAPE_RECT) {
-            return collision::circle_to_rect(
-                transform_a, shape_a.circle, transform_b, shape_b.rect);
-        }
-        if (type_b == ShapeType::SHAPE_CIRCLE) {
-            return collision::circle_to_circle(
-                transform_a, shape_a.circle, transform_b, shape_b.circle);
-        }
-    }
-    if (type_a == ShapeType::SHAPE_RECT) {
-        if (type_b == ShapeType::SHAPE_RECT) {
-            return collision::rect_to_rect(
-                transform_b, shape_b.rect, transform_a, shape_a.rect);
-        }
-        if (type_b == ShapeType::SHAPE_CIRCLE) {
-            auto result = collision::circle_to_rect(
-                transform_b, shape_b.circle, transform_a, shape_a.rect);
-            result.normal = result.normal;
-            return result;
-        }
-    }
-    return collision::CollisionHit { };
-}
-
-void Simulation::resolve_collision(
-    entt::entity a, entt::entity b, const collision::CollisionHit &collision)
-{
-    if (collision.penetration <= 0.001F) {
-        return;
-    }
-
-    auto transform_a = registry_.get<Transform>(a);
-    auto transform_b = registry_.get<Transform>(b);
-
-    auto &position_a = transform_a.pos;
-    auto &position_b = transform_b.pos;
-
-    auto &velocity_a = transform_a.vel;
-    auto &velocity_b = transform_b.vel;
-
-    auto &physics_a = registry_.get<PhysicalObject>(a);
-    auto &physics_b = registry_.get<PhysicalObject>(b);
-
-    const float inverse_mass_a
-        = physics_a.is_static ? 0.0F : 1.0F / (physics_a.mass + 0.00001F);
-    const float inverse_mass_b
-        = physics_b.is_static ? 0.0F : 1.0F / (physics_b.mass + 0.00001F);
-    const float inverse_mass_sum = inverse_mass_a + inverse_mass_b;
-
-    if (inverse_mass_sum <= 0.0F)
-        return;
-
-    physics_b.dirty = true;
-    physics_a.dirty = true;
-
-    const glm::vec2 correction
-        = collision.normal * (collision.penetration / inverse_mass_sum);
-
-    position_a -= correction * inverse_mass_a;
-    position_b += correction * inverse_mass_b;
-
-    const glm::vec2 relative_velocity = velocity_b - velocity_a;
-    const float velocity_along_normal
-        = glm::dot(relative_velocity, collision.normal);
-    if (velocity_along_normal > 0.0F) {
-        return;
-    }
-
-    const float restitution
-        = std::min(physics_a.restitution, physics_b.restitution);
-    const float impulse_magnitude
-        = -(1.0F + restitution) * velocity_along_normal / inverse_mass_sum;
-    const glm::vec2 impulse = collision.normal * impulse_magnitude;
-
-    velocity_a -= impulse * inverse_mass_a;
-    velocity_b += impulse * inverse_mass_b;
-
-    auto *proj_a = registry_.try_get<Projectile>(a);
-    auto *proj_b = registry_.try_get<Projectile>(b);
-    auto *res_a = registry_.try_get<Ressource>(a);
-    auto *res_b = registry_.try_get<Ressource>(b);
-    if ((proj_a != nullptr && res_b != nullptr)) {
-        res_b->health -= proj_a->damage;
-        auto &state_a = registry_.get<State>(a);
-        state_a = State::STATE_DESTROYED;
-        return;
-    }
-    if ((proj_b != nullptr && res_a != nullptr)) {
-        res_a->health -= proj_b->damage;
-        auto &state_b = registry_.get<State>(b);
-        state_b = State::STATE_DESTROYED;
-        return;
-    }
-}
-
 void Simulation::update_physics(float delta_seconds)
 {
-    const int simulation_steps = 10;
-    const float sub_delta = delta_seconds / simulation_steps;
+    // const int simulation_steps = 10;
     const auto &view
         = registry_.view<Transform, PhysicalObject, ShapeType, Shape, State>();
+    for (auto [entity, transform, physics, shape_type, shape, state] :
+        view.each()) {
 
-    for (int step = 0; step < simulation_steps; ++step) {
-        quad_tree_.clear();
+        transform.vel += transform.acc * delta_seconds;
 
-        for (auto [entity, transform, physics, shape_type, shape, state] :
-            view.each()) {
+        transform.vel *= std::max(0.0F, 1.0F - (physics.drag * delta_seconds));
 
-            transform.vel += transform.acc * sub_delta;
-
-            transform.vel *= std::max(0.0F, 1.0F - (physics.drag * sub_delta));
-
-            if (!physics.is_static) {
-                transform.pos += transform.vel * sub_delta;
-            }
-            const AABB bounds = get_aabb(transform, shape_type, shape);
-            quad_tree_.insert(entity, bounds);
-        }
-
-        std::vector<entt::entity> candidates;
-
-        for (auto [entity, transform, physics, shape_type, shape, state] :
-            view.each()) {
-
-            candidates.clear();
-
-            const AABB bounds = get_aabb(transform, shape_type, shape);
-            quad_tree_.query(bounds, candidates);
-
-            for (auto entity_b_ : candidates) {
-                if (entity == entity_b_)
-                    continue;
-
-                auto comp = view[entity_b_];
-                auto transform_b = std::get<0>(comp);
-                auto physics_b = std::get<1>(comp);
-                auto shape_type_b = std::get<2>(comp);
-                auto shape_b = std::get<3>(comp);
-
-                if ((physics_b.layer & physics.mask) == 0)
-                    continue;
-
-                const auto collision = collide_objects(transform, shape,
-                    shape_type, transform_b, shape_b, shape_type_b);
-                resolve_collision(entity_b_, entity, collision);
-            }
-
-            physics.dirty = false;
+        if (!physics.is_static) {
+            transform.pos += transform.vel * delta_seconds;
         }
     }
 }
@@ -366,29 +224,6 @@ void Simulation::create_obstacle(
             .layer = COLLISION_LAYER_OBSTACLE,
         });
     registry_.emplace<State>(obstacle, State::STATE_OK);
-}
-
-AABB Simulation::get_aabb(
-    Transform transform, ShapeType shape_type, Shape shape)
-{
-
-    switch (shape_type) {
-    case ShapeType::SHAPE_CIRCLE:
-        return {
-            .min_x = transform.pos.x,
-            .min_y = transform.pos.y,
-            .max_x = transform.pos.x + shape.circle.size,
-            .max_y = transform.pos.y + shape.circle.size,
-        };
-    case ShapeType::SHAPE_RECT:
-        return {
-            .min_x = transform.pos.x,
-            .min_y = transform.pos.y,
-            .max_x = transform.pos.x + shape.rect.width,
-            .max_y = transform.pos.y + shape.rect.height,
-        };
-    }
-    return { .min_x = 0, .min_y = 0, .max_x = 0, .max_y = 0 };
 }
 
 } // namespace game::simulation
