@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:46 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/11 00:29:27 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/11 16:35:02 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ bool App::initialize()
     if (!platform_.initialize()) {
         return false;
     }
+    renderer_.init();
     this->tank_name_ = "test";
     simulation::Tank tank {
         .name = tank_name_,
@@ -123,7 +124,7 @@ void App::iterate()
     update_player();
 
     simulation_.update(delta_seconds);
-    renderer::Renderer::draw(simulation_);
+    renderer_.draw(simulation_);
 }
 
 } // namespace game::core

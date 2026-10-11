@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 14:29:13 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/09 06:49:55 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/11 16:37:27 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,6 +67,37 @@ struct Ressource {
     float health;
     float max_health;
 };
+
+namespace TankType {
+
+#define TANK_TYPES                                                             \
+    X(TANK_BASIC, CMAKE_SOURCE_DIR "/src/renderer/assets/simple_tank.svg")     \
+    X(TANK_TWIN, CMAKE_SOURCE_DIR "/src/renderer/assets/twin_tank.svg")        \
+    X(TANK_QUAD, CMAKE_SOURCE_DIR "/src/renderer/assets/quad_tank.svg")        \
+    X(TANK_HEAVY, CMAKE_SOURCE_DIR "/src/renderer/assets/heavy_tank.svg")      \
+    X(TANK_DRONE, CMAKE_SOURCE_DIR "/src/renderer/assets/drone_tank.svg")      \
+    X(TANK_SNIPER, CMAKE_SOURCE_DIR "/src/renderer/assets/sniper_tank.svg")
+
+enum type : uint8_t {
+#define X(name, _) name,
+    TANK_TYPES
+#undef X
+        TANK_TYPE_MAX,
+};
+
+constexpr std::array<std::string_view, TANK_TYPE_MAX> strings = {
+#define X(name, _) #name,
+    TANK_TYPES
+#undef X
+};
+
+constexpr std::array<std::string_view, TANK_TYPE_MAX> paths = {
+#define X(_, path) path,
+    TANK_TYPES
+#undef X
+};
+
+}
 
 struct Tank {
     std::string name;

@@ -92,7 +92,18 @@ FetchContent_Declare(
 set(BOX2D_SAMPLES OFF CACHE BOOL "" FORCE)
 set(BOX2D_UNIT_TESTS OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(raylib EnTT spdlog glm box2d)
+FetchContent_Declare(
+	nanosvg
+    GIT_REPOSITORY https://github.com/memononen/nanosvg.git
+	GIT_TAG master
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(raylib EnTT spdlog glm box2d nanosvg)
+
+target_include_directories(nanosvg PUBLIC
+    $<BUILD_INTERFACE:${nanosvg_SOURCE_DIR}/src>
+)
 
 include(CTest)
 

@@ -5,5 +5,5 @@ target_include_directories(game_renderer PUBLIC include)
 target_link_libraries(
     game_renderer
     PUBLIC game::simulation
-    PRIVATE game::base raylib
-)
+    PRIVATE game::base raylib spdlog::spdlog nanosvg nanosvgrast
+) 

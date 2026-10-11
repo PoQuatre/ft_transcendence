@@ -6,11 +6,13 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:38 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/04 16:18:58 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/11 16:34:07 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
+
+#include <raylib.h>
 
 #include "game/simulation.hpp"
 
@@ -18,12 +20,16 @@ namespace game::renderer {
 
 class Renderer {
 public:
-    static void draw(simulation::Simulation &simulation);
+    Renderer() = default;
+    void init();
+    void draw(simulation::Simulation &simulation);
 
 private:
     static void draw_progress_bar(glm::vec2 pos, glm::vec2 size,
         simulation::Color background, simulation::Color foreground, float value,
         float max_value);
+
+    std::array<Texture, simulation::TankType::TANK_TYPE_MAX> tank_textures;
 };
 
 } // namespace game::renderer

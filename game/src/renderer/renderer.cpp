@@ -6,17 +6,117 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/11 00:25:27 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/11 16:38:50 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "game/renderer.hpp"
 
+#include <nanosvg.h>
+#include <nanosvgrast.h>
 #include <raylib.h>
+#include <spdlog/spdlog.h>
 
 #include "game/simulation.hpp"
 
+namespace {
+
+// CREDIT: raysan5
+// https://github.com/raylib-extras/examples-c/commit/1e38dd9f1ae84c3beafecf69a7002a9339d1b4e9#diff-820f8b79e6e180ac315cc1f221bc5e98b0cf240210b96e9b860bc94cd5d3ec84
+// Load SVG image, rasteraizing it at desired width and height
+// NOTE: If width/height are 0, using internal default width/height
+Image LoadImageSVG(const char *fileName, int width, int height)
+{
+    Image image = { };
+
+    if ((strcmp(GetFileExtension(fileName), ".svg") == 0)
+        || (strcmp(GetFileExtension(fileName), ".SVG") == 0)) {
+        int dataSize = 0;
+        unsigned char *fileData = nullptr;
+
+        fileData = LoadFileData(fileName, &dataSize);
+
+        // Make sure the file data contains an EOL character: '\0'
+        if ((dataSize > 0) && (fileData[dataSize - 1] != '\0')) {
+            auto *tmp = static_cast<unsigned char *>(
+                RL_REALLOC(fileData, dataSize + 1));
+            fileData = tmp;
+            fileData[dataSize] = '\0';
+            dataSize += 1;
+        }
+
+        // Validate fileData as valid SVG string data
+        //<svg xmlns="http://www.w3.org/2000/svg" width="2500" height="2484"
+        // viewBox="0 0 192.756 191.488">
+        if ((fileData != nullptr) && (fileData[0] == '<')
+            && (fileData[1] == 's') && (fileData[2] == 'v')
+            && (fileData[3] == 'g')) {
+            struct NSVGimage *svgImage
+                = nsvgParse(reinterpret_cast<char *>(fileData), "px", 96.0F);
+            auto *imgData = static_cast<unsigned char *>(
+                RL_MALLOC(svgImage->width * svgImage->height * 4));
+
+            // NOTE: If required width or height is 0, using default SVG
+            // internal value
+            if (width == 0)
+                width = svgImage->width;
+            if (height == 0)
+                height = svgImage->height;
+
+            // Calculate scales for both the width and the height
+            float scaleWidth = width / svgImage->width;
+            float scaleHeight = height / svgImage->height;
+
+            // Set the largest of the 2 scales to be the scale to use
+            float scale = (scaleHeight > scaleWidth) ? scaleWidth : scaleHeight;
+
+            int offsetX = 0;
+            int offsetY = 0;
+
+            if (scaleHeight > scaleWidth)
+                offsetY = (height - (svgImage->height * scale)) / 2;
+            else
+                offsetX = (width - (svgImage->width * scale)) / 2;
+
+            // Rasterize
+            struct NSVGrasterizer *rast = nsvgCreateRasterizer();
+            nsvgRasterize(rast, svgImage, offsetX, offsetY, scale, imgData,
+                width, height, width * 4);
+
+            // Populate image struct with all data
+            image.data = imgData;
+            image.width = width;
+            image.height = height;
+            image.mipmaps = 1;
+            image.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+
+            nsvgDelete(svgImage);
+            nsvgDeleteRasterizer(rast);
+        }
+
+        UnloadFileData(fileData);
+    }
+
+    return image;
+}
+
+};
+
 namespace game::renderer {
+
+void Renderer::init()
+{
+    size_t i = 0;
+    for (const auto &path : simulation::TankType::paths) {
+        const std::string path_copy(path);
+        SPDLOG_INFO("loading texture {}", path_copy);
+        Image image = LoadImageSVG(path_copy.c_str(), 0, 0);
+        ImageResize(&image, 300, 300);
+        tank_textures[i] = LoadTextureFromImage(image);
+        UnloadImage(image);
+        ++i;
+    }
+}
 
 void Renderer::draw(simulation::Simulation &sim)
 {
@@ -129,6 +229,9 @@ void Renderer::draw(simulation::Simulation &sim)
     //     (int)camera.target.x, GetRenderHeight() * 10, GREEN);
     // DrawLine(-GetRenderWidth() * 10, (int)camera.target.y,
     //     GetRenderWidth() * 10, (int)camera.target.y, GREEN);
+    for (size_t i = 0; i < simulation::TankType::TANK_TYPE_MAX; ++i) {
+        DrawTexture(tank_textures[i], i * 300, 100, WHITE);
+    }
 
     EndMode2D();
 
