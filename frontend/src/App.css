@@ -1,1 +1,11 @@
 @import 'tailwindcss';
+
+@theme {
+    --font-ibm-plex-mono: 'IBM Plex Mono', sans-serif;
+    --font-space-grotesk: "Space Grotesk", sans-serif;
+}
+
+.scrolled {
+    position: fixed;
+    top: 100px;
+}
