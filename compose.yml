@@ -205,6 +205,7 @@ services:
       - vault-backend-credentials:/credentials:ro,z
       - ./certs/rootCA.pem:/etc/ssl/certs/rootCA.pem:ro,z
     environment:
+      EXTERNAL_IP: ${EXTERNAL_IP}
       VAULT_ADDR: http://vault:8200
       BACKEND_ROLE_ID: ${BACKEND_ROLE_ID:?BACKEND_ROLE_ID is required}
       BACKEND_SECRET_ID_PATH: /credentials/secret_id

@@ -220,6 +220,8 @@ certs:
 env:
 	@umask 077; touch .env; \
 	grep -q "^HOST_NAME=" .env || printf 'HOST_NAME=%s\n' "$$(uname -n)" >> .env; \
+	grep -q "^EXTERNAL_IP=" .env || printf 'EXTERNAL_IP=%s\n' \
+		"$$(ip -4 -o addr show | awk '{print $$4}' | cut -d/ -f1 | paste -sd, -)" >> .env; \
 	for v in $(PASSWORD_VARS); do \
 		grep -q "^$$v=" .env || printf '%s=%s\n' "$$v" "$$(openssl rand -hex 32)" >> .env; \
 	done; \

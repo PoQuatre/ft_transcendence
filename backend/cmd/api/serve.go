@@ -7,7 +7,10 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/database"
@@ -30,7 +33,10 @@ func newServeCmd() *cobra.Command {
 		Short: "Start the API server",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
-			webRTC, err := webrtc.New(webrtcPort)
+
+			external := strings.Split(os.Getenv("EXTERNAL_IP"), ",")
+			external = slices.DeleteFunc(external, func(str string) bool { return str == "" })
+			webRTC, err := webrtc.New(webrtcPort, external)
 			if err != nil {
 				return fmt.Errorf("start WebRTC server: %w", err)
 			}

@@ -57,7 +57,7 @@ func TestNewDoesNotRegisterAuthRoutesWithoutDatabase(t *testing.T) {
 }
 
 func TestWebRTCOfferEchoesMessage(t *testing.T) {
-	webRTC, err := webrtc.New(0)
+	webRTC, err := webrtc.New(0, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
