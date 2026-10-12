@@ -158,7 +158,7 @@ services:
       backend:
         condition: service_started
     ports:
-      - 127.0.0.1:8443:8443
+      - 8443:8443/tcp
     environment:
       BLOCKING_PARANOIA: "2"
       DETECTION_PARANOIA: "2"
@@ -199,6 +199,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+    ports:
+      - 9000:9000/udp
     volumes:
       - vault-backend-credentials:/credentials:ro,z
       - ./certs/rootCA.pem:/etc/ssl/certs/rootCA.pem:ro,z
