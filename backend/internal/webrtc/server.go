@@ -17,7 +17,7 @@ type Server struct {
 	mux *ice.MultiUDPMuxDefault
 }
 
-func New(port int) (*Server, error) {
+func New(port int, external []string) (*Server, error) {
 	mux, err := ice.NewMultiUDPMuxFromPort(port,
 		ice.UDPMuxFromPortWithNetworks(ice.NetworkTypeUDP4),
 		ice.UDPMuxFromPortWithLoopback(),
@@ -25,9 +25,31 @@ func New(port int) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("listen for WebRTC UDP traffic: %w", err)
 	}
-
 	se := pion.SettingEngine{}
 	se.SetICEUDPMux(mux)
+
+	if len(external) == 0 {
+		external = append(external, "127.0.0.1")
+	}
+
+	rewriteErr := se.SetICEAddressRewriteRules(
+		pion.ICEAddressRewriteRule{
+			Local:           "127.0.0.1",
+			External:        external,
+			AsCandidateType: pion.ICECandidateTypeHost,
+			Mode:            pion.ICEAddressRewriteReplace,
+		},
+	)
+	if rewriteErr != nil {
+		closeErr := mux.Close()
+		if closeErr != nil {
+			return nil, errors.Join(
+				fmt.Errorf("configure ICE address rewrite: %w", rewriteErr),
+				fmt.Errorf("close WebRTC UDP listener: %w", closeErr),
+			)
+		}
+		return nil, fmt.Errorf("configure ICE address rewrite: %w", rewriteErr)
+	}
 
 	return &Server{
 		api: pion.NewAPI(pion.WithSettingEngine(se)),
