@@ -20,16 +20,22 @@ import (
 	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/swagger"
+	"github.com/PoQuatre/ft_transcendence/backend/internal/webrtc"
 )
 
 type config struct {
 	database *bun.DB
+	webrtc   *webrtc.Server
 }
 
 type Option func(*config)
 
 func WithDatabase(database *bun.DB) Option {
 	return func(config *config) { config.database = database }
+}
+
+func WithWebRTC(webrtcServer *webrtc.Server) Option {
+	return func(config *config) { config.webrtc = webrtcServer }
 }
 
 func New(options ...Option) (http.Handler, error) {
@@ -70,6 +76,9 @@ func New(options ...Option) (http.Handler, error) {
 
 	if cfg.database != nil {
 		auth.RegisterRoutes(e.Group("/api/auth"), *auth.NewService(auth.NewRepository(cfg.database)), sessionManager, validat)
+	}
+	if cfg.webrtc != nil {
+		webrtc.RegisterRoutes(e.Group("/api/webrtc"), cfg.webrtc)
 	}
 
 	return e, nil
