@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 00:00:00 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/07 19:02:22 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/11 21:55:20 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,7 +72,7 @@ Platform::~Platform()
 bool Platform::initialize()
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI);
-    InitWindow(window_width, window_height, "raylib 6 + EnTT + spdlog");
+    InitWindow(window_width, window_height, "ft_transcendence");
     if (!IsWindowReady()) {
         spdlog::error("Window creation failed");
         return false;

@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 14:29:13 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/11 20:28:30 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/11 23:06:59 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,9 @@ namespace ProjectileType {
 
 #define PROJECTILE_TYPES                                                       \
     X(PROJECTILE_BASIC,                                                        \
-        CMAKE_SOURCE_DIR "/src/renderer/assets/bullet_projectile.svg", 7, 7)
+        CMAKE_SOURCE_DIR                                                       \
+        "/src/renderer/assets/textures/bullet_projectile.svg",                 \
+        7, 7)
 
 enum type : uint8_t {
 #define X(name, _, __, ___) name,
@@ -108,18 +110,24 @@ struct Ressource {
 namespace TankType {
 
 #define TANK_TYPES                                                             \
-    X(TANK_BASIC, CMAKE_SOURCE_DIR "/src/renderer/assets/simple_tank.svg", 28, \
+    X(TANK_BASIC,                                                              \
+        CMAKE_SOURCE_DIR "/src/renderer/assets/textures/simple_tank.svg", 28,  \
         28)                                                                    \
-    X(TANK_TWIN, CMAKE_SOURCE_DIR "/src/renderer/assets/twin_tank.svg", 28,    \
+    X(TANK_TWIN,                                                               \
+        CMAKE_SOURCE_DIR "/src/renderer/assets/textures/twin_tank.svg", 28,    \
         25)                                                                    \
-    X(TANK_QUAD, CMAKE_SOURCE_DIR "/src/renderer/assets/quad_tank.svg", 54,    \
+    X(TANK_QUAD,                                                               \
+        CMAKE_SOURCE_DIR "/src/renderer/assets/textures/quad_tank.svg", 54,    \
         54)                                                                    \
-    X(TANK_HEAVY, CMAKE_SOURCE_DIR "/src/renderer/assets/heavy_tank.svg", 34,  \
+    X(TANK_HEAVY,                                                              \
+        CMAKE_SOURCE_DIR "/src/renderer/assets/textures/heavy_tank.svg", 34,   \
         34)                                                                    \
-    X(TANK_DRONE, CMAKE_SOURCE_DIR "/src/renderer/assets/drone_tank.svg", 35,  \
+    X(TANK_DRONE,                                                              \
+        CMAKE_SOURCE_DIR "/src/renderer/assets/textures/drone_tank.svg", 35,   \
         53)                                                                    \
-    X(TANK_SNIPER, CMAKE_SOURCE_DIR "/src/renderer/assets/sniper_tank.svg",    \
-        25, 25)
+    X(TANK_SNIPER,                                                             \
+        CMAKE_SOURCE_DIR "/src/renderer/assets/textures/sniper_tank.svg", 25,  \
+        25)
 
 enum type : uint8_t {
 #define X(name, _, __, ___) name,

@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/11 20:42:53 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/12 18:28:37 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -127,9 +127,99 @@ void Renderer::init()
         UnloadImage(image);
         ++i;
     }
+    font_ = LoadFont(
+        CMAKE_SOURCE_DIR "/src/renderer/assets/textures/space_grotesk.ttf");
+    update_render_textures();
+
+    extract_shader_ = LoadShader(nullptr,
+        CMAKE_SOURCE_DIR "/src/renderer/assets/shaders/bloom_extract.fs");
+    blur_shader_ = LoadShader(
+        nullptr, CMAKE_SOURCE_DIR "/src/renderer/assets/shaders/bloom_blur.fs");
+    composite_shader_ = LoadShader(nullptr,
+        CMAKE_SOURCE_DIR "/src/renderer/assets/shaders/bloom_composite.fs");
+
+    threshold_loc_ = GetShaderLocation(extract_shader_, "threshold");
+    texel_size_loc_ = GetShaderLocation(blur_shader_, "texelSize");
+    direction_loc_ = GetShaderLocation(blur_shader_, "direction");
+    bloom_texture_loc_ = GetShaderLocation(composite_shader_, "bloomTexture");
+    intensity_loc_ = GetShaderLocation(composite_shader_, "bloomIntensity");
+}
+
+Renderer::~Renderer()
+{
+    for (size_t i = 0; i < simulation::TankType::paths.size(); ++i) {
+        UnloadTexture(tank_textures_[i]);
+    }
+
+    for (size_t i = 0; i < simulation::ProjectileType::paths.size(); ++i) {
+        UnloadTexture(tank_textures_[i]);
+    }
+    UnloadFont(font_);
+    UnloadRenderTexture(scene_target_);
+    UnloadRenderTexture(bright_target_);
+    UnloadRenderTexture(blur_v_target_);
+    UnloadRenderTexture(blur_h_target_);
+
+    UnloadShader(extract_shader_);
+    UnloadShader(blur_shader_);
+    UnloadShader(composite_shader_);
+}
+
+void Renderer::update_render_textures()
+{
+    if (render_width_ != GetRenderWidth()
+        || render_height_ != GetRenderHeight()) {
+        render_width_ = GetRenderWidth();
+        render_height_ = GetRenderHeight();
+
+        UnloadRenderTexture(scene_target_);
+        UnloadRenderTexture(bright_target_);
+        UnloadRenderTexture(blur_v_target_);
+        UnloadRenderTexture(blur_h_target_);
+
+        scene_target_ = LoadRenderTexture(render_width_, render_height_);
+        bright_target_ = LoadRenderTexture(render_width_, render_height_);
+        blur_v_target_ = LoadRenderTexture(render_width_, render_height_);
+        blur_h_target_ = LoadRenderTexture(render_width_, render_height_);
+    }
 }
 
 void Renderer::draw(simulation::Simulation &sim)
+{
+    update_render_textures();
+
+    render_scene(sim);
+
+    apply_bloom();
+
+    float bloom_intensity = 3.2F;
+
+    BeginDrawing();
+    ClearBackground(Colors::colors[Colors::COLOR_BACKGROUND]);
+
+    BeginShaderMode(composite_shader_);
+    SetShaderValue(composite_shader_, intensity_loc_, &bloom_intensity,
+        SHADER_UNIFORM_FLOAT);
+    SetShaderValueTexture(
+        composite_shader_, bloom_texture_loc_, blur_v_target_.texture);
+
+    DrawTextureRec(scene_target_.texture,
+        Rectangle {
+            .x = 0.0F,
+            .y = 0.0F,
+            .width = static_cast<float>(scene_target_.texture.width),
+            .height = -static_cast<float>(scene_target_.texture.height),
+        },
+        Vector2 { .x = 0.0F, .y = 0.0F }, WHITE);
+
+    EndShaderMode();
+
+    DrawFPS(8, 8);
+
+    EndDrawing();
+}
+
+void Renderer::render_scene(simulation::Simulation &sim)
 {
     auto *registry = sim.get_registry();
     const float camera_zoom = 1.5F;
@@ -147,7 +237,7 @@ void Renderer::draw(simulation::Simulation &sim)
     camera.rotation = 0;
     camera.zoom = camera_zoom;
 
-    BeginDrawing();
+    BeginTextureMode(scene_target_);
     ClearBackground(Colors::colors[Colors::COLOR_BACKGROUND]); // 0B 08 11
     BeginMode2D(camera);
 
@@ -157,7 +247,6 @@ void Renderer::draw(simulation::Simulation &sim)
         const auto &transform = registry->get<simulation::Transform>(entity);
         const auto &tank = registry->get<simulation::Tank>(entity);
         const auto &direction = tank.dir;
-        // const auto &color = registry->get<simulation::Color>(entity);
 
         float rot = (atan2(direction.y, direction.x) + M_PI) * RAD2DEG;
         Texture texture = tank_textures_[tank.type];
@@ -184,10 +273,12 @@ void Renderer::draw(simulation::Simulation &sim)
 
         DrawTexturePro(texture, source, dest, origin, rot, WHITE);
 
-        DrawText(tank.name.c_str(),
-            transform.pos.x - ((tank.name.size() / 2.F) + 12),
-            transform.pos.y + ((texture.height) - 12), 24,
-            Color { .r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF });
+        DrawTextEx(font_, tank.name.c_str(),
+            {
+                .x = transform.pos.x - ((tank.name.size() / 2.F) + 12),
+                .y = transform.pos.y + (texture.height - 12),
+            },
+            24, 2, Color { .r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF });
     }
 
     for (const auto entity :
@@ -278,15 +369,92 @@ void Renderer::draw(simulation::Simulation &sim)
         DrawTexturePro(texture, source, dest, origin, rot, WHITE);
     }
 
-    // DrawLine((int)camera.target.x, -GetRenderHeight() * 10,
-    //     (int)camera.target.x, GetRenderHeight() * 10, GREEN);
-    // DrawLine(-GetRenderWidth() * 10, (int)camera.target.y,
-    //     GetRenderWidth() * 10, (int)camera.target.y, GREEN);
-
     EndMode2D();
+    EndTextureMode();
+}
 
-    DrawFPS(8, 8);
-    EndDrawing();
+void Renderer::apply_bloom()
+{
+    float threshold = 0.1F;
+
+    SetShaderValue(
+        extract_shader_, threshold_loc_, &threshold, SHADER_UNIFORM_FLOAT);
+    SetShaderValueTexture(extract_shader_,
+        GetShaderLocation(extract_shader_, "texture0"), scene_target_.texture);
+
+    BeginTextureMode(bright_target_);
+    ClearBackground(BLACK);
+
+    BeginShaderMode(extract_shader_);
+
+    DrawTextureRec(scene_target_.texture,
+        Rectangle {
+            .x = 0.0F,
+            .y = 0.0F,
+            .width = static_cast<float>(scene_target_.texture.width),
+            .height = -static_cast<float>(scene_target_.texture.height),
+        },
+        Vector2 { .x = 0.0F, .y = 0.0F }, WHITE);
+
+    EndShaderMode();
+    EndTextureMode();
+
+    Vector2 texel_size {
+        .x = 1.0F / static_cast<float>(blur_h_target_.texture.width),
+        .y = 1.0F / static_cast<float>(blur_h_target_.texture.height),
+    };
+
+    Vector2 direction { .x = 1.0F, .y = 0.0F };
+
+    BeginTextureMode(blur_h_target_);
+    ClearBackground(BLACK);
+
+    BeginShaderMode(blur_shader_);
+    SetShaderValue(
+        blur_shader_, texel_size_loc_, &texel_size, SHADER_UNIFORM_VEC2);
+    SetShaderValue(
+        blur_shader_, direction_loc_, &direction, SHADER_UNIFORM_VEC2);
+
+    DrawTextureRec(bright_target_.texture,
+        Rectangle {
+            .x = 0.0F,
+            .y = 0.0F,
+            .width = static_cast<float>(bright_target_.texture.width),
+            .height = -static_cast<float>(bright_target_.texture.height),
+        },
+        Vector2 { .x = 0.0F, .y = 0.0F }, WHITE);
+
+    EndShaderMode();
+    EndTextureMode();
+
+    texel_size = {
+        .x = 1.0F / static_cast<float>(blur_v_target_.texture.width),
+        .y = 1.0F / static_cast<float>(blur_v_target_.texture.height),
+    };
+
+    direction = { .x = 0.0F, .y = 1.0F };
+
+    BeginTextureMode(blur_v_target_);
+    ClearBackground(BLACK);
+
+    BeginShaderMode(blur_shader_);
+    SetShaderValue(
+        blur_shader_, texel_size_loc_, &texel_size, SHADER_UNIFORM_VEC2);
+
+    SetShaderValue(
+        blur_shader_, direction_loc_, &direction, SHADER_UNIFORM_VEC2);
+
+    DrawTextureRec(blur_h_target_.texture,
+        Rectangle {
+            .x = 0.0F,
+            .y = 0.0F,
+            .width = static_cast<float>(bright_target_.texture.width),
+            .height = -static_cast<float>(bright_target_.texture.height),
+        },
+        Vector2 { .x = 0.0F, .y = 0.0F }, WHITE);
+
+    EndShaderMode();
+    EndTextureMode();
 }
 
 void Renderer::draw_progress_bar(glm::vec2 pos, glm::vec2 size,

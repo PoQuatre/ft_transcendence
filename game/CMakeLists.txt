@@ -120,6 +120,10 @@ if(BUILD_TESTING)
     include(Catch)
 endif()
 
+if(NOT EXISTS "${CMAKE_SOURCE_DIR}/src/renderer/assets/textures/space_grotesk.ttf")
+	execute_process(COMMAND wget https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj62UUsj.ttf -O "${CMAKE_SOURCE_DIR}/src/renderer/assets/textures/space_grotesk.ttf")
+endif()
+
 # ------------------------------------------------------------------------------
 # Project
 # ------------------------------------------------------------------------------
