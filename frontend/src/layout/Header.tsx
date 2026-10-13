@@ -1,35 +1,42 @@
+import basicTankLogo from '~/assets/basic-tank.svg';
 import type { Component } from 'solid-js';
 import { createSignal, onSettled, Show } from 'solid-js';
+import { useNavigate } from '@solidjs/router';
 
-import { type AuthUser, getMe } from '~/lib/auth';
+import { currentUser, getMe, logout } from '~/lib/auth';
 import { paths } from '~/router';
 
 export const Header: Component = () => {
-  // Signal d'utilisateur compatible SolidJS 2.0 & SSR
-  const [user, setUser] = createSignal<AuthUser | null>(null);
+  const navigate = useNavigate();
+  const [settingsOpen, setSettingsOpen] = createSignal(false);
 
-  // Vérification de la session une fois le composant initialisé dans le navigateur
+  // Initialisation et récupération de la session dès le montage client
   onSettled(() => {
-    void getMe().then(setUser);
+    void getMe();
   });
+
+  // Déconnexion propre avec fermeture du menu et redirection vers /login
+  const handleLogout = async () => {
+    setSettingsOpen(false);
+    await logout();
+    navigate('/login');
+  };
+
   return (
     <header class="fixed top-0 left-0 right-0 z-50 bg-[#070b18]/90 backdrop-blur-md border-b border-[rgba(23,42,77,0.85)] px-4 lg:px-8 py-3">
       <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-        
-        {/* Identifiant & Logo TRANSCEDANCE ARENA */}
+
+        {/* =================================================================
+            1. IDENTIFIANT & LOGO TRANSCEDANCE ARENA
+            ================================================================= */}
         <div class="flex items-center space-x-3">
           <a href={paths()} class="flex items-center gap-3 no-underline">
-            <div class="w-8 h-8 flex items-center justify-center text-[#00f0ff]">
-              <svg viewBox="0 0 100 100" class="w-8 h-8 drop-shadow-[0_0_8px_#00f0ff]">
-                <circle cx="50" cy="50" r="42" fill="none" stroke="#00f0ff" stroke-width="6" />
-                <circle cx="50" cy="50" r="24" fill="#00f0ff" opacity="0.3" />
-                <circle cx="50" cy="50" r="10" fill="#00f0ff" />
-                <line x1="50" y1="8" x2="50" y2="24" stroke="#00f0ff" stroke-width="6" />
-                <line x1="50" y1="76" x2="50" y2="92" stroke="#00f0ff" stroke-width="6" />
-                <line x1="8" y1="50" x2="24" y2="50" stroke="#00f0ff" stroke-width="6" />
-                <line x1="76" y1="50" x2="92" stroke="#00f0ff" stroke-width="6" />
-              </svg>
-            </div>
+            {/* Nouveau Logo Tank */}
+            <img
+              src={basicTankLogo}
+              alt="Cybercore Tank Logo"
+              class="w-9 h-9 object-contain drop-shadow-[0_0_8px_#00E5FF]"
+            />
             <div>
               <div class="flex items-center gap-1.5 font-sans font-extrabold text-sm tracking-wider text-white">
                 <span>TRANSCEDANCE</span>
@@ -42,7 +49,9 @@ export const Header: Component = () => {
           </a>
         </div>
 
-        {/* Navigation : PLAY, GAME, LEADERBOARD, CLASSES (Sans UPDATES ni USERS) */}
+        {/* =================================================================
+            2. NAVIGATION
+            ================================================================= */}
         <nav class="hidden md:flex items-center space-x-6 font-mono text-xs font-bold tracking-wider uppercase text-slate-400">
           <a
             href={paths()}
@@ -70,11 +79,14 @@ export const Header: Component = () => {
           </a>
         </nav>
 
-        {/* Statut Télémétrique & Contrôles Utilisateur */}
+        {/* =================================================================
+            3. SECTION DROITE : [ONLINE] + MENU PARAMÈTRES AVEC LOGOUT
+            ================================================================= */}
         <div class="flex items-center gap-4 font-mono text-xs">
           <Show
-            when={user()}
+            when={currentUser()}
             fallback={
+              /* Non connecté */
               <div class="flex items-center gap-3">
                 <a
                   href="/login"
@@ -88,41 +100,77 @@ export const Header: Component = () => {
                 >
                   SIGN UP
                 </a>
-                <span class="material-symbols-outlined text-base text-slate-400 cursor-pointer hover:text-[#00f0ff] transition-colors">
-                  settings
-                </span>
               </div>
             }
           >
-            {/* Badge [ONLINE] avec point vert pulsant */}
+            {/* 1. Badge [ONLINE] vert pulsant */}
             <div class="flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-950/40 border border-emerald-500/40">
               <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#39ff14] animate-pulse" />
               <span class="text-emerald-400 font-bold text-[11px] tracking-widest">[ONLINE]</span>
             </div>
 
-            {/* Icônes d'action : Chat, Paramètres, Profil */}
-            <div class="flex items-center gap-3 text-slate-400">
+            {/* 2. Bouton Paramètres & Popover Déroulant */}
+            <div class="relative">
               <button
                 type="button"
-                title="Messagerie tactique"
-                class="material-symbols-outlined text-base cursor-pointer hover:text-[#00f0ff] transition-colors bg-transparent border-none p-0 text-slate-400"
+                onClick={() => setSettingsOpen(!settingsOpen())}
+                title="Paramètres du pilote"
+                class={`p-1.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${settingsOpen()
+                    ? 'bg-cyan-950/70 border-[#00f0ff] text-[#00f0ff] shadow-[0_0_12px_rgba(0,240,255,0.4)]'
+                    : 'bg-[#070b1a] border-[rgba(23,42,77,0.85)] text-slate-400 hover:text-[#00f0ff] hover:border-[#00f0ff]/50'
+                  }`}
               >
-                chat_bubble
+                <span class="material-symbols-outlined text-lg">settings</span>
               </button>
-              <button
-                type="button"
-                title="Paramètres de l'arène"
-                class="material-symbols-outlined text-base cursor-pointer hover:text-[#00f0ff] transition-colors bg-transparent border-none p-0 text-slate-400"
-              >
-                settings
-              </button>
-              <button
-                type="button"
-                title={`Profil de ${user()?.username ?? 'Pilote'}`}
-                class="material-symbols-outlined text-base cursor-pointer hover:text-[#00f0ff] transition-colors bg-transparent border-none p-0 text-slate-400"
-              >
-                account_circle
-              </button>
+
+              {/* Menu Popover Tactique */}
+              <Show when={settingsOpen()}>
+                {/* Backdrop invisible pour fermer en cliquant n'importe où ailleurs */}
+                <div
+                  class="fixed inset-0 z-40"
+                  onClick={() => setSettingsOpen(false)}
+                />
+
+                {/* Boîte du menu */}
+                <div class="absolute right-0 top-full mt-2 w-72 bg-[#080d1e]/95 backdrop-blur-xl border border-[rgba(23,42,77,0.9)] rounded-xl p-4 shadow-2xl z-50 font-mono space-y-3">
+
+                  {/* Bouton LOGOUT au-dessus */}
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    class="w-full py-2 px-3 rounded-lg bg-rose-950/40 hover:bg-rose-950/80 border border-rose-500/50 hover:border-rose-400 text-rose-400 font-bold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_10px_rgba(244,63,94,0.25)] hover:shadow-[0_0_14px_rgba(244,63,94,0.45)]"
+                  >
+                    <span class="material-symbols-outlined text-sm">logout</span>
+                    <span>LOG OUT</span>
+                  </button>
+
+                  <div class="border-t border-[rgba(23,42,77,0.8)] pt-2" />
+
+                  {/* Informations du Pilote Connecté */}
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-[10px] text-slate-400">
+                      <span class="tracking-widest uppercase">OPERATOR PROTOCOL</span>
+                      <span class="w-1.5 h-1.5 rounded-full bg-[#39ff14] shadow-[0_0_6px_#39ff14]" />
+                    </div>
+
+                    {/* Pseudo / Call-sign */}
+                    <div class="bg-[#050711] border border-[rgba(23,42,77,0.85)] rounded-lg p-2.5">
+                      <div class="text-[10px] text-slate-500 font-bold">CALL-SIGN</div>
+                      <div class="text-sm font-bold text-[#00f0ff] tracking-wider truncate mt-0.5">
+                        {currentUser()?.username}
+                      </div>
+                    </div>
+
+                    {/* Email du compte */}
+                    <div class="bg-[#050711] border border-[rgba(23,42,77,0.85)] rounded-lg p-2.5">
+                      <div class="text-[10px] text-slate-500 font-bold">EMAIL PILOTE</div>
+                      <div class="text-xs text-slate-300 truncate mt-0.5">
+                        {currentUser()?.email}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Show>
             </div>
           </Show>
         </div>
