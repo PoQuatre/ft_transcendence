@@ -90,11 +90,19 @@ function toError(status: number, message: string): AuthResult {
   }
 }
 
+import { createSignal } from 'solid-js';
+
+export type AuthUser = { id: string; username: string; email: string };
+
+// 1. Signal d'état global accessible par toute l'application (Header, Lobby, etc.)
+export const [currentUser, setCurrentUser] = createSignal<AuthUser | null>(null);
+
 async function post(path: string, payload: object): Promise<AuthResult> {
   try {
     const res = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // Envoie et reçoit les cookies de session
       body: JSON.stringify(payload),
     });
     if (res.ok) return { ok: true };
@@ -108,27 +116,49 @@ async function post(path: string, payload: object): Promise<AuthResult> {
   }
 }
 
-export const login = (payload: LoginPayload) =>
-  post('/api/auth/login', payload);
+// 2. Récupération du profil connecté via /api/auth/me
+export async function getMe(): Promise<AuthUser | null> {
+  try {
+    const res = await fetch('/api/auth/me', {
+      credentials: 'include',
+    });
+    if (res.ok) {
+      const user = (await res.json()) as AuthUser;
+      setCurrentUser(user); // Met à jour le signal global
+      return user;
+    }
+  } catch {
+    // Non connecté ou indisponible
+  }
+  setCurrentUser(null);
+  return null;
+}
 
-// Le backend ne connecte pas après l'inscription : on enchaîne un login.
+// 3. Login : synchronise immédiatement currentUser dès la réussite
+export async function login(payload: LoginPayload): Promise<AuthResult> {
+  const result = await post('/api/auth/login', payload);
+  if (result.ok) {
+    // Synchronise immédiatement la session dans l'app
+    await getMe();
+  }
+  return result;
+}
+
+// 4. Signup : enchaîne login puis synchronise la session
 export async function signup(payload: SignupPayload): Promise<AuthResult> {
   const created = await post('/api/auth/signup', payload);
   if (!created.ok) return created;
   return login({ email: payload.email, password: payload.password });
 }
 
-export type AuthUser = { id: string; username: string; email: string };
-
-// Récupère l'utilisateur connecté via l'endpoint backend /api/auth/me
-export async function getMe(): Promise<AuthUser | null> {
+// 5. Logout
+export async function logout(): Promise<void> {
   try {
-    const res = await fetch('/api/auth/me');
-    if (res.ok) {
-      return (await res.json()) as AuthUser;
-    }
-  } catch {
-    // Non connecté ou erreur réseau
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } finally {
+    setCurrentUser(null);
   }
-  return null;
 }
