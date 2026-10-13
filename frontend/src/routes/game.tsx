@@ -1,6 +1,6 @@
-import { Title } from '@solidjs/meta';
+import { Title } from "@solidjs/meta";
 
-import Game from '../components/Game';
+import Game from "../components/Game";
 
 export default function GamePage() {
   return (

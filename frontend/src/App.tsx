@@ -1,11 +1,11 @@
-import { Title } from '@solidjs/meta';
-import { Loading } from 'solid-js';
+import { Title } from "@solidjs/meta";
+import { Loading } from "solid-js";
 
-import { Footer } from './layout/Footer';
-import { Header } from './layout/Header';
-import { Router } from './router';
+import { Footer } from "./layout/Footer";
+import { Header } from "./layout/Header";
+import { Router } from "./router";
 
-import './App.css';
+import "./App.css";
 
 export default function App() {
   return (

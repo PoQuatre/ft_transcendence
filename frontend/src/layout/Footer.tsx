@@ -1,4 +1,4 @@
-import type { Component } from 'solid-js';
+import type { Component } from "solid-js";
 
 export const Footer: Component = () => {
   return (
@@ -11,9 +11,7 @@ export const Footer: Component = () => {
               SYSTEM STATUS // OPERATIONAL
             </span>
           </div>
-          <span class="text-outline font-label-data text-label-data hidden sm:inline">
-            |
-          </span>
+          <span class="text-outline font-label-data text-label-data hidden sm:inline">|</span>
           <span class="font-label-data text-label-data text-on-surface-variant tracking-wider">
             BUILD: v2.8.4-PROD
           </span>
@@ -26,9 +24,7 @@ export const Footer: Component = () => {
               aria-label="Terminal Signal"
               class="text-on-surface-variant hover:text-primary transition-colors flex items-center bg-transparent border-0 cursor-pointer p-0"
             >
-              <span class="material-symbols-outlined text-[18px]">
-                terminal
-              </span>
+              <span class="material-symbols-outlined text-[18px]">terminal</span>
             </button>
             <button
               type="button"
@@ -47,10 +43,7 @@ export const Footer: Component = () => {
           </div>
 
           <div class="flex items-center gap-space-md font-label-data text-label-data">
-            <a
-              class="hover:text-primary transition-colors no-underline text-outline"
-              href="/terms"
-            >
+            <a class="hover:text-primary transition-colors no-underline text-outline" href="/terms">
               TERMS_OF_ENGAGEMENT
             </a>
             <a

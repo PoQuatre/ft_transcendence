@@ -1,10 +1,10 @@
-import basicTankLogo from '~/assets/basic-tank.svg';
-import type { Component } from 'solid-js';
-import { createSignal, onSettled, Show } from 'solid-js';
-import { useNavigate } from '@solidjs/router';
+import { useNavigate } from "@solidjs/router";
+import type { Component } from "solid-js";
+import { createSignal, onSettled, Show } from "solid-js";
 
-import { currentUser, getMe, logout } from '~/lib/auth';
-import { paths } from '~/router';
+import basicTankLogo from "~/assets/basic-tank.svg";
+import { currentUser, getMe, logout } from "~/lib/auth";
+import { paths } from "~/router";
 
 export const Header: Component = () => {
   const navigate = useNavigate();
@@ -19,13 +19,12 @@ export const Header: Component = () => {
   const handleLogout = async () => {
     setSettingsOpen(false);
     await logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
     <header class="fixed top-0 left-0 right-0 z-50 bg-[#070b18]/90 backdrop-blur-md border-b border-[rgba(23,42,77,0.85)] px-4 lg:px-8 py-3">
       <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-
         {/* =================================================================
             1. IDENTIFIANT & LOGO TRANSCEDANCE ARENA
             ================================================================= */}
@@ -65,16 +64,10 @@ export const Header: Component = () => {
           >
             GAME
           </a>
-          <a
-            href="#leaderboard"
-            class="hover:text-[#00f0ff] transition-colors no-underline"
-          >
+          <a href="#leaderboard" class="hover:text-[#00f0ff] transition-colors no-underline">
             LEADERBOARD
           </a>
-          <a
-            href="#classes"
-            class="hover:text-[#00f0ff] transition-colors no-underline"
-          >
+          <a href="#classes" class="hover:text-[#00f0ff] transition-colors no-underline">
             CLASSES
           </a>
         </nav>
@@ -115,29 +108,35 @@ export const Header: Component = () => {
                 type="button"
                 onClick={() => setSettingsOpen(!settingsOpen())}
                 title="Paramètres du pilote"
-                class={`p-1.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${settingsOpen()
-                    ? 'bg-cyan-950/70 border-[#00f0ff] text-[#00f0ff] shadow-[0_0_12px_rgba(0,240,255,0.4)]'
-                    : 'bg-[#070b1a] border-[rgba(23,42,77,0.85)] text-slate-400 hover:text-[#00f0ff] hover:border-[#00f0ff]/50'
-                  }`}
+                class={[
+                  "p-1.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center",
+                  {
+                    "bg-cyan-950/70 border-[#00f0ff] text-[#00f0ff] shadow-[0_0_12px_rgba(0,240,255,0.4)]":
+                      settingsOpen(),
+                    "bg-[#070b1a] border-[rgba(23,42,77,0.85)] text-slate-400 hover:text-[#00f0ff] hover:border-[#00f0ff]/50":
+                      !settingsOpen(),
+                  },
+                ]}
               >
                 <span class="material-symbols-outlined text-lg">settings</span>
               </button>
 
               {/* Menu Popover Tactique */}
               <Show when={settingsOpen()}>
-                {/* Backdrop invisible pour fermer en cliquant n'importe où ailleurs */}
-                <div
-                  class="fixed inset-0 z-40"
+                {/* Backdrop accessible pour fermer en cliquant n'importe où ailleurs */}
+                <button
+                  type="button"
+                  aria-label="Fermer les paramètres"
+                  class="fixed inset-0 z-40 w-full h-full border-none bg-transparent cursor-default"
                   onClick={() => setSettingsOpen(false)}
                 />
 
                 {/* Boîte du menu */}
                 <div class="absolute right-0 top-full mt-2 w-72 bg-[#080d1e]/95 backdrop-blur-xl border border-[rgba(23,42,77,0.9)] rounded-xl p-4 shadow-2xl z-50 font-mono space-y-3">
-
                   {/* Bouton LOGOUT au-dessus */}
                   <button
                     type="button"
-                    onClick={handleLogout}
+                    onClick={() => void handleLogout()}
                     class="w-full py-2 px-3 rounded-lg bg-rose-950/40 hover:bg-rose-950/80 border border-rose-500/50 hover:border-rose-400 text-rose-400 font-bold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_10px_rgba(244,63,94,0.25)] hover:shadow-[0_0_14px_rgba(244,63,94,0.45)]"
                   >
                     <span class="material-symbols-outlined text-sm">logout</span>

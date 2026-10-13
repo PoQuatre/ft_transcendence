@@ -1,6 +1,6 @@
-import { createSignal } from 'solid-js';
+import { createSignal } from "solid-js";
 
-import { Button } from './ui/Button';
+import { Button } from "./ui/Button";
 
 export default function Counter() {
   const [count, setCount] = createSignal(0);

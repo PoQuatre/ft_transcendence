@@ -4,9 +4,7 @@ if (internalOrigin) {
   const nativeFetch = globalThis.fetch;
   globalThis.fetch = (input, init) =>
     nativeFetch(
-      typeof input === 'string' &&
-        input.startsWith('/') &&
-        !input.startsWith('//')
+      typeof input === "string" && input.startsWith("/") && !input.startsWith("//")
         ? new URL(input, internalOrigin)
         : input,
       init,
