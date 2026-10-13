@@ -117,3 +117,18 @@ export async function signup(payload: SignupPayload): Promise<AuthResult> {
   if (!created.ok) return created;
   return login({ email: payload.email, password: payload.password });
 }
+
+export type AuthUser = { id: string; username: string; email: string };
+
+// Récupère l'utilisateur connecté via l'endpoint backend /api/auth/me
+export async function getMe(): Promise<AuthUser | null> {
+  try {
+    const res = await fetch('/api/auth/me');
+    if (res.ok) {
+      return (await res.json()) as AuthUser;
+    }
+  } catch {
+    // Non connecté ou erreur réseau
+  }
+  return null;
+}
