@@ -193,3 +193,63 @@
     0 8px
   );
 }
+
+/* ==========================================================================
+   CYBER TACTICAL HUD TOKENS & PATTERNS
+   ========================================================================== */
+
+/* 1. Grille tactique de fond (plan militaire) */
+.tactical-grid {
+  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+}
+
+/* 2. Motif strié CRT pour le blindage et les jauges */
+.striped-pattern {
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.45),
+    rgba(0, 0, 0, 0.45) 1.5px,
+    transparent 1.5px,
+    transparent 3px
+  );
+}
+
+/* 3. Filtre dynamique de lueur pour les châssis de tank */
+.tank-soft-halo {
+  filter: drop-shadow(0 0 16px var(--tank-glow-color, rgba(0, 240, 255, 0.75)))
+          drop-shadow(0 0 32px var(--tank-glow-color, rgba(0, 240, 255, 0.4)));
+}
+
+/* 4. Ombres néon spécifiques (box-shadow) */
+.shadow-glow-cyan {
+  box-shadow: 0 0 20px -2px rgba(0, 240, 255, 0.45);
+}
+
+.shadow-glow-cyan-lg {
+  box-shadow: 0 0 35px 2px rgba(0, 240, 255, 0.65);
+}
+
+.shadow-glow-magenta {
+  box-shadow: 0 0 20px -2px rgba(255, 0, 127, 0.5);
+}
+
+.shadow-glow-lime {
+  box-shadow: 0 0 20px -2px rgba(57, 255, 20, 0.45);
+}
+
+.shadow-card-inner {
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.08), inset 0 0 20px 0 rgba(0, 240, 255, 0.02);
+}
+
+/* 5. Halo de texte néon */
+.neon-text-cyan {
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.75), 0 0 20px rgba(0, 240, 255, 0.35);
+}
+
+.neon-text-magenta {
+  text-shadow: 0 0 10px rgba(255, 0, 127, 0.75), 0 0 20px rgba(255, 0, 127, 0.35);
+}
+
