@@ -1,8 +1,8 @@
-import type { ComponentProps, JSX } from '@solidjs/web';
-import { Portal } from '@solidjs/web';
-import { type Component, Show, omit } from 'solid-js';
+import type { ComponentProps, JSX } from "@solidjs/web";
+import { Portal } from "@solidjs/web";
+import { type Component, Show, omit } from "solid-js";
 
-import { cn } from '~/lib/utils';
+import { cn } from "~/lib/utils";
 
 export type DialogProps = {
   open: boolean;
@@ -33,12 +33,12 @@ export const Dialog: Component<DialogProps> = (props) => {
   );
 };
 
-export const DialogHeader: Component<ComponentProps<'div'>> = (props) => {
-  const rest = omit(props, 'class', 'children');
+export const DialogHeader: Component<ComponentProps<"div">> = (props) => {
+  const rest = omit(props, "class", "children");
   return (
     <div
       class={cn(
-        'flex flex-col gap-1.5 pb-4 border-b border-surface-container-high/40',
+        "flex flex-col gap-1.5 pb-4 border-b border-surface-container-high/40",
         props.class,
       )}
       {...rest}
@@ -48,12 +48,12 @@ export const DialogHeader: Component<ComponentProps<'div'>> = (props) => {
   );
 };
 
-export const DialogTitle: Component<ComponentProps<'h3'>> = (props) => {
-  const rest = omit(props, 'class', 'children');
+export const DialogTitle: Component<ComponentProps<"h3">> = (props) => {
+  const rest = omit(props, "class", "children");
   return (
     <h3
       class={cn(
-        'font-headline-md text-headline-md text-white font-bold tracking-wide',
+        "font-headline-md text-headline-md text-white font-bold tracking-wide",
         props.class,
       )}
       {...rest}
@@ -63,27 +63,21 @@ export const DialogTitle: Component<ComponentProps<'h3'>> = (props) => {
   );
 };
 
-export const DialogDescription: Component<ComponentProps<'p'>> = (props) => {
-  const rest = omit(props, 'class', 'children');
+export const DialogDescription: Component<ComponentProps<"p">> = (props) => {
+  const rest = omit(props, "class", "children");
   return (
-    <p
-      class={cn(
-        'font-body-sm text-body-sm text-on-surface-variant',
-        props.class,
-      )}
-      {...rest}
-    >
+    <p class={cn("font-body-sm text-body-sm text-on-surface-variant", props.class)} {...rest}>
       {props.children}
     </p>
   );
 };
 
-export const DialogFooter: Component<ComponentProps<'div'>> = (props) => {
-  const rest = omit(props, 'class', 'children');
+export const DialogFooter: Component<ComponentProps<"div">> = (props) => {
+  const rest = omit(props, "class", "children");
   return (
     <div
       class={cn(
-        'flex items-center justify-end gap-space-sm pt-4 border-t border-surface-container-high/40',
+        "flex items-center justify-end gap-space-sm pt-4 border-t border-surface-container-high/40",
         props.class,
       )}
       {...rest}

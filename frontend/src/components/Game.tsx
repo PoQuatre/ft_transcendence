@@ -1,7 +1,7 @@
-import { createSignal, createUniqueId, onCleanup, Show } from 'solid-js';
+import { createSignal, createUniqueId, onCleanup, Show } from "solid-js";
 
 type GameInstance = {
-  ['_game_shutdown'](): void;
+  ["_game_shutdown"](): void;
 };
 
 type GameFactory = (options: {
@@ -18,8 +18,8 @@ export default function Game() {
     const hot = import.meta.hot;
     const onGameRebuilt = ({ buildId: rebuiltBuildId }: { buildId: string }) =>
       setBuildId(rebuiltBuildId);
-    hot.on('game:rebuilt', onGameRebuilt);
-    onCleanup(() => hot.off('game:rebuilt', onGameRebuilt));
+    hot.on("game:rebuilt", onGameRebuilt);
+    onCleanup(() => hot.off("game:rebuilt", onGameRebuilt));
   }
 
   return (
@@ -36,13 +36,13 @@ function GameView(props: { buildId: string }) {
 
   function attachCanvas(canvas: HTMLCanvasElement) {
     void (async () => {
-      const gameUrl = new URL('/assets/game/game.mjs', window.location.href);
-      const wasmUrl = new URL('/assets/game/game.wasm', window.location.href);
-      gameUrl.searchParams.set('v', props.buildId);
-      wasmUrl.searchParams.set('v', props.buildId);
-      const { default: createGame } = (await import(
-        /* @vite-ignore */ gameUrl.href
-      )) as { default: GameFactory };
+      const gameUrl = new URL("/assets/game/game.mjs", window.location.href);
+      const wasmUrl = new URL("/assets/game/game.wasm", window.location.href);
+      gameUrl.searchParams.set("v", props.buildId);
+      wasmUrl.searchParams.set("v", props.buildId);
+      const { default: createGame } = (await import(/* @vite-ignore */ gameUrl.href)) as {
+        default: GameFactory;
+      };
       if (disposed) return;
 
       const instance = await createGame({
@@ -50,7 +50,7 @@ function GameView(props: { buildId: string }) {
         locateFile: () => wasmUrl.href,
       });
       if (disposed) {
-        instance['_game_shutdown']();
+        instance["_game_shutdown"]();
         return;
       }
       game = instance;
@@ -59,14 +59,8 @@ function GameView(props: { buildId: string }) {
 
   onCleanup(() => {
     disposed = true;
-    game?.['_game_shutdown']();
+    game?.["_game_shutdown"]();
   });
 
-  return (
-    <canvas
-      id={canvasId}
-      ref={(canvas) => attachCanvas(canvas)}
-      class="h-full! w-full!"
-    />
-  );
+  return <canvas id={canvasId} ref={(canvas) => attachCanvas(canvas)} class="h-full! w-full!" />;
 }

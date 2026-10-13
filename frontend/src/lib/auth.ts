@@ -1,8 +1,6 @@
 // Appels /api/auth/* et traduction des erreurs du backend (backend/internal/auth).
 
-export type AuthResult =
-  | { ok: true }
-  | { ok: false; title: string; message: string };
+export type AuthResult = { ok: true } | { ok: false; title: string; message: string };
 
 export type LoginPayload = { email: string; password: string };
 export type SignupPayload = LoginPayload & { username: string };
@@ -10,99 +8,94 @@ export type SignupPayload = LoginPayload & { username: string };
 // Règles de backend/internal/helpers/validator.go (password_complexity).
 export const PASSWORD_RULES = [
   {
-    id: 'len',
-    label: '10-72 CARACTÈRES',
+    id: "len",
+    label: "10-72 CARACTÈRES",
     test: (p: string) => p.length >= 10 && p.length <= 72,
   },
-  { id: 'upper', label: 'UNE MAJUSCULE', test: (p: string) => /[A-Z]/.test(p) },
-  { id: 'lower', label: 'UNE MINUSCULE', test: (p: string) => /[a-z]/.test(p) },
-  { id: 'digit', label: 'UN CHIFFRE', test: (p: string) => /[0-9]/.test(p) },
+  { id: "upper", label: "UNE MAJUSCULE", test: (p: string) => /[A-Z]/.test(p) },
+  { id: "lower", label: "UNE MINUSCULE", test: (p: string) => /[a-z]/.test(p) },
+  { id: "digit", label: "UN CHIFFRE", test: (p: string) => /[0-9]/.test(p) },
   {
-    id: 'special',
-    label: 'UN CARACTÈRE SPÉCIAL',
+    id: "special",
+    label: "UN CARACTÈRE SPÉCIAL",
     test: (p: string) => /[^A-Za-z0-9]/.test(p),
   },
 ] as const;
 
-export const USERNAME_PATTERN = '[A-Za-z0-9_]{3,30}';
+export const USERNAME_PATTERN = "[A-Za-z0-9_]{3,30}";
 
 async function readMessage(res: Response): Promise<string> {
   try {
     const body: unknown = await res.json();
-    if (
-      body &&
-      typeof body === 'object' &&
-      'message' in body &&
-      typeof body.message === 'string'
-    ) {
+    if (body && typeof body === "object" && "message" in body && typeof body.message === "string") {
       return body.message;
     }
   } catch {
     // Corps vide ou non JSON.
   }
-  return '';
+  return "";
 }
 
 function toError(status: number, message: string): AuthResult {
   switch (message) {
-    case 'invalid email or password':
+    case "invalid email or password":
       return {
         ok: false,
-        title: 'Access denied',
-        message: 'Email ou mot de passe invalide.',
+        title: "Access denied",
+        message: "Email ou mot de passe invalide.",
       };
-    case 'already logged in':
+    case "already logged in":
       return {
         ok: false,
-        title: 'Already online',
-        message: 'Tu es déjà connecté.',
+        title: "Already online",
+        message: "Tu es déjà connecté.",
       };
-    case 'username already used':
+    case "username already used":
       return {
         ok: false,
-        title: 'Call-sign taken',
+        title: "Call-sign taken",
         message: "Ce nom d'utilisateur est déjà enregistré.",
       };
-    case 'email already used':
+    case "email already used":
       return {
         ok: false,
-        title: 'Email taken',
-        message: 'Cet email est déjà utilisé.',
+        title: "Email taken",
+        message: "Cet email est déjà utilisé.",
       };
-    case 'email or username already used':
+    case "email or username already used":
       return {
         ok: false,
-        title: 'Already enlisted',
-        message: 'Cet email ou ce nom est déjà utilisé.',
+        title: "Already enlisted",
+        message: "Cet email ou ce nom est déjà utilisé.",
       };
     default:
       return status === 400
         ? {
             ok: false,
-            title: 'Invalid data',
-            message: 'Vérifie les champs du formulaire.',
+            title: "Invalid data",
+            message: "Vérifie les champs du formulaire.",
           }
         : {
             ok: false,
-            title: 'Uplink lost',
-            message: 'Erreur serveur, réessaie plus tard.',
+            title: "Uplink lost",
+            message: "Erreur serveur, réessaie plus tard.",
           };
   }
 }
 
-import { createSignal } from 'solid-js';
+import { createRoot, createSignal } from "solid-js";
 
 export type AuthUser = { id: string; username: string; email: string };
 
 // 1. Signal d'état global accessible par toute l'application (Header, Lobby, etc.)
-export const [currentUser, setCurrentUser] = createSignal<AuthUser | null>(null);
+export const [currentUser, setCurrentUser] = createRoot(() => createSignal<AuthUser | null>(null));
 
 async function post(path: string, payload: object): Promise<AuthResult> {
   try {
     const res = await fetch(path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // Envoie et reçoit les cookies de session
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // Envoie et reçoit les cookies de session
       body: JSON.stringify(payload),
     });
     if (res.ok) return { ok: true };
@@ -110,8 +103,8 @@ async function post(path: string, payload: object): Promise<AuthResult> {
   } catch {
     return {
       ok: false,
-      title: 'Uplink lost',
-      message: 'Impossible de joindre le serveur.',
+      title: "Uplink lost",
+      message: "Impossible de joindre le serveur.",
     };
   }
 }
@@ -119,8 +112,8 @@ async function post(path: string, payload: object): Promise<AuthResult> {
 // 2. Récupération du profil connecté via /api/auth/me
 export async function getMe(): Promise<AuthUser | null> {
   try {
-    const res = await fetch('/api/auth/me', {
-      credentials: 'include',
+    const res = await fetch("/api/auth/me", {
+      credentials: "include",
     });
     if (res.ok) {
       const user = (await res.json()) as AuthUser;
@@ -136,7 +129,7 @@ export async function getMe(): Promise<AuthUser | null> {
 
 // 3. Login : synchronise immédiatement currentUser dès la réussite
 export async function login(payload: LoginPayload): Promise<AuthResult> {
-  const result = await post('/api/auth/login', payload);
+  const result = await post("/api/auth/login", payload);
   if (result.ok) {
     // Synchronise immédiatement la session dans l'app
     await getMe();
@@ -146,7 +139,7 @@ export async function login(payload: LoginPayload): Promise<AuthResult> {
 
 // 4. Signup : enchaîne login puis synchronise la session
 export async function signup(payload: SignupPayload): Promise<AuthResult> {
-  const created = await post('/api/auth/signup', payload);
+  const created = await post("/api/auth/signup", payload);
   if (!created.ok) return created;
   return login({ email: payload.email, password: payload.password });
 }
@@ -154,9 +147,9 @@ export async function signup(payload: SignupPayload): Promise<AuthResult> {
 // 5. Logout
 export async function logout(): Promise<void> {
   try {
-    await fetch('/api/auth/logout', {
-      method: 'POST',
-      credentials: 'include',
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
     });
   } finally {
     setCurrentUser(null);

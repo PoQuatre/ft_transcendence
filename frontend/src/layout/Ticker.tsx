@@ -1,4 +1,4 @@
-import type { Component } from 'solid-js';
+import type { Component } from "solid-js";
 
 export const Ticker: Component = () => {
   return (
@@ -12,15 +12,11 @@ export const Ticker: Component = () => {
         </div>
         <div class="flex items-center gap-space-xs font-label-data text-label-data text-on-surface-variant">
           <span>GRID COORD:</span>
-          <span class="font-label-mono-caps text-primary-fixed">
-            SEC-09 // LAT 43.190
-          </span>
+          <span class="font-label-mono-caps text-primary-fixed">SEC-09 // LAT 43.190</span>
         </div>
         <div class="flex items-center gap-space-xs font-label-data text-label-data text-on-surface-variant">
           <span>MATCH PROTOCOL:</span>
-          <span class="text-tertiary-fixed font-bold">
-            CYBER-CUP S4 // OVERDRIVE
-          </span>
+          <span class="text-tertiary-fixed font-bold">CYBER-CUP S4 // OVERDRIVE</span>
         </div>
       </div>
 
