@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/12 18:28:37 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/13 22:03:07 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,8 @@
 #include <nanosvgrast.h>
 #include <raylib.h>
 #include <spdlog/spdlog.h>
+
+#include <glm/geometric.hpp>
 
 #include "game/simulation.hpp"
 
@@ -129,6 +131,12 @@ void Renderer::init()
     }
     font_ = LoadFont(
         CMAKE_SOURCE_DIR "/src/renderer/assets/textures/space_grotesk.ttf");
+    Image crosshair_image = LoadImageSVG(
+        CMAKE_SOURCE_DIR "/src/renderer/assets/textures/crosshair.svg", 0, 0);
+    ImageResize(&crosshair_image, 0.5 * crosshair_image.width,
+        0.5 * crosshair_image.height);
+    crosshair_ = LoadTextureFromImage(crosshair_image);
+    UnloadImage(crosshair_image);
     update_render_textures();
 
     extract_shader_ = LoadShader(nullptr,
@@ -155,6 +163,8 @@ Renderer::~Renderer()
         UnloadTexture(tank_textures_[i]);
     }
     UnloadFont(font_);
+    UnloadTexture(crosshair_);
+
     UnloadRenderTexture(scene_target_);
     UnloadRenderTexture(bright_target_);
     UnloadRenderTexture(blur_v_target_);
@@ -221,25 +231,14 @@ void Renderer::draw(simulation::Simulation &sim)
 
 void Renderer::render_scene(simulation::Simulation &sim)
 {
+    update_camera(sim);
     auto *registry = sim.get_registry();
-    const float camera_zoom = 1.5F;
-    const auto tank = registry->view<simulation::Tank>().begin();
-    const auto &player_transform = registry->get<simulation::Transform>(*tank);
-    const auto &player_tank = registry->get<simulation::Tank>(*tank);
-
-    Camera2D camera { };
-    camera.target = {
-        .x = player_transform.pos.x + (player_tank.size / 2),
-        .y = player_transform.pos.y + (player_tank.size / 2),
-    };
-    camera.offset
-        = { .x = GetRenderWidth() / 2.F, .y = GetRenderHeight() / 2.F };
-    camera.rotation = 0;
-    camera.zoom = camera_zoom;
 
     BeginTextureMode(scene_target_);
-    ClearBackground(Colors::colors[Colors::COLOR_BACKGROUND]); // 0B 08 11
-    BeginMode2D(camera);
+    ClearBackground(Colors::colors[Colors::COLOR_BACKGROUND]);
+    BeginMode2D(camera_);
+
+    draw_grid();
 
     for (const auto entity : registry->view<simulation::Tank, simulation::Color,
              simulation::Transform>()) {
@@ -337,6 +336,7 @@ void Renderer::render_scene(simulation::Simulation &sim)
             break;
         }
     }
+
     for (const auto entity : registry->view<simulation::Color,
              simulation::Transform, simulation::Projectile>()) {
         const auto &transform = registry->get<simulation::Transform>(entity);
@@ -368,6 +368,12 @@ void Renderer::render_scene(simulation::Simulation &sim)
 
         DrawTexturePro(texture, source, dest, origin, rot, WHITE);
     }
+
+    const Vector2 mouse_screen = GetMousePosition();
+    const Vector2 mouse_world_raylib
+        = GetScreenToWorld2D(mouse_screen, camera_);
+    DrawTexture(crosshair_, mouse_world_raylib.x - (crosshair_.width / 2.F),
+        mouse_world_raylib.y - (crosshair_.height / 2.F), WHITE);
 
     EndMode2D();
     EndTextureMode();
@@ -455,6 +461,79 @@ void Renderer::apply_bloom()
 
     EndShaderMode();
     EndTextureMode();
+}
+
+void Renderer::draw_grid()
+{
+    const glm::vec2 grid_size { 80.F, 80.F };
+
+    const int grid_count_y
+        = (simulation::map_bounds_.max_y - simulation::map_bounds_.min_y)
+        / grid_size.y;
+    const int grid_count_x
+        = (simulation::map_bounds_.max_x - simulation::map_bounds_.min_x)
+        / grid_size.x;
+
+    for (int y = 0; y <= grid_count_y; ++y) {
+        DrawLine(simulation::map_bounds_.min_x,
+            (y * grid_size.y) + simulation::map_bounds_.min_y,
+            simulation::map_bounds_.max_x,
+            (y * grid_size.y) + simulation::map_bounds_.min_y,
+            Colors::colors[Colors::COLOR_GRID]);
+    }
+    for (int x = 0; x <= grid_count_x; ++x) {
+        DrawLine((x * grid_size.x) + simulation::map_bounds_.min_x,
+            simulation::map_bounds_.min_y,
+            (x * grid_size.x) + simulation::map_bounds_.min_x,
+            simulation::map_bounds_.max_y, Colors::colors[Colors::COLOR_GRID]);
+    }
+}
+
+void Renderer::update_camera(simulation::Simulation &sim)
+{
+    auto *registry = sim.get_registry();
+    const float camera_zoom = 1.5F;
+    const float camera_look_ahead = 0.5F;
+    const float max_camera_dist = 100.F;
+
+    const auto tank = registry->view<simulation::Tank>().begin();
+    const auto &player_transform = registry->get<simulation::Transform>(*tank);
+    const auto &player_tank = registry->get<simulation::Tank>(*tank);
+
+    camera_.offset
+        = { .x = GetRenderWidth() / 2.F, .y = GetRenderHeight() / 2.F };
+    camera_.rotation = 0;
+    camera_.zoom = camera_zoom;
+
+    const Vector2 mouse_screen = GetMousePosition();
+    const Vector2 mouse_world_raylib
+        = GetScreenToWorld2D(mouse_screen, camera_);
+    const glm::vec2 mouse_world(mouse_world_raylib.x, mouse_world_raylib.y);
+
+    glm::vec2 player_origin(player_transform.pos.x
+            + simulation::TankType::origins[player_tank.type].x,
+        player_transform.pos.y
+            + simulation::TankType::origins[player_tank.type].y);
+
+    // Direction from the player's origin toward the cursor.
+    const glm::vec2 mouse_delta = mouse_world - player_origin;
+    const float distance = glm::length(mouse_delta);
+
+    // Clamp the look-ahead distance.
+    const glm::vec2 look_ahead = distance > max_camera_dist
+        ? glm::normalize(mouse_delta) * max_camera_dist
+        : mouse_delta;
+
+    const float delta_time = GetFrameTime();
+    const float smoothing = 5.0F;
+
+    // Move the target halfway toward the clamped mouse position.
+    glm::vec2 camera_target = player_origin + (camera_look_ahead * look_ahead);
+
+    camera_target = glm::mix(glm::vec2(camera_.target.x, camera_.target.y),
+        camera_target, smoothing * delta_time);
+
+    camera_.target = { .x = camera_target.x, .y = camera_target.y };
 }
 
 void Renderer::draw_progress_bar(glm::vec2 pos, glm::vec2 size,

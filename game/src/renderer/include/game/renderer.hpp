@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:38 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/12 18:28:09 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/13 21:58:04 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@ namespace Colors {
     X(COLOR_PINK, 0xFF, 0x50, 0xDF, 255)                                       \
     X(COLOR_AMBER, 0xFF, 0xBB, 0x24, 255)                                      \
     X(COLOR_BACKGROUND, 0x0B, 0x08, 0x11, 255)                                 \
+    X(COLOR_GRID, 0x3B, 0x2F, 0x49, 255)                                       \
     X(COLOR_BLACK, 0, 0, 0, 255)
 
 enum type : uint8_t {
@@ -66,10 +67,16 @@ private:
         float max_value);
     void apply_bloom();
     void render_scene(simulation::Simulation &sim);
+    void update_camera(simulation::Simulation &sim);
+
+    static void draw_grid();
+
+    Camera2D camera_;
 
     std::array<Texture, simulation::TankType::TANK_TYPE_MAX> tank_textures_;
     std::array<Texture, simulation::ProjectileType::PROJECTILE_TYPE_MAX>
         projectile_textures_;
+    Texture crosshair_;
     Font font_;
 
     int render_width_ = 800;

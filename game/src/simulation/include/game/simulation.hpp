@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:34 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/11 00:23:08 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/13 16:44:24 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,9 @@
 #include "components.hpp"
 
 namespace game::simulation {
+
+const AABB map_bounds_
+    = AABB { .min_x = -1000, .min_y = -1000, .max_x = 1000, .max_y = 1000 };
 
 class Simulation {
 public:
@@ -45,8 +48,6 @@ private:
     entt::entity player_tank_;
 
     const int ressource_count_ = 100;
-    const AABB map_bounds_
-        = AABB { .min_x = -1000, .min_y = -1000, .max_x = 1000, .max_y = 1000 };
 };
 
 } // namespace game::simulation
