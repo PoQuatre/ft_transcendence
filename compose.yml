@@ -170,6 +170,7 @@ services:
       PROXY_PROTOCOL_PORT: 9443
     volumes:
       - ./nginx/default.conf.template:/etc/nginx/templates/conf.d/default.conf.template:ro,Z
+      - ./nginx/includes/app-routes.conf:/etc/nginx/includes/app-routes.conf:ro,Z
       - ./nginx/tls-reload-entrypoint.sh:/usr/local/bin/tls-reload-entrypoint.sh:ro,Z
       - nginx-tls:/run/nginx-tls:ro,z
     networks:

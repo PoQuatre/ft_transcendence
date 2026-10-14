@@ -38,6 +38,7 @@ func New(options ...Option) (http.Handler, error) {
 	}
 
 	e := echo.New()
+	e.IPExtractor = echo.ExtractIPFromXFFHeader()
 
 	e.Use(middleware.RequestID())
 	e.Use(middleware.RequestLogger())
