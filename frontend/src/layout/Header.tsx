@@ -1,10 +1,10 @@
-import { useNavigate } from "@solidjs/router";
-import type { Component } from "solid-js";
-import { createSignal, onSettled, Show } from "solid-js";
+import { useNavigate } from '@solidjs/router';
+import type { Component } from 'solid-js';
+import { createSignal, onSettled, Show } from 'solid-js';
 
-import basicTankLogo from "~/assets/basic-tank.svg";
-import { currentUser, getMe, logout } from "~/lib/auth";
-import { paths } from "~/router";
+import basicTankLogo from '~/assets/basic-tank.svg';
+import { currentUser, getMe, logout } from '~/lib/auth';
+import { paths } from '~/router';
 
 export const Header: Component = () => {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export const Header: Component = () => {
   const handleLogout = async () => {
     setSettingsOpen(false);
     await logout();
-    navigate("/login");
+    navigate('/login');
   };
 
   return (
@@ -64,10 +64,16 @@ export const Header: Component = () => {
           >
             GAME
           </a>
-          <a href="#leaderboard" class="hover:text-[#00f0ff] transition-colors no-underline">
+          <a
+            href="#leaderboard"
+            class="hover:text-[#00f0ff] transition-colors no-underline"
+          >
             LEADERBOARD
           </a>
-          <a href="#classes" class="hover:text-[#00f0ff] transition-colors no-underline">
+          <a
+            href="#classes"
+            class="hover:text-[#00f0ff] transition-colors no-underline"
+          >
             CLASSES
           </a>
         </nav>
@@ -99,7 +105,9 @@ export const Header: Component = () => {
             {/* 1. Badge [ONLINE] vert pulsant */}
             <div class="flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-950/40 border border-emerald-500/40">
               <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#39ff14] animate-pulse" />
-              <span class="text-emerald-400 font-bold text-[11px] tracking-widest">[ONLINE]</span>
+              <span class="text-emerald-400 font-bold text-[11px] tracking-widest">
+                [ONLINE]
+              </span>
             </div>
 
             {/* 2. Bouton Paramètres & Popover Déroulant */}
@@ -109,11 +117,11 @@ export const Header: Component = () => {
                 onClick={() => setSettingsOpen(!settingsOpen())}
                 title="Paramètres du pilote"
                 class={[
-                  "p-1.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center",
+                  'p-1.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center',
                   {
-                    "bg-cyan-950/70 border-[#00f0ff] text-[#00f0ff] shadow-[0_0_12px_rgba(0,240,255,0.4)]":
+                    'bg-cyan-950/70 border-[#00f0ff] text-[#00f0ff] shadow-[0_0_12px_rgba(0,240,255,0.4)]':
                       settingsOpen(),
-                    "bg-[#070b1a] border-[rgba(23,42,77,0.85)] text-slate-400 hover:text-[#00f0ff] hover:border-[#00f0ff]/50":
+                    'bg-[#070b1a] border-[rgba(23,42,77,0.85)] text-slate-400 hover:text-[#00f0ff] hover:border-[#00f0ff]/50':
                       !settingsOpen(),
                   },
                 ]}
@@ -139,7 +147,9 @@ export const Header: Component = () => {
                     onClick={() => void handleLogout()}
                     class="w-full py-2 px-3 rounded-lg bg-rose-950/40 hover:bg-rose-950/80 border border-rose-500/50 hover:border-rose-400 text-rose-400 font-bold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_10px_rgba(244,63,94,0.25)] hover:shadow-[0_0_14px_rgba(244,63,94,0.45)]"
                   >
-                    <span class="material-symbols-outlined text-sm">logout</span>
+                    <span class="material-symbols-outlined text-sm">
+                      logout
+                    </span>
                     <span>LOG OUT</span>
                   </button>
 
@@ -148,13 +158,17 @@ export const Header: Component = () => {
                   {/* Informations du Pilote Connecté */}
                   <div class="space-y-2">
                     <div class="flex items-center justify-between text-[10px] text-slate-400">
-                      <span class="tracking-widest uppercase">OPERATOR PROTOCOL</span>
+                      <span class="tracking-widest uppercase">
+                        OPERATOR PROTOCOL
+                      </span>
                       <span class="w-1.5 h-1.5 rounded-full bg-[#39ff14] shadow-[0_0_6px_#39ff14]" />
                     </div>
 
                     {/* Pseudo / Call-sign */}
                     <div class="bg-[#050711] border border-[rgba(23,42,77,0.85)] rounded-lg p-2.5">
-                      <div class="text-[10px] text-slate-500 font-bold">CALL-SIGN</div>
+                      <div class="text-[10px] text-slate-500 font-bold">
+                        CALL-SIGN
+                      </div>
                       <div class="text-sm font-bold text-[#00f0ff] tracking-wider truncate mt-0.5">
                         {currentUser()?.username}
                       </div>
@@ -162,7 +176,9 @@ export const Header: Component = () => {
 
                     {/* Email du compte */}
                     <div class="bg-[#050711] border border-[rgba(23,42,77,0.85)] rounded-lg p-2.5">
-                      <div class="text-[10px] text-slate-500 font-bold">EMAIL PILOTE</div>
+                      <div class="text-[10px] text-slate-500 font-bold">
+                        EMAIL PILOTE
+                      </div>
                       <div class="text-xs text-slate-300 truncate mt-0.5">
                         {currentUser()?.email}
                       </div>
