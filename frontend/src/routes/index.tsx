@@ -198,7 +198,7 @@ export default function Home() {
         </section>
 
         {/* =================================================================
-            2. SECTION COMBAT DASHBOARD (8 cols + 4 cols)
+            2. SECTION COMBAT DASHBOARD : MODES & DAILY CHALLENGES (8 cols + 4 cols)
             ================================================================= */}
         <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           {/* CARTE GAUCHE : SÉLECTEUR DE MODE & RADAR (8 colonnes) */}
@@ -579,144 +579,101 @@ export default function Home() {
             </div>
           </Card>
 
-          {/* CARTE DROITE : ARENA APEX LEADERBOARD (4 colonnes) */}
+          {/* CARTE DROITE : DAILY CHALLENGES (4 colonnes) */}
           <Card
             variant="default"
-            class="lg:col-span-4 bg-[rgba(10,15,33,0.92)] backdrop-blur-md border-[rgba(23,42,77,0.85)] rounded-xl p-5 shadow-card-inner flex flex-col justify-between"
+            class="lg:col-span-4 bg-[rgba(10,15,33,0.92)] backdrop-blur-md border-[rgba(23,42,77,0.85)] rounded-xl p-5 sm:p-6 shadow-card-inner flex flex-col justify-between"
           >
             <div>
-              {/* En-tête Apex */}
-              <div class="flex items-center justify-between font-mono text-xs mb-2">
-                <div class="flex items-center gap-2 font-bold text-[#00f0ff] tracking-wider uppercase">
-                  <span class="material-symbols-outlined text-sm">trophy</span>
-                  <span>ARENA APEX</span>
-                </div>
-                <Badge variant="danger" class="animate-pulse">
-                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1" />
-                  LIVE TELEMETRY
-                </Badge>
-              </div>
-
-              {/* Sous-titre */}
+              {/* En-tête Défis */}
               <div class="flex items-center justify-between border-b border-[rgba(23,42,77,0.85)] pb-2.5">
-                <h2 class="text-lg font-bold text-white tracking-wide font-sans">
-                  Ranked Free-for-all
-                </h2>
-                <span class="font-mono text-[11px] text-slate-400">
-                  GLOBAL TOP 10
-                </span>
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span class="material-symbols-outlined text-sm text-[#ff007f]">
+                      flag
+                    </span>
+                    <span class="font-mono text-xs font-bold text-[#ff007f] tracking-wider uppercase">
+                      DAILY CHALLENGES
+                    </span>
+                  </div>
+                  <h2 class="text-xl font-bold text-white tracking-wide mt-0.5">
+                    Make every match count
+                  </h2>
+                </div>
+                <Badge variant="success">+1,500 CREDITS</Badge>
               </div>
 
-              {/* Liste Top 5 */}
-              <div class="mt-3.5 space-y-2 font-mono text-xs">
-                {/* 01 */}
-                <div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-[#0a1127] border border-[#00f0ff]/50 text-white shadow-[0_0_12px_rgba(0,240,255,0.2)]">
-                  <div class="flex items-center space-x-2.5">
-                    <span class="text-[#00f0ff] font-extrabold px-1 bg-cyan-950/80 rounded border border-[#00f0ff]/40">
-                      01
+              {/* Liste des Quêtes */}
+              <div class="mt-4 space-y-3">
+                {/* Quête 1 */}
+                <div class="bg-[#070b19] border border-[rgba(23,42,77,0.85)] rounded-lg p-3 space-y-1.5">
+                  <div class="flex items-center justify-between text-xs font-mono">
+                    <span class="text-slate-200">
+                      First strike: Destroy 5 predator tanks in FFA
                     </span>
-                    <span class="material-symbols-outlined text-xs text-[#00f0ff]">
-                      verified
-                    </span>
-                    <span class="font-bold tracking-wider">NEONVOID</span>
-                    <span class="text-[10px] text-slate-400 font-normal">
-                      PHANTOM
-                    </span>
+                    <span class="text-[#00f0ff] font-bold">[ 3 / 5 ]</span>
                   </div>
-                  <span class="text-[#00f0ff] font-bold tracking-wider">
-                    248,475
-                  </span>
+                  <Progress
+                    value={60}
+                    color="cyan"
+                    class="h-1.5 shadow-[0_0_8px_#00f0ff]"
+                  />
                 </div>
 
-                {/* 02 */}
-                <div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-[#090e1f] border border-[#ff007f]/40 text-slate-200 shadow-[0_0_10px_rgba(255,0,127,0.15)]">
-                  <div class="flex items-center space-x-2.5">
-                    <span class="text-[#ff007f] font-extrabold px-1 bg-fuchsia-950/80 rounded border border-[#ff007f]/40">
-                      02
+                {/* Quête 2 (Accomplie avec bouton CLAIM) */}
+                <div class="bg-[#070b19] border border-[rgba(23,42,77,0.85)] rounded-lg p-3 space-y-2">
+                  <div class="flex items-center justify-between text-xs font-mono">
+                    <span class="text-slate-200">
+                      Core harvester: Absorb 50 radiant pentagons
                     </span>
-                    <span class="material-symbols-outlined text-xs text-[#ff007f]">
-                      target
-                    </span>
-                    <span class="font-bold tracking-wider">V3X_PILOT</span>
-                    <span class="text-[10px] text-slate-400 font-normal">
-                      STRIKER
-                    </span>
+                    <span class="text-[#12ee83] font-bold">[ 50 / 50 ]</span>
                   </div>
-                  <span class="text-[#ff007f] font-bold tracking-wider">
-                    221,840
-                  </span>
+                  <div class="flex items-center justify-between pt-0.5 gap-3">
+                    <div class="w-3/5">
+                      <Progress
+                        value={100}
+                        color="lime"
+                        class="h-1.5 shadow-[0_0_8px_#12ee83]"
+                      />
+                    </div>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      disabled={claimedReward()}
+                      onClick={() => setClaimedReward(true)}
+                      class="px-2.5 py-1 text-[10px] font-mono font-bold bg-[#12ee83] hover:bg-[#4affa3] text-[#050711] rounded shadow-[0_0_10px_rgba(18,238,131,0.5)] transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
+                    >
+                      <span class="material-symbols-outlined text-[11px]">
+                        redeem
+                      </span>
+                      {claimedReward() ? 'CLAIMED' : 'CLAIM REWARD'}
+                    </Button>
+                  </div>
                 </div>
 
-                {/* 03 */}
-                <div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-[#080d1c] border border-[#dcb8ff]/40 text-slate-300">
-                  <div class="flex items-center space-x-2.5">
-                    <span class="text-[#dcb8ff] font-extrabold px-1 bg-purple-950/80 rounded border border-[#dcb8ff]/40">
-                      03
+                {/* Quête 3 */}
+                <div class="bg-[#070b19] border border-[rgba(23,42,77,0.85)] rounded-lg p-3 space-y-1.5">
+                  <div class="flex items-center justify-between text-xs font-mono">
+                    <span class="text-slate-200">
+                      Apex predator: Reach top 3 on leaderboard
                     </span>
-                    <span class="material-symbols-outlined text-xs text-[#dcb8ff]">
-                      military_tech
-                    </span>
-                    <span class="tracking-wider">KAIROS</span>
-                    <span class="text-[10px] text-slate-400 font-normal">
-                      OVERSEER
-                    </span>
+                    <span class="text-[#ff50df] font-bold">+250 CREDITS</span>
                   </div>
-                  <span class="font-bold text-slate-200 tracking-wider">
-                    198,248
-                  </span>
-                </div>
-
-                {/* 04 */}
-                <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-[#070b18] border border-[rgba(23,42,77,0.85)] text-slate-400">
-                  <div class="flex items-center space-x-2.5">
-                    <span class="text-slate-500 font-bold">04</span>
-                    <span class="tracking-wide text-slate-300">NULLBYTE</span>
-                    <span class="text-[10px] text-slate-500">TITAN</span>
-                  </div>
-                  <span class="text-slate-300">183,991</span>
-                </div>
-
-                {/* 05 */}
-                <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-[#070b18] border border-[rgba(23,42,77,0.85)] text-slate-400">
-                  <div class="flex items-center space-x-2.5">
-                    <span class="text-slate-500 font-bold">05</span>
-                    <span class="tracking-wide text-slate-300">SYNTAX_ERR</span>
-                    <span class="text-[10px] text-slate-500">REAPER</span>
-                  </div>
-                  <span class="text-slate-300">162,483</span>
-                </div>
-
-                {/* Ligne Joueur Actuel (#142) */}
-                <div class="mt-3 flex items-center justify-between px-3 py-2.5 rounded-lg bg-gradient-to-r from-fuchsia-950/40 via-[#0d142e] to-cyan-950/40 border border-[#ff007f] shadow-glow-magenta text-white">
-                  <div class="flex items-center space-x-2.5">
-                    <span class="text-[#ff007f] font-extrabold tracking-wider">
-                      #142
-                    </span>
-                    <span class="font-bold tracking-wider text-pink-100">
-                      YOU [{callsign()}]
-                    </span>
-                  </div>
-                  <span class="text-[#ff007f] font-extrabold tracking-wider">
-                    124,179
-                  </span>
+                  <Progress
+                    value={25}
+                    color="pink"
+                    class="h-1.5 shadow-[0_0_8px_#ff50df]"
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Pied de Carte Leaderboard */}
-            <div class="pt-4 mt-4 border-t border-[rgba(23,42,77,0.7)] flex items-center justify-between font-mono text-xs">
-              <span class="text-slate-500">
-                YOUR ARENA RANK: <strong class="text-white">#142</strong>
+            {/* Pied Quêtes */}
+            <div class="pt-3 mt-3 border-t border-[rgba(23,42,77,0.85)] text-[11px] font-mono text-slate-500 flex items-center justify-between">
+              <span>RESETS IN: 04H 21M</span>
+              <span class="text-[#00f0ff] font-bold tracking-wider">
+                [ TIER 4 BONUS ACTIVE ]
               </span>
-              <a
-                href="#leaderboard"
-                class="inline-flex items-center gap-1.5 font-bold text-[#00f0ff] hover:text-white transition-colors group no-underline"
-              >
-                <span>FULL RANKINGS</span>
-                <span class="transform group-hover:translate-x-1 transition-transform">
-                  →
-                </span>
-              </a>
             </div>
           </Card>
         </section>
@@ -839,7 +796,7 @@ export default function Home() {
         </section>
 
         {/* =================================================================
-            4. SECTION INFÉRIEURE : KEY MAP & DAILY CHALLENGES (7 cols + 5 cols)
+            4. SECTION INFÉRIEURE : KEY MAP & ARENA APEX (7 cols + 5 cols)
             ================================================================= */}
         <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* CARTE GAUCHE : CONTRÔLES TACTIQUES (7 colonnes) */}
@@ -979,101 +936,144 @@ export default function Home() {
             </div>
           </Card>
 
-          {/* CARTE DROITE : DAILY CHALLENGES (5 colonnes) */}
+          {/* CARTE DROITE : ARENA APEX LEADERBOARD (5 colonnes) */}
           <Card
             variant="default"
-            class="lg:col-span-5 bg-[rgba(10,15,33,0.92)] backdrop-blur-md border-[rgba(23,42,77,0.85)] rounded-xl p-5 sm:p-6 shadow-card-inner flex flex-col justify-between"
+            class="lg:col-span-5 bg-[rgba(10,15,33,0.92)] backdrop-blur-md border-[rgba(23,42,77,0.85)] rounded-xl p-5 shadow-card-inner flex flex-col justify-between"
           >
             <div>
-              {/* En-tête Défis */}
-              <div class="flex items-center justify-between border-b border-[rgba(23,42,77,0.85)] pb-2.5">
-                <div>
-                  <div class="flex items-center space-x-2">
-                    <span class="material-symbols-outlined text-sm text-[#ff007f]">
-                      flag
-                    </span>
-                    <span class="font-mono text-xs font-bold text-[#ff007f] tracking-wider uppercase">
-                      DAILY CHALLENGES
-                    </span>
-                  </div>
-                  <h2 class="text-xl font-bold text-white tracking-wide mt-0.5">
-                    Make every match count
-                  </h2>
+              {/* En-tête Apex */}
+              <div class="flex items-center justify-between font-mono text-xs mb-2">
+                <div class="flex items-center gap-2 font-bold text-[#00f0ff] tracking-wider uppercase">
+                  <span class="material-symbols-outlined text-sm">trophy</span>
+                  <span>ARENA APEX</span>
                 </div>
-                <Badge variant="success">+1,500 CREDITS</Badge>
+                <Badge variant="danger" class="animate-pulse">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1" />
+                  LIVE TELEMETRY
+                </Badge>
               </div>
 
-              {/* Liste des Quêtes */}
-              <div class="mt-4 space-y-3">
-                {/* Quête 1 */}
-                <div class="bg-[#070b19] border border-[rgba(23,42,77,0.85)] rounded-lg p-3 space-y-1.5">
-                  <div class="flex items-center justify-between text-xs font-mono">
-                    <span class="text-slate-200">
-                      First strike: Destroy 5 predator tanks in FFA
+              {/* Sous-titre */}
+              <div class="flex items-center justify-between border-b border-[rgba(23,42,77,0.85)] pb-2.5">
+                <h2 class="text-lg font-bold text-white tracking-wide font-sans">
+                  Ranked Free-for-all
+                </h2>
+                <span class="font-mono text-[11px] text-slate-400">
+                  GLOBAL TOP 10
+                </span>
+              </div>
+
+              {/* Liste Top 5 */}
+              <div class="mt-3.5 space-y-2 font-mono text-xs">
+                {/* 01 */}
+                <div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-[#0a1127] border border-[#00f0ff]/50 text-white shadow-[0_0_12px_rgba(0,240,255,0.2)]">
+                  <div class="flex items-center space-x-2.5">
+                    <span class="text-[#00f0ff] font-extrabold px-1 bg-cyan-950/80 rounded border border-[#00f0ff]/40">
+                      01
                     </span>
-                    <span class="text-[#00f0ff] font-bold">[ 3 / 5 ]</span>
+                    <span class="material-symbols-outlined text-xs text-[#00f0ff]">
+                      verified
+                    </span>
+                    <span class="font-bold tracking-wider">NEONVOID</span>
+                    <span class="text-[10px] text-slate-400 font-normal">
+                      PHANTOM
+                    </span>
                   </div>
-                  <Progress
-                    value={60}
-                    color="cyan"
-                    class="h-1.5 shadow-[0_0_8px_#00f0ff]"
-                  />
+                  <span class="text-[#00f0ff] font-bold tracking-wider">
+                    248,475
+                  </span>
                 </div>
 
-                {/* Quête 2 (Accomplie avec bouton CLAIM) */}
-                <div class="bg-[#070b19] border border-[rgba(23,42,77,0.85)] rounded-lg p-3 space-y-2">
-                  <div class="flex items-center justify-between text-xs font-mono">
-                    <span class="text-slate-200">
-                      Core harvester: Absorb 50 radiant pentagons
+                {/* 02 */}
+                <div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-[#090e1f] border border-[#ff007f]/40 text-slate-200 shadow-[0_0_10px_rgba(255,0,127,0.15)]">
+                  <div class="flex items-center space-x-2.5">
+                    <span class="text-[#ff007f] font-extrabold px-1 bg-fuchsia-950/80 rounded border border-[#ff007f]/40">
+                      02
                     </span>
-                    <span class="text-[#12ee83] font-bold">[ 50 / 50 ]</span>
+                    <span class="material-symbols-outlined text-xs text-[#ff007f]">
+                      target
+                    </span>
+                    <span class="font-bold tracking-wider">V3X_PILOT</span>
+                    <span class="text-[10px] text-slate-400 font-normal">
+                      STRIKER
+                    </span>
                   </div>
-                  <div class="flex items-center justify-between pt-0.5 gap-3">
-                    <div class="w-3/5">
-                      <Progress
-                        value={100}
-                        color="lime"
-                        class="h-1.5 shadow-[0_0_8px_#12ee83]"
-                      />
-                    </div>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      disabled={claimedReward()}
-                      onClick={() => setClaimedReward(true)}
-                      class="px-2.5 py-1 text-[10px] font-mono font-bold bg-[#12ee83] hover:bg-[#4affa3] text-[#050711] rounded shadow-[0_0_10px_rgba(18,238,131,0.5)] transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
-                    >
-                      <span class="material-symbols-outlined text-[11px]">
-                        redeem
-                      </span>
-                      {claimedReward() ? 'CLAIMED' : 'CLAIM REWARD'}
-                    </Button>
-                  </div>
+                  <span class="text-[#ff007f] font-bold tracking-wider">
+                    221,840
+                  </span>
                 </div>
 
-                {/* Quête 3 */}
-                <div class="bg-[#070b19] border border-[rgba(23,42,77,0.85)] rounded-lg p-3 space-y-1.5">
-                  <div class="flex items-center justify-between text-xs font-mono">
-                    <span class="text-slate-200">
-                      Apex predator: Reach top 3 on leaderboard
+                {/* 03 */}
+                <div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-[#080d1c] border border-[#dcb8ff]/40 text-slate-300">
+                  <div class="flex items-center space-x-2.5">
+                    <span class="text-[#dcb8ff] font-extrabold px-1 bg-purple-950/80 rounded border border-[#dcb8ff]/40">
+                      03
                     </span>
-                    <span class="text-[#ff50df] font-bold">+250 CREDITS</span>
+                    <span class="material-symbols-outlined text-xs text-[#dcb8ff]">
+                      military_tech
+                    </span>
+                    <span class="tracking-wider">KAIROS</span>
+                    <span class="text-[10px] text-slate-400 font-normal">
+                      OVERSEER
+                    </span>
                   </div>
-                  <Progress
-                    value={25}
-                    color="pink"
-                    class="h-1.5 shadow-[0_0_8px_#ff50df]"
-                  />
+                  <span class="font-bold text-slate-200 tracking-wider">
+                    198,248
+                  </span>
+                </div>
+
+                {/* 04 */}
+                <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-[#070b18] border border-[rgba(23,42,77,0.85)] text-slate-400">
+                  <div class="flex items-center space-x-2.5">
+                    <span class="text-slate-500 font-bold">04</span>
+                    <span class="tracking-wide text-slate-300">NULLBYTE</span>
+                    <span class="text-[10px] text-slate-500">TITAN</span>
+                  </div>
+                  <span class="text-slate-300">183,991</span>
+                </div>
+
+                {/* 05 */}
+                <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-[#070b18] border border-[rgba(23,42,77,0.85)] text-slate-400">
+                  <div class="flex items-center space-x-2.5">
+                    <span class="text-slate-500 font-bold">05</span>
+                    <span class="tracking-wide text-slate-300">SYNTAX_ERR</span>
+                    <span class="text-[10px] text-slate-500">REAPER</span>
+                  </div>
+                  <span class="text-slate-300">162,483</span>
+                </div>
+
+                {/* Ligne Joueur Actuel (#142) */}
+                <div class="mt-3 flex items-center justify-between px-3 py-2.5 rounded-lg bg-gradient-to-r from-fuchsia-950/40 via-[#0d142e] to-cyan-950/40 border border-[#ff007f] shadow-glow-magenta text-white">
+                  <div class="flex items-center space-x-2.5">
+                    <span class="text-[#ff007f] font-extrabold tracking-wider">
+                      #142
+                    </span>
+                    <span class="font-bold tracking-wider text-pink-100">
+                      YOU [{callsign()}]
+                    </span>
+                  </div>
+                  <span class="text-[#ff007f] font-extrabold tracking-wider">
+                    124,179
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Pied Quêtes */}
-            <div class="pt-3 mt-3 border-t border-[rgba(23,42,77,0.85)] text-[11px] font-mono text-slate-500 flex items-center justify-between">
-              <span>RESETS IN: 04H 21M</span>
-              <span class="text-[#00f0ff] font-bold tracking-wider">
-                [ TIER 4 BONUS ACTIVE ]
+            {/* Pied de Carte Leaderboard */}
+            <div class="pt-4 mt-4 border-t border-[rgba(23,42,77,0.7)] flex items-center justify-between font-mono text-xs">
+              <span class="text-slate-500">
+                YOUR ARENA RANK: <strong class="text-white">#142</strong>
               </span>
+              <a
+                href="#leaderboard"
+                class="inline-flex items-center gap-1.5 font-bold text-[#00f0ff] hover:text-white transition-colors group no-underline"
+              >
+                <span>FULL RANKINGS</span>
+                <span class="transform group-hover:translate-x-1 transition-transform">
+                  →
+                </span>
+              </a>
             </div>
           </Card>
         </section>
