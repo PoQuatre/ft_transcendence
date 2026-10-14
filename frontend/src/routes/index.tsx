@@ -8,8 +8,8 @@ import { Badge, Button, Card, Kbd, Progress } from '~/components/ui';
 //champ de saisie
 const isEditableTarget = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
-    (target.isContentEditable ||
-      ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+  (target.isContentEditable ||
+    ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
 export default function Home() {
   const navigate = useNavigate();
@@ -264,7 +264,12 @@ export default function Home() {
                         }
                         class="bg-transparent border-none text-[#00f0ff] font-bold font-mono text-xs focus:outline-none w-full"
                         maxlength={14}
-                        autofocus
+                        ref={(el) =>
+                          queueMicrotask(() => {
+                            el.focus();
+                            el.select();
+                          })
+                        }
                       />
                       <button
                         type="button"
