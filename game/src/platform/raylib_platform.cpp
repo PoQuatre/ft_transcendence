@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 00:00:00 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/13 22:06:13 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/14 20:05:40 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,12 +102,6 @@ int Platform::height() { return GetRenderHeight(); }
 
 void Platform::update_inputs()
 {
-    if (IsKeyPressed(KEY_H)) {
-        if (IsCursorHidden())
-            ShowCursor();
-        else
-            HideCursor();
-    }
     std::array<KeyboardKey, Keys::KEY_COUNT> checked_keys({
         KeyboardKey::KEY_A,
         KeyboardKey::KEY_S,

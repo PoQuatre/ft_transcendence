@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:41 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/12 19:12:23 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/14 20:08:21 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include <glm/geometric.hpp>
 #include <random>
 
+#include "game/colors.hpp"
 #include "game/platform.hpp"
 #include "game/renderer.hpp"
 

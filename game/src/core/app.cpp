@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:46 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/11 19:32:33 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/14 09:22:03 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,6 +120,10 @@ void App::update_player()
 
 void App::iterate()
 {
+    if (GetScreenHeight() == 0 || GetScreenWidth() == 0) {
+        SPDLOG_INFO("caca mini");
+        return;
+    }
     const double delta_seconds = platform::Platform::delta_seconds();
     platform_.update_inputs();
     update_player();

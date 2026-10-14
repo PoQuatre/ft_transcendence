@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/13 22:03:07 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/14 20:12:11 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 
 #include <glm/geometric.hpp>
 
+#include "game/colors.hpp"
 #include "game/simulation.hpp"
 
 namespace {
@@ -465,7 +466,7 @@ void Renderer::apply_bloom()
 
 void Renderer::draw_grid()
 {
-    const glm::vec2 grid_size { 80.F, 80.F };
+    const glm::vec2 grid_size { 30.F, 30.F };
 
     const int grid_count_y
         = (simulation::map_bounds_.max_y - simulation::map_bounds_.min_y)
@@ -493,42 +494,37 @@ void Renderer::update_camera(simulation::Simulation &sim)
 {
     auto *registry = sim.get_registry();
     const float camera_zoom = 1.5F;
-    const float camera_look_ahead = 0.5F;
+    const auto camera_look_ahead = 0.5F;
     const float max_camera_dist = 100.F;
 
     const auto tank = registry->view<simulation::Tank>().begin();
     const auto &player_transform = registry->get<simulation::Transform>(*tank);
-    const auto &player_tank = registry->get<simulation::Tank>(*tank);
+    // const auto &player_tank = registry->get<simulation::Tank>(*tank);
 
     camera_.offset
         = { .x = GetRenderWidth() / 2.F, .y = GetRenderHeight() / 2.F };
     camera_.rotation = 0;
     camera_.zoom = camera_zoom;
 
+    glm::vec2 player_origin(player_transform.pos.x, player_transform.pos.y);
+
     const Vector2 mouse_screen = GetMousePosition();
     const Vector2 mouse_world_raylib
         = GetScreenToWorld2D(mouse_screen, camera_);
     const glm::vec2 mouse_world(mouse_world_raylib.x, mouse_world_raylib.y);
 
-    glm::vec2 player_origin(player_transform.pos.x
-            + simulation::TankType::origins[player_tank.type].x,
-        player_transform.pos.y
-            + simulation::TankType::origins[player_tank.type].y);
-
-    // Direction from the player's origin toward the cursor.
     const glm::vec2 mouse_delta = mouse_world - player_origin;
     const float distance = glm::length(mouse_delta);
 
-    // Clamp the look-ahead distance.
     const glm::vec2 look_ahead = distance > max_camera_dist
         ? glm::normalize(mouse_delta) * max_camera_dist
         : mouse_delta;
-
     const float delta_time = GetFrameTime();
     const float smoothing = 5.0F;
 
-    // Move the target halfway toward the clamped mouse position.
     glm::vec2 camera_target = player_origin + (camera_look_ahead * look_ahead);
+    if (distance < max_camera_dist)
+        camera_target = player_origin;
 
     camera_target = glm::mix(glm::vec2(camera_.target.x, camera_.target.y),
         camera_target, smoothing * delta_time);
