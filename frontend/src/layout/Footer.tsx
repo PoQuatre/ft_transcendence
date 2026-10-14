@@ -11,12 +11,6 @@ export const Footer: Component = () => {
               SYSTEM STATUS // OPERATIONAL
             </span>
           </div>
-          <span class="text-outline font-label-data text-label-data hidden sm:inline">
-            |
-          </span>
-          <span class="font-label-data text-label-data text-on-surface-variant tracking-wider">
-            BUILD: v2.8.4-PROD
-          </span>
         </div>
 
         <div class="flex items-center gap-space-lg">
