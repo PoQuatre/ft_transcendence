@@ -5,6 +5,12 @@ import { createSignal, onSettled, For, Show } from 'solid-js';
 import { ChassisVector } from '~/components/ChassisVectors';
 import { Badge, Button, Card, Kbd, Progress } from '~/components/ui';
 
+//champ de saisie
+const isEditableTarget = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+
 export default function Home() {
   const navigate = useNavigate();
 
@@ -112,9 +118,11 @@ export default function Home() {
   };
 
   onSettled(() => {
-    // Raccourci Déploiement
+    //Raccourci Déploiement
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && !isEditingCallsign()) handleDeploy();
+      if (e.key !== 'Enter' || isEditingCallsign()) return;
+      if (isEditableTarget(e.target)) return;
+      handleDeploy();
     };
     window.addEventListener('keydown', onKeyDown);
     // Suivi dynamique de la visée tourelle vers la souris (60fps lerp)
