@@ -28,6 +28,8 @@ func RegisterRoutes(group *echo.Group, service Service, sessionManager *scs.Sess
 	group.POST("/signup", h.signup)
 	group.POST("/login", h.login)
 	group.POST("/logout", h.logout)
+	group.POST("/verify-email/request", h.requestEmailVerification)
+	// group.POST("/verify-email/confirm", h.confirmEmailVerification)
 	group.GET("/me", h.me)
 }
 
@@ -44,6 +46,34 @@ func apiError(err error) error {
 	default:
 		return err
 	}
+}
+
+// /api/auth/verify-email/confirm est appele par le front sur le lien genere pas la requete de validation de mail
+// func (h *handler) confirmEmailVerification(c *echo.Context) error {
+// 	// TODO: Set Verified du user en question a true
+// 	return nil
+// }
+
+func (h *handler) requestEmailVerification(c *echo.Context) error {
+	ctx := c.Request().Context()
+	userIDStr := h.sessionManager.GetString(ctx, "user_id")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "invalid session user id")
+	}
+	user, err := h.service.GetUserByID(ctx, userID)
+	if err != nil {
+		return apiError(err)
+	}
+
+	if user.Verified {
+		return echo.NewHTTPError(http.StatusBadRequest, "email already verified")
+	}
+
+	if err := h.service.SendVerificationEmail(ctx, userID, user.Email); err != nil {
+		return apiError(err)
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "email verification sent"})
 }
 
 func (h *handler) signup(c *echo.Context) error {
