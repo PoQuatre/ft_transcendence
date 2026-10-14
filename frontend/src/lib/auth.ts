@@ -95,8 +95,10 @@ import { createRoot, createSignal } from 'solid-js';
 export type AuthUser = { id: string; username: string; email: string };
 
 // 1. Signal d'état global accessible par toute l'application (Header, Lobby, etc.)
+// undefined : session pas encore vérifiée (SSR, ou getMe() en cours).
+// null : vérifiée, personne n'est connecté.
 export const [currentUser, setCurrentUser] = createRoot(() =>
-  createSignal<AuthUser | null>(null),
+  createSignal<AuthUser | null | undefined>(undefined),
 );
 
 async function post(path: string, payload: object): Promise<AuthResult> {
