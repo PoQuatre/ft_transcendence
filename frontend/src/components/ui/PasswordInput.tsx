@@ -1,34 +1,35 @@
-import { type Component, createSignal, omit, Show } from "solid-js";
+import { type Component, createSignal, omit, Show } from 'solid-js';
 
-import { cn } from "~/lib/utils";
+import { cn } from '~/lib/utils';
 
-import { Input, type InputProps } from "./Input";
+import { Input, type InputProps } from './Input';
 
-export type PasswordInputProps = Omit<InputProps, "type">;
+export type PasswordInputProps = Omit<InputProps, 'type'>;
 
 // Input mot de passe avec un œil : barré quand masqué, ouvert quand visible.
 export const PasswordInput: Component<PasswordInputProps> = (props) => {
   const [visible, setVisible] = createSignal(false);
-  const rest = omit(props, "class");
-  const label = () => (visible() ? "Masquer le mot de passe" : "Afficher le mot de passe");
+  const rest = omit(props, 'class');
+  const label = () =>
+    visible() ? 'Masquer le mot de passe' : 'Afficher le mot de passe';
 
   return (
     <div class="relative">
       <Input
         {...rest}
-        type={visible() ? "text" : "password"}
-        class={cn("normal-case pr-12", props.class)}
+        type={visible() ? 'text' : 'password'}
+        class={cn('pr-12', props.class)}
       />
       <button
         type="button"
         aria-label={label()}
-        aria-pressed={visible() ? "true" : "false"}
+        aria-pressed={visible() ? 'true' : 'false'}
         title={label()}
         onClick={() => setVisible((v) => !v)}
         class={cn(
-          "absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center cursor-pointer transition-colors",
-          "hover:text-primary-container focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-container",
-          visible() ? "text-primary-container" : "text-outline",
+          'absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center cursor-pointer transition-colors',
+          'hover:text-primary-container focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-container',
+          visible() ? 'text-primary-container' : 'text-outline',
         )}
       >
         <svg
