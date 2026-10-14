@@ -367,9 +367,6 @@ export default function Home() {
                             <div class="text-[10px] text-slate-400 font-mono mt-0.5">
                               {mode.sub}
                             </div>
-                            <Show when={isActive()}>
-                              <div class="absolute right-1.5 top-1.5 w-1.5 h-1.5 rounded-full bg-[#00f0ff] shadow-[0_0_6px_#00f0ff]" />
-                            </Show>
                           </button>
                         );
                       }}
