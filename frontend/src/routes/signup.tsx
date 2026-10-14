@@ -150,19 +150,18 @@ export default function Signup() {
               aria-describedby="confirm-msg"
               aria-invalid={showConfirm() && !confirmOk() ? 'true' : 'false'}
               onInput={(e) => setConfirm(e.currentTarget.value)}
-              class={cn(
-                showConfirm() &&
-                  (confirmOk() ? 'border-[#39ff14]' : 'border-neon-pink'),
-              )}
+              class={cn(showConfirm() && !confirmOk() && 'border-neon-pink')}
             />
           </label>
           <p
             id="confirm-msg"
             aria-live="polite"
-            class={cn(
+            // Tableau de classes et non cn() : tailwind-merge prend
+            // text-label-data pour une couleur et l'écraserait par la couleur.
+            class={[
               '-mt-space-sm min-h-[14px] font-label-data text-label-data',
               confirmOk() ? 'text-[#39ff14]' : 'text-neon-pink',
-            )}
+            ]}
           >
             <Show when={showConfirm()}>
               {confirmOk()
