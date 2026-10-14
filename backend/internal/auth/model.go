@@ -18,6 +18,7 @@ type User struct {
 	PasswordHash string    `bun:",nullzero,notnull"`
 	CreatedAt    time.Time `bun:",nullzero,notnull,default:current_timestamp"`
 	UpdatedAt    time.Time `bun:",nullzero,notnull,default:current_timestamp"`
+	Verified     bool      `bun:",notnull,default:false"`
 }
 
 var _ bun.BeforeUpdateHook = (*User)(nil)

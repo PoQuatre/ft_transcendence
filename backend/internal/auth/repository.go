@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
@@ -23,6 +24,8 @@ type Repository interface {
 	CreateUser(ctx context.Context, user *User) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
+
+	MarkEmailAsVerified(ctx context.Context, UserID uuid.UUID) error
 }
 
 type bunRepository struct {
@@ -31,6 +34,28 @@ type bunRepository struct {
 
 func NewRepository(db *bun.DB) Repository {
 	return &bunRepository{db: db}
+}
+
+func (r *bunRepository) MarkEmailAsVerified(ctx context.Context, userID uuid.UUID) error {
+	res, err := r.db.NewUpdate().
+		Model((*User)(nil)).
+		Set("verified = ?", true).
+		Where("id = ?", userID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("mark email as verified: %w", err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
 }
 
 func (r *bunRepository) CreateUser(ctx context.Context, user *User) (*User, error) {

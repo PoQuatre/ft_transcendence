@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"os"
 	"strings"
 
 	"github.com/google/uuid"
@@ -27,7 +28,18 @@ func toUserResponse(user *User) *UserResponse {
 		ID:       user.ID.String(),
 		Username: user.Username,
 		Email:    user.Email,
+		Verified: user.Verified,
 	}
+}
+
+func (s *Service) SendVerificationEmail(ctx context.Context, userID uuid.UUID, email string) error {
+	if os.Getenv("ENABLE_EMAILS") != "true" {
+		return s.repo.MarkEmailAsVerified(ctx, userID)
+	}
+
+	// TODO: Envoyer le mail, generer le lien vers la page du front qui fera le post sur /api/auth/verify-email/confirm, je sais pas encore exactement comment faire ca
+	SendMail(email, "transcendance@transcendance.com", "Email verification transcendence", "This is not fully implemented yet.")
+	return nil
 }
 
 func (s *Service) SignUp(ctx context.Context, req SignupRequest) (*UserResponse, error) {
