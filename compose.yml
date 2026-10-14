@@ -158,14 +158,16 @@ services:
       backend:
         condition: service_started
     ports:
-      - 8443:8443/tcp
+      - 127.0.0.1:9443:9443/tcp
     environment:
       BLOCKING_PARANOIA: "2"
       DETECTION_PARANOIA: "2"
       MODSEC_RULE_ENGINE: "On"
+      ACCESSLOG: /dev/null
       SSL_OCSP_STAPLING: "off"
       SSL_CERT_FILE: /run/nginx-tls/server.crt
       SSL_CERT_KEY_FILE: /run/nginx-tls/server.key
+      PROXY_PROTOCOL_PORT: 9443
     volumes:
       - ./nginx/default.conf.template:/etc/nginx/templates/conf.d/default.conf.template:ro,Z
       - ./nginx/tls-reload-entrypoint.sh:/usr/local/bin/tls-reload-entrypoint.sh:ro,Z
@@ -173,6 +175,16 @@ services:
     networks:
       nginx-frontend:
       nginx-backend:
+
+  haproxy:
+    restart: unless-stopped
+    image: docker.io/library/haproxy:3.2-alpine
+    depends_on:
+      nginx:
+        condition: service_started
+    network_mode: host
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro,Z
 
   frontend:
     restart: unless-stopped
