@@ -1,9 +1,10 @@
 import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
-import { createSignal, onSettled, For, Show } from 'solid-js';
+import { createSignal, onSettled, For } from 'solid-js';
 
 import { ChassisVector } from '~/components/ChassisVectors';
 import { Badge, Button, Card, Kbd, Progress } from '~/components/ui';
+import { currentUser } from '~/lib/auth';
 
 //champ de saisie
 const isEditableTarget = (target: EventTarget | null) =>
@@ -11,13 +12,42 @@ const isEditableTarget = (target: EventTarget | null) =>
   (target.isContentEditable ||
     ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
+// Call-sign d'invité : ANONYM_ + 4 hexadécimaux, généré une fois et conservé
+// dans localStorage pour survivre au rechargement.
+const GUEST_CALLSIGN_KEY = 'cybercore.guest-callsign';
+const loadGuestCallsign = () => {
+  try {
+    const saved = localStorage.getItem(GUEST_CALLSIGN_KEY);
+    if (saved) return saved;
+  } catch {
+    // Stockage indisponible (navigation privée, etc.) : on régénère.
+  }
+  const hex = Array.from(crypto.getRandomValues(new Uint8Array(2)), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  )
+    .join('')
+    .toUpperCase();
+  const generated = `ANONYM_${hex}`;
+  try {
+    localStorage.setItem(GUEST_CALLSIGN_KEY, generated);
+  } catch {
+    // Idem : le nom ne sera pas conservé entre deux visites.
+  }
+  return generated;
+};
+
 export default function Home() {
   const navigate = useNavigate();
 
   // --- Signaux d'état ---
-  const [callsign, setCallsign] = createSignal('NEXUS_VIPER');
-  const [isEditingCallsign, setIsEditingCallsign] = createSignal(false);
-  const [tempCallsign, setTempCallsign] = createSignal('NEXUS_VIPER');
+  // Call-sign affiché : le username du compte connecté, sinon le nom d'invité.
+  // Tant que la session n'est pas vérifiée (SSR, getMe() en cours) : « … ».
+  const [guestCallsign, setGuestCallsign] = createSignal('');
+  const callsign = () => {
+    const user = currentUser();
+    if (user === undefined) return '…';
+    return user?.username ?? (guestCallsign() || '…');
+  };
 
   const [selectedMode, setSelectedMode] = createSignal<
     'ffa' | 'tdm' | 'ctf' | 'br'
@@ -107,20 +137,11 @@ export default function Home() {
     }, 800);
   };
 
-  const handleSaveCallsign = () => {
-    const clean = tempCallsign()
-      .trim()
-      .toUpperCase()
-      .replace(/[^A-Z0-9_-]/g, '')
-      .slice(0, 14);
-    if (clean) setCallsign(clean);
-    setIsEditingCallsign(false);
-  };
-
   onSettled(() => {
+    setGuestCallsign(loadGuestCallsign());
     //Raccourci Déploiement
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Enter' || isEditingCallsign()) return;
+      if (e.key !== 'Enter') return;
       if (isEditableTarget(e.target)) return;
       handleDeploy();
     };
@@ -226,59 +247,15 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Saisie Callsign */}
-                  <div class="flex items-center justify-between px-3.5 py-2.5 rounded-lg bg-[#050711] border border-[rgba(23,42,77,0.85)] hover:border-[#00f0ff]/60 transition-all font-mono text-xs">
-                    <Show
-                      when={isEditingCallsign()}
-                      fallback={
-                        <>
-                          <div class="flex items-center space-x-2 text-white">
-                            <span class="text-[#00f0ff] font-bold">[</span>
-                            <span class="font-bold tracking-widest text-[#00f0ff]">
-                              {callsign()}
-                            </span>
-                            <span class="text-[#00f0ff] font-bold">]</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setTempCallsign(callsign());
-                              setIsEditingCallsign(true);
-                            }}
-                            class="text-slate-500 hover:text-[#00f0ff] transition-colors cursor-pointer"
-                            title="Changer le Callsign"
-                          >
-                            <span class="material-symbols-outlined text-sm">
-                              edit_square
-                            </span>
-                          </button>
-                        </>
-                      }
-                    >
-                      <input
-                        type="text"
-                        value={tempCallsign()}
-                        onInput={(e) => setTempCallsign(e.currentTarget.value)}
-                        onKeyDown={(e) =>
-                          e.key === 'Enter' && handleSaveCallsign()
-                        }
-                        class="bg-transparent border-none text-[#00f0ff] font-bold font-mono text-xs focus:outline-none w-full"
-                        maxlength={14}
-                        ref={(el) =>
-                          queueMicrotask(() => {
-                            el.focus();
-                            el.select();
-                          })
-                        }
-                      />
-                      <button
-                        type="button"
-                        onClick={handleSaveCallsign}
-                        class="text-[#39ff14] text-xs font-bold font-mono ml-2 cursor-pointer"
-                      >
-                        OK
-                      </button>
-                    </Show>
+                  {/* Call-sign (lecture seule) */}
+                  <div class="flex items-center px-3.5 py-2.5 rounded-lg bg-[#050711] border border-[rgba(23,42,77,0.85)] font-mono text-xs">
+                    <div class="flex items-center space-x-2 text-white">
+                      <span class="text-[#00f0ff] font-bold">[</span>
+                      <span class="font-bold tracking-widest text-[#00f0ff]">
+                        {callsign()}
+                      </span>
+                      <span class="text-[#00f0ff] font-bold">]</span>
+                    </div>
                   </div>
 
                   {/* Classe Active */}
