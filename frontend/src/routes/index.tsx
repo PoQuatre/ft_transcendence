@@ -515,13 +515,6 @@ export default function Home() {
                       </For>
                     </div>
                   </div>
-                  <a
-                    href="#classes"
-                    class="flex items-center gap-1.5 text-slate-400 hover:text-[#00f0ff] transition-colors font-mono text-[11px] uppercase tracking-wider no-underline"
-                  >
-                    <span>MUTATION MATRIX</span>
-                    <span class="text-xs">⤓</span>
-                  </a>
                 </div>
               </div>
             </div>
