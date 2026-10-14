@@ -1,18 +1,18 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-  --font-sans: "Space Grotesk", sans-serif;
-  --font-mono: "Space Mono", monospace;
+  --font-sans: 'Space Grotesk', sans-serif;
+  --font-mono: 'Space Mono', monospace;
 
   /* Typographies nommées du Design System */
-  --font-display-hero: "Space Grotesk", sans-serif;
-  --font-headline-xl: "Space Grotesk", sans-serif;
-  --font-headline-md: "Space Grotesk", sans-serif;
-  --font-body-lg: "Space Grotesk", sans-serif;
-  --font-body-sm: "Space Grotesk", sans-serif;
-  --font-label-mono-caps: "Space Mono", monospace;
-  --font-label-data: "Space Mono", monospace;
-  --font-stat-counter: "Space Mono", monospace;
+  --font-display-hero: 'Space Grotesk', sans-serif;
+  --font-headline-xl: 'Space Grotesk', sans-serif;
+  --font-headline-md: 'Space Grotesk', sans-serif;
+  --font-body-lg: 'Space Grotesk', sans-serif;
+  --font-body-sm: 'Space Grotesk', sans-serif;
+  --font-label-mono-caps: 'Space Mono', monospace;
+  --font-label-data: 'Space Mono', monospace;
+  --font-stat-counter: 'Space Mono', monospace;
 
   /* Tailles et interlignes du Design System */
   --text-display-hero: 56px;
@@ -138,7 +138,12 @@
 .scanlines {
   background:
     linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.03),
+      rgba(0, 255, 0, 0.01),
+      rgba(0, 0, 255, 0.03)
+    );
   background-size:
     100% 3px,
     6px 100%;
@@ -179,7 +184,14 @@
 }
 
 .clip-chamfer-btn {
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  clip-path: polygon(
+    8px 0,
+    100% 0,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    0 100%,
+    0 8px
+  );
 }
 
 /* ==========================================================================

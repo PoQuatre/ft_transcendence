@@ -1,12 +1,12 @@
-import { cleanup, fireEvent, render, waitFor } from "@solidjs/testing-library";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { cleanup, fireEvent, render, waitFor } from '@solidjs/testing-library';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 const navigate = vi.fn<(to: string) => void>();
-vi.mock("@solidjs/router", () => ({ useNavigate: () => navigate }));
+vi.mock('@solidjs/router', () => ({ useNavigate: () => navigate }));
 
-import Signup from "./signup";
+import Signup from './signup';
 
-const STRONG = "Abcdefgh1!";
+const STRONG = 'Abcdefgh1!';
 
 function field(container: HTMLElement, id: string): HTMLInputElement {
   const input = container.querySelector<HTMLInputElement>(`#${id}`);
@@ -15,14 +15,14 @@ function field(container: HTMLElement, id: string): HTMLInputElement {
 }
 
 function fill(container: HTMLElement, confirm: string) {
-  fireEvent.input(field(container, "username"), {
-    target: { value: "NEXUS_VIPER" },
+  fireEvent.input(field(container, 'username'), {
+    target: { value: 'NEXUS_VIPER' },
   });
-  fireEvent.input(field(container, "email"), {
-    target: { value: "ada@example.com" },
+  fireEvent.input(field(container, 'email'), {
+    target: { value: 'ada@example.com' },
   });
-  fireEvent.input(field(container, "password"), { target: { value: STRONG } });
-  fireEvent.input(field(container, "confirm"), { target: { value: confirm } });
+  fireEvent.input(field(container, 'password'), { target: { value: STRONG } });
+  fireEvent.input(field(container, 'confirm'), { target: { value: confirm } });
 }
 
 afterEach(() => {
@@ -31,59 +31,63 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("<Signup />", () => {
-  test("toggles password visibility with the eye button", async () => {
+describe('<Signup />', () => {
+  test('toggles password visibility with the eye button', async () => {
     const { container, getAllByRole } = render(() => <Signup />);
-    const eye = getAllByRole("button", {
-      name: "Afficher le mot de passe",
+    const eye = getAllByRole('button', {
+      name: 'Afficher le mot de passe',
     })[0]!;
-    expect(field(container, "password").type).toBe("password");
+    expect(field(container, 'password').type).toBe('password');
     fireEvent.click(eye);
-    await waitFor(() => expect(field(container, "password").type).toBe("text"));
-    expect(eye).toHaveAttribute("aria-label", "Masquer le mot de passe");
+    await waitFor(() => expect(field(container, 'password').type).toBe('text'));
+    expect(eye).toHaveAttribute('aria-label', 'Masquer le mot de passe');
   });
 
-  test("blocks submit when confirmation differs", async () => {
+  test('blocks submit when confirmation differs', async () => {
     const fetchMock = vi.fn<typeof fetch>();
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
     const { container, getByRole, findByText } = render(() => <Signup />);
 
-    fill(container, "nope");
-    fireEvent.submit(getByRole("button", { name: /enlist/i }));
+    fill(container, 'nope');
+    fireEvent.submit(getByRole('button', { name: /enlist/i }));
 
-    expect(await findByText("◇ LES MOTS DE PASSE NE CORRESPONDENT PAS")).toBeInTheDocument();
+    expect(
+      await findByText('◇ LES MOTS DE PASSE NE CORRESPONDENT PAS'),
+    ).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(field(container, "confirm")).toHaveAttribute("aria-invalid", "true");
+    expect(field(container, 'confirm')).toHaveAttribute('aria-invalid', 'true');
   });
 
-  test("sends signup without the confirmation, then logs in", async () => {
-    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response("{}", { status: 200 }));
-    vi.stubGlobal("fetch", fetchMock);
+  test('sends signup without the confirmation, then logs in', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
     const { container, getByRole } = render(() => <Signup />);
 
     fill(container, STRONG);
-    fireEvent.submit(getByRole("button", { name: /enlist/i }));
+    fireEvent.submit(getByRole('button', { name: /enlist/i }));
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/'));
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      "/api/auth/signup",
+      '/api/auth/signup',
       expect.objectContaining({
         body: JSON.stringify({
-          username: "NEXUS_VIPER",
-          email: "ada@example.com",
+          username: 'NEXUS_VIPER',
+          email: 'ada@example.com',
           password: STRONG,
         }),
       }),
     );
-    expect(fetchMock.mock.calls[1]?.[0]).toBe("/api/auth/login");
+    expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/auth/login');
   });
 
-  test("shows the backend conflict message", async () => {
+  test('shows the backend conflict message', async () => {
     vi.stubGlobal(
-      "fetch",
+      'fetch',
       vi.fn<typeof fetch>().mockResolvedValue(
-        new Response(JSON.stringify({ message: "username already used" }), {
+        new Response(JSON.stringify({ message: 'username already used' }), {
           status: 409,
         }),
       ),
@@ -91,9 +95,9 @@ describe("<Signup />", () => {
     const { container, getByRole, findByText } = render(() => <Signup />);
 
     fill(container, STRONG);
-    fireEvent.submit(getByRole("button", { name: /enlist/i }));
+    fireEvent.submit(getByRole('button', { name: /enlist/i }));
 
-    expect(await findByText("Call-sign taken")).toBeInTheDocument();
+    expect(await findByText('Call-sign taken')).toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
   });
 });
