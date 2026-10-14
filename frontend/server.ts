@@ -8,6 +8,8 @@ import { Readable } from 'node:stream';
 
 import sirv from 'sirv';
 
+import { clientIPContext } from './src/client-ip-context.js';
+
 type HandleRequest = (request: Request) => Promise<Response>;
 
 const { handleRequest } = (await import(
@@ -91,7 +93,10 @@ const server = createServer(async (req, res) => {
       requestInit.duplex = 'half';
     }
 
-    const response = await handleRequest(new Request(url, requestInit));
+    const response = await clientIPContext.run(
+      headerValue(req.headers['x-forwarded-for']),
+      () => handleRequest(new Request(url, requestInit)),
+    );
 
     res.writeHead(response.status, Object.fromEntries(response.headers));
     if (method === 'HEAD' || !response.body) {
