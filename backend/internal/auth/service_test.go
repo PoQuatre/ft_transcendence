@@ -35,6 +35,16 @@ func (m *mockRepository) CreateUser(ctx context.Context, u *User) (*User, error)
 	return u, nil
 }
 
+func (m *mockRepository) MarkEmailAsVerified(ctx context.Context, id uuid.UUID) error {
+	for _, u := range m.users {
+		if u.ID == id {
+			u.Verified = true
+			return nil
+		}
+	}
+	return ErrNotFound
+}
+
 func (m *mockRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	for _, u := range m.users {
 		if u.ID == id {
