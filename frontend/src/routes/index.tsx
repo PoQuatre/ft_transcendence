@@ -1,61 +1,63 @@
-import { Title } from "@solidjs/meta";
-import { useNavigate } from "@solidjs/router";
-import { createSignal, onSettled, For, Show } from "solid-js";
+import { Title } from '@solidjs/meta';
+import { useNavigate } from '@solidjs/router';
+import { createSignal, onSettled, For, Show } from 'solid-js';
 
-import { ChassisVector } from "~/components/ChassisVectors";
-import { Badge, Button, Card, Kbd, Progress } from "~/components/ui";
+import { ChassisVector } from '~/components/ChassisVectors';
+import { Badge, Button, Card, Kbd, Progress } from '~/components/ui';
 
 export default function Home() {
   const navigate = useNavigate();
 
   // --- Signaux d'état ---
-  const [callsign, setCallsign] = createSignal("NEXUS_VIPER");
+  const [callsign, setCallsign] = createSignal('NEXUS_VIPER');
   const [isEditingCallsign, setIsEditingCallsign] = createSignal(false);
-  const [tempCallsign, setTempCallsign] = createSignal("NEXUS_VIPER");
+  const [tempCallsign, setTempCallsign] = createSignal('NEXUS_VIPER');
 
-  const [selectedMode, setSelectedMode] = createSignal<"ffa" | "tdm" | "ctf" | "br">("ctf");
-  const [subMode, setSubMode] = createSignal<"casual" | "ranked">("ranked");
-  const [activeChassis, setActiveChassis] = createSignal<"STRIKER" | "PHANTOM" | "OVERSEER">(
-    "STRIKER",
-  );
+  const [selectedMode, setSelectedMode] = createSignal<
+    'ffa' | 'tdm' | 'ctf' | 'br'
+  >('ctf');
+  const [subMode, setSubMode] = createSignal<'casual' | 'ranked'>('ranked');
+  const [activeChassis, setActiveChassis] = createSignal<
+    'STRIKER' | 'PHANTOM' | 'OVERSEER'
+  >('STRIKER');
 
   // Palette de couleur du cœur
   const colorOptions = [
     {
-      hex: "#00f0ff",
-      glow: "rgba(0, 240, 255, 0.75)",
-      ref: "#00F0FF",
-      name: "Electric Cyan",
+      hex: '#00f0ff',
+      glow: 'rgba(0, 240, 255, 0.75)',
+      ref: '#00F0FF',
+      name: 'Electric Cyan',
     },
     {
-      hex: "#ff4a8d",
-      glow: "rgba(255, 74, 141, 0.75)",
-      ref: "#FF4A8D",
-      name: "Hot Pink",
+      hex: '#ff4a8d',
+      glow: 'rgba(255, 74, 141, 0.75)',
+      ref: '#FF4A8D',
+      name: 'Hot Pink',
     },
     {
-      hex: "#39ff14",
-      glow: "rgba(57, 255, 20, 0.75)",
-      ref: "#39FF14",
-      name: "Neon Green",
+      hex: '#39ff14',
+      glow: 'rgba(57, 255, 20, 0.75)',
+      ref: '#39FF14',
+      name: 'Neon Green',
     },
     {
-      hex: "#ffb703",
-      glow: "rgba(255, 183, 3, 0.75)",
-      ref: "#FFB703",
-      name: "Electric Amber",
+      hex: '#ffb703',
+      glow: 'rgba(255, 183, 3, 0.75)',
+      ref: '#FFB703',
+      name: 'Electric Amber',
     },
     {
-      hex: "#dcb8ff",
-      glow: "rgba(220, 184, 255, 0.75)",
-      ref: "#DCB8FF",
-      name: "Active Violet",
+      hex: '#dcb8ff',
+      glow: 'rgba(220, 184, 255, 0.75)',
+      ref: '#DCB8FF',
+      name: 'Active Violet',
     },
   ];
   const [selectedColor, setSelectedColor] = createSignal(colorOptions[4]!);
 
   const [deploying, setDeploying] = createSignal(false);
-  const [deployText, setDeployText] = createSignal("DEPLOY [ENTER]");
+  const [deployText, setDeployText] = createSignal('DEPLOY [ENTER]');
 
   // Quêtes journalières réactives
   const [claimedReward, setClaimedReward] = createSignal(false);
@@ -63,20 +65,20 @@ export default function Home() {
   // Descriptions dynamiques des modes
   const modeDetails = {
     ffa: {
-      badge: "FFA SOLO // CONTINUOUS APEX ARENA",
-      desc: "Chaque tank pour soi. Assimilez les orbes, faites évoluer votre châssis et dominez le classement apex.",
+      badge: 'FFA SOLO // CONTINUOUS APEX ARENA',
+      desc: 'Chaque tank pour soi. Assimilez les orbes, faites évoluer votre châssis et dominez le classement apex.',
     },
     tdm: {
-      badge: "SQUAD 4v4 // TACTICAL NODE CONTROL",
-      desc: "Coordonnez vos tirs en escouade. Contrôlez les nœuds régionaux et anéantissez les forces ennemies.",
+      badge: 'SQUAD 4v4 // TACTICAL NODE CONTROL',
+      desc: 'Coordonnez vos tirs en escouade. Contrôlez les nœuds régionaux et anéantissez les forces ennemies.',
     },
     ctf: {
-      badge: "EXTRACTION / HIGH-DENSITY CORE HEIST",
-      desc: "Infiltrez les secteurs hostiles, récupérez les cœurs singuliers haute densité et défendez les sanctuaires d’extraction.",
+      badge: 'EXTRACTION / HIGH-DENSITY CORE HEIST',
+      desc: 'Infiltrez les secteurs hostiles, récupérez les cœurs singuliers haute densité et défendez les sanctuaires d’extraction.',
     },
     br: {
-      badge: "OVERLOAD // SHRINKING PERIMETER ARENA",
-      desc: "Trente blindés déployés. Collectez les composants rares avant que l’orage ionique ne referme le périmètre.",
+      badge: 'OVERLOAD // SHRINKING PERIMETER ARENA',
+      desc: 'Trente blindés déployés. Collectez les composants rares avant que l’orage ionique ne referme le périmètre.',
     },
   };
 
@@ -87,10 +89,10 @@ export default function Home() {
   const handleDeploy = () => {
     if (deploying()) return;
     setDeploying(true);
-    setDeployText("CONNECTING TO ARENA...");
+    setDeployText('CONNECTING TO ARENA...');
 
     setTimeout(() => {
-      setDeployText("WARPING...");
+      setDeployText('WARPING...');
       setTimeout(() => {
         navigate(
           `/game?pilot=${encodeURIComponent(callsign())}&class=${activeChassis()}&color=${encodeURIComponent(selectedColor().hex)}`,
@@ -103,7 +105,7 @@ export default function Home() {
     const clean = tempCallsign()
       .trim()
       .toUpperCase()
-      .replace(/[^A-Z0-9_-]/g, "")
+      .replace(/[^A-Z0-9_-]/g, '')
       .slice(0, 14);
     if (clean) setCallsign(clean);
     setIsEditingCallsign(false);
@@ -112,20 +114,23 @@ export default function Home() {
   onSettled(() => {
     // Raccourci Déploiement
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && !isEditingCallsign()) handleDeploy();
+      if (e.key === 'Enter' && !isEditingCallsign()) handleDeploy();
     };
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener('keydown', onKeyDown);
     // Suivi dynamique de la visée tourelle vers la souris (60fps lerp)
     let currentAngle = 0;
     let targetAngle = 0;
+    const SPRITE_HEADING_OFFSET = Math.PI / 2;
     const onMouseMove = (e: MouseEvent) => {
       if (!tankPivotRef) return;
       const rect = tankPivotRef.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
-      targetAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
+      targetAngle =
+        Math.atan2(e.clientY - centerY, e.clientX - centerX) +
+        SPRITE_HEADING_OFFSET;
     };
-    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener('mousemove', onMouseMove);
     const updateAim = () => {
       if (tankPivotRef) {
         let diff = targetAngle - currentAngle;
@@ -140,8 +145,8 @@ export default function Home() {
     animId = requestAnimationFrame(updateAim);
     // Nettoyage retourné directement (SolidJS 2.0)
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('mousemove', onMouseMove);
       cancelAnimationFrame(animId);
     };
   });
@@ -150,8 +155,8 @@ export default function Home() {
     <div
       class="flex flex-col w-full relative overflow-x-hidden min-h-screen bg-[#050711] text-slate-200"
       style={{
-        "--tank-glow-color": selectedColor().glow,
-        "--tank-stroke-color": selectedColor().hex,
+        '--tank-glow-color': selectedColor().glow,
+        '--tank-stroke-color': selectedColor().hex,
       }}
     >
       <Title>CYBERCORE // Tactical Net Arena</Title>
@@ -178,8 +183,9 @@ export default function Home() {
             ENTER THE <span class="text-[#00f0ff] neon-text-cyan">ARENA</span>
           </h1>
           <p class="font-mono text-slate-400 text-xs md:text-sm max-w-3xl pt-1">
-            High-density real-time tactical geometry. Neutralize hostiles, assimilate radiant cores,
-            and mutate combat chassis along live evolution trees.
+            High-density real-time tactical geometry. Neutralize hostiles,
+            assimilate radiant cores, and mutate combat chassis along live
+            evolution trees.
           </p>
         </section>
 
@@ -199,7 +205,9 @@ export default function Home() {
                   {/* Protocole Pilote */}
                   <div class="flex items-center justify-between font-mono text-[11px] mb-2">
                     <div class="flex items-center gap-1.5 text-slate-400">
-                      <span class="material-symbols-outlined text-xs text-[#00f0ff]">badge</span>
+                      <span class="material-symbols-outlined text-xs text-[#00f0ff]">
+                        badge
+                      </span>
                       <span class="font-bold tracking-wider uppercase">
                         OPERATOR PILOT PROTOCOL
                       </span>
@@ -232,7 +240,9 @@ export default function Home() {
                             class="text-slate-500 hover:text-[#00f0ff] transition-colors cursor-pointer"
                             title="Changer le Callsign"
                           >
-                            <span class="material-symbols-outlined text-sm">edit_square</span>
+                            <span class="material-symbols-outlined text-sm">
+                              edit_square
+                            </span>
                           </button>
                         </>
                       }
@@ -241,7 +251,9 @@ export default function Home() {
                         type="text"
                         value={tempCallsign()}
                         onInput={(e) => setTempCallsign(e.currentTarget.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSaveCallsign()}
+                        onKeyDown={(e) =>
+                          e.key === 'Enter' && handleSaveCallsign()
+                        }
                         class="bg-transparent border-none text-[#00f0ff] font-bold font-mono text-xs focus:outline-none w-full"
                         maxlength={14}
                         autofocus
@@ -262,7 +274,9 @@ export default function Home() {
                       <span class="material-symbols-outlined text-sm text-[#00f0ff]">
                         view_in_ar
                       </span>
-                      <span class="text-slate-400 text-[11px]">CHASSIS CLASS:</span>
+                      <span class="text-slate-400 text-[11px]">
+                        CHASSIS CLASS:
+                      </span>
                     </div>
                     <span class="text-[#00f0ff] font-bold tracking-wider">
                       {activeChassis()} Mk.IV
@@ -272,7 +286,9 @@ export default function Home() {
                   {/* En-tête des Modes */}
                   <div class="mt-4 flex items-center justify-between">
                     <h2 class="text-xs font-mono font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                      <span class="material-symbols-outlined text-sm text-[#00f0ff]">tune</span>
+                      <span class="material-symbols-outlined text-sm text-[#00f0ff]">
+                        tune
+                      </span>
                       SELECT SIMULATION MODE:
                     </h2>
                   </div>
@@ -282,28 +298,28 @@ export default function Home() {
                     <For
                       each={[
                         {
-                          id: "ffa" as const,
-                          label: "FFA SOLO",
-                          sub: "Solo Domination",
-                          icon: "groups_3",
+                          id: 'ffa' as const,
+                          label: 'FFA SOLO',
+                          sub: 'Solo Domination',
+                          icon: 'groups_3',
                         },
                         {
-                          id: "tdm" as const,
-                          label: "SQUAD 4v4",
-                          sub: "Team Combat",
-                          icon: "shield",
+                          id: 'tdm' as const,
+                          label: 'SQUAD 4v4',
+                          sub: 'Team Combat',
+                          icon: 'shield',
                         },
                         {
-                          id: "ctf" as const,
-                          label: "EXTRACTION",
-                          sub: "Objective Hunt",
-                          icon: "flag",
+                          id: 'ctf' as const,
+                          label: 'EXTRACTION',
+                          sub: 'Objective Hunt',
+                          icon: 'flag',
                         },
                         {
-                          id: "br" as const,
-                          label: "OVERLOAD",
-                          sub: "Shrinking Zone",
-                          icon: "warning",
+                          id: 'br' as const,
+                          label: 'OVERLOAD',
+                          sub: 'Shrinking Zone',
+                          icon: 'warning',
                         },
                       ]}
                     >
@@ -314,11 +330,11 @@ export default function Home() {
                             type="button"
                             onClick={() => setSelectedMode(mode.id)}
                             class={[
-                              "group text-left px-3 py-2.5 rounded-lg border transition-all relative overflow-hidden cursor-pointer",
+                              'group text-left px-3 py-2.5 rounded-lg border transition-all relative overflow-hidden cursor-pointer',
                               {
-                                "border-[#00f0ff] bg-[#00f0ff]/15 shadow-[0_0_15px_rgba(0,240,255,0.25)] text-white":
+                                'border-[#00f0ff] bg-[#00f0ff]/15 shadow-[0_0_15px_rgba(0,240,255,0.25)] text-white':
                                   isActive(),
-                                "border-[rgba(23,42,77,0.85)] bg-[#090e1f] text-slate-300 hover:text-white hover:border-[#00f0ff]/60":
+                                'border-[rgba(23,42,77,0.85)] bg-[#090e1f] text-slate-300 hover:text-white hover:border-[#00f0ff]/60':
                                   !isActive(),
                               },
                             ]}
@@ -326,10 +342,10 @@ export default function Home() {
                             <div class="flex items-center justify-between">
                               <span
                                 class={[
-                                  "text-xs font-mono font-bold tracking-wider",
+                                  'text-xs font-mono font-bold tracking-wider',
                                   {
-                                    "text-[#00f0ff]": isActive(),
-                                    "group-hover:text-[#00f0ff]": !isActive(),
+                                    'text-[#00f0ff]': isActive(),
+                                    'group-hover:text-[#00f0ff]': !isActive(),
                                   },
                                 ]}
                               >
@@ -337,10 +353,11 @@ export default function Home() {
                               </span>
                               <span
                                 class={[
-                                  "material-symbols-outlined text-xs",
+                                  'material-symbols-outlined text-xs',
                                   {
-                                    "text-[#00f0ff]": isActive(),
-                                    "text-slate-500 group-hover:text-[#00f0ff]": !isActive(),
+                                    'text-[#00f0ff]': isActive(),
+                                    'text-slate-500 group-hover:text-[#00f0ff]':
+                                      !isActive(),
                                   },
                                 ]}
                               >
@@ -363,13 +380,14 @@ export default function Home() {
                   <div class="mt-4 bg-[#060a17] p-1 rounded-lg border border-[rgba(23,42,77,0.85)] flex items-center">
                     <button
                       type="button"
-                      onClick={() => setSubMode("casual")}
+                      onClick={() => setSubMode('casual')}
                       class={[
-                        "flex-1 py-1.5 text-xs font-mono font-bold rounded text-center transition-all cursor-pointer",
+                        'flex-1 py-1.5 text-xs font-mono font-bold rounded text-center transition-all cursor-pointer',
                         {
-                          "text-[#00f0ff] bg-cyan-950/60 border border-[#00f0ff]/60 shadow-[0_0_10px_rgba(0,240,255,0.25)]":
-                            subMode() === "casual",
-                          "text-slate-400 hover:text-white": subMode() !== "casual",
+                          'text-[#00f0ff] bg-cyan-950/60 border border-[#00f0ff]/60 shadow-[0_0_10px_rgba(0,240,255,0.25)]':
+                            subMode() === 'casual',
+                          'text-slate-400 hover:text-white':
+                            subMode() !== 'casual',
                         },
                       ]}
                     >
@@ -377,13 +395,14 @@ export default function Home() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSubMode("ranked")}
+                      onClick={() => setSubMode('ranked')}
                       class={[
-                        "flex-1 py-1.5 text-xs font-mono font-bold rounded text-center transition-all cursor-pointer",
+                        'flex-1 py-1.5 text-xs font-mono font-bold rounded text-center transition-all cursor-pointer',
                         {
-                          "text-[#00f0ff] bg-cyan-950/60 border border-[#00f0ff]/60 shadow-[0_0_10px_rgba(0,240,255,0.25)]":
-                            subMode() === "ranked",
-                          "text-slate-400 hover:text-white": subMode() !== "ranked",
+                          'text-[#00f0ff] bg-cyan-950/60 border border-[#00f0ff]/60 shadow-[0_0_10px_rgba(0,240,255,0.25)]':
+                            subMode() === 'ranked',
+                          'text-slate-400 hover:text-white':
+                            subMode() !== 'ranked',
                         },
                       ]}
                     >
@@ -413,7 +432,9 @@ export default function Home() {
                   <span class="text-slate-400 tracking-wider">
                     [SYS_DIAG // {activeChassis()} MK.IV]
                   </span>
-                  <span class="text-[#00f0ff] font-bold tracking-wider">AIM LOCK: MOUSE</span>
+                  <span class="text-[#00f0ff] font-bold tracking-wider">
+                    AIM LOCK: MOUSE
+                  </span>
                 </div>
 
                 {/* Viseur Radar & Tank Interactif */}
@@ -452,20 +473,22 @@ export default function Home() {
                   <div class="w-full bg-[#050814] h-1.5 rounded-full overflow-hidden flex gap-0.5">
                     <div
                       class="bg-[#00f0ff] h-full rounded-l transition-all duration-300"
-                      style={{ width: "45%" }}
+                      style={{ width: '45%' }}
                     />
                     <div
                       class="bg-[#ff007f] h-full transition-all duration-300"
-                      style={{ width: "35%" }}
+                      style={{ width: '35%' }}
                     />
                     <div
                       class="bg-[#39ff14] h-full rounded-r transition-all duration-300"
-                      style={{ width: "20%" }}
+                      style={{ width: '20%' }}
                     />
                   </div>
                   <div class="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
                     <span>SHIELDS: 100%</span>
-                    <span class="tracking-widest">CORE REF: {selectedColor().ref}</span>
+                    <span class="tracking-widest">
+                      CORE REF: {selectedColor().ref}
+                    </span>
                   </div>
                 </div>
 
@@ -478,7 +501,8 @@ export default function Home() {
                     <div class="flex items-center gap-2">
                       <For each={colorOptions}>
                         {(col) => {
-                          const isColActive = () => selectedColor().hex === col.hex;
+                          const isColActive = () =>
+                            selectedColor().hex === col.hex;
                           return (
                             <button
                               type="button"
@@ -486,16 +510,18 @@ export default function Home() {
                               onClick={() => setSelectedColor(col)}
                               title={col.name}
                               class={[
-                                "rounded-full relative transition-transform hover:scale-110 focus:outline-none cursor-pointer",
+                                'rounded-full relative transition-transform hover:scale-110 focus:outline-none cursor-pointer',
                                 {
-                                  "w-6 h-6 ring-2 ring-offset-2 ring-offset-[#080d1a]":
+                                  'w-6 h-6 ring-2 ring-offset-2 ring-offset-[#080d1a]':
                                     isColActive(),
-                                  "w-5 h-5": !isColActive(),
+                                  'w-5 h-5': !isColActive(),
                                 },
                               ]}
                               style={{
-                                "background-color": col.hex,
-                                "box-shadow": isColActive() ? `0 0 12px ${col.hex}` : "none",
+                                'background-color': col.hex,
+                                'box-shadow': isColActive()
+                                  ? `0 0 12px ${col.hex}`
+                                  : 'none',
                               }}
                             >
                               <span class="striped-pattern absolute inset-0 rounded-full opacity-40" />
@@ -524,14 +550,21 @@ export default function Home() {
                 disabled={deploying()}
                 class="w-full sm:w-80 py-3.5 px-6 rounded-lg bg-[#00f0ff] hover:bg-cyan-300 text-[#050711] font-extrabold text-sm md:text-base tracking-wider font-mono uppercase shadow-glow-cyan hover:shadow-glow-cyan-lg transform active:scale-95 transition-all flex items-center justify-center gap-3 border border-cyan-100"
               >
-                <span class="material-symbols-outlined font-extrabold text-lg">bolt</span>
+                <span class="material-symbols-outlined font-extrabold text-lg">
+                  bolt
+                </span>
                 <span class="tracking-widest">{deployText()}</span>
               </Button>
               <div class="font-mono text-xs text-slate-400 text-center sm:text-right">
                 <div class="text-slate-300">
-                  LOADOUT: <span class="text-[#00f0ff] font-bold">TWIN-ACCELERATOR // MK.IV</span>
+                  LOADOUT:{' '}
+                  <span class="text-[#00f0ff] font-bold">
+                    TWIN-ACCELERATOR // MK.IV
+                  </span>
                 </div>
-                <div class="text-[11px] text-slate-500">ENCRYPTED CLIENT PROTOCOL // SHA-256</div>
+                <div class="text-[11px] text-slate-500">
+                  ENCRYPTED CLIENT PROTOCOL // SHA-256
+                </div>
               </div>
             </div>
           </Card>
@@ -559,7 +592,9 @@ export default function Home() {
                 <h2 class="text-lg font-bold text-white tracking-wide font-sans">
                   Ranked Free-for-all
                 </h2>
-                <span class="font-mono text-[11px] text-slate-400">GLOBAL TOP 10</span>
+                <span class="font-mono text-[11px] text-slate-400">
+                  GLOBAL TOP 10
+                </span>
               </div>
 
               {/* Liste Top 5 */}
@@ -570,11 +605,17 @@ export default function Home() {
                     <span class="text-[#00f0ff] font-extrabold px-1 bg-cyan-950/80 rounded border border-[#00f0ff]/40">
                       01
                     </span>
-                    <span class="material-symbols-outlined text-xs text-[#00f0ff]">verified</span>
+                    <span class="material-symbols-outlined text-xs text-[#00f0ff]">
+                      verified
+                    </span>
                     <span class="font-bold tracking-wider">NEONVOID</span>
-                    <span class="text-[10px] text-slate-400 font-normal">PHANTOM</span>
+                    <span class="text-[10px] text-slate-400 font-normal">
+                      PHANTOM
+                    </span>
                   </div>
-                  <span class="text-[#00f0ff] font-bold tracking-wider">248,475</span>
+                  <span class="text-[#00f0ff] font-bold tracking-wider">
+                    248,475
+                  </span>
                 </div>
 
                 {/* 02 */}
@@ -583,11 +624,17 @@ export default function Home() {
                     <span class="text-[#ff007f] font-extrabold px-1 bg-fuchsia-950/80 rounded border border-[#ff007f]/40">
                       02
                     </span>
-                    <span class="material-symbols-outlined text-xs text-[#ff007f]">target</span>
+                    <span class="material-symbols-outlined text-xs text-[#ff007f]">
+                      target
+                    </span>
                     <span class="font-bold tracking-wider">V3X_PILOT</span>
-                    <span class="text-[10px] text-slate-400 font-normal">STRIKER</span>
+                    <span class="text-[10px] text-slate-400 font-normal">
+                      STRIKER
+                    </span>
                   </div>
-                  <span class="text-[#ff007f] font-bold tracking-wider">221,840</span>
+                  <span class="text-[#ff007f] font-bold tracking-wider">
+                    221,840
+                  </span>
                 </div>
 
                 {/* 03 */}
@@ -600,9 +647,13 @@ export default function Home() {
                       military_tech
                     </span>
                     <span class="tracking-wider">KAIROS</span>
-                    <span class="text-[10px] text-slate-400 font-normal">OVERSEER</span>
+                    <span class="text-[10px] text-slate-400 font-normal">
+                      OVERSEER
+                    </span>
                   </div>
-                  <span class="font-bold text-slate-200 tracking-wider">198,248</span>
+                  <span class="font-bold text-slate-200 tracking-wider">
+                    198,248
+                  </span>
                 </div>
 
                 {/* 04 */}
@@ -628,10 +679,16 @@ export default function Home() {
                 {/* Ligne Joueur Actuel (#142) */}
                 <div class="mt-3 flex items-center justify-between px-3 py-2.5 rounded-lg bg-gradient-to-r from-fuchsia-950/40 via-[#0d142e] to-cyan-950/40 border border-[#ff007f] shadow-glow-magenta text-white">
                   <div class="flex items-center space-x-2.5">
-                    <span class="text-[#ff007f] font-extrabold tracking-wider">#142</span>
-                    <span class="font-bold tracking-wider text-pink-100">YOU [{callsign()}]</span>
+                    <span class="text-[#ff007f] font-extrabold tracking-wider">
+                      #142
+                    </span>
+                    <span class="font-bold tracking-wider text-pink-100">
+                      YOU [{callsign()}]
+                    </span>
                   </div>
-                  <span class="text-[#ff007f] font-extrabold tracking-wider">124,179</span>
+                  <span class="text-[#ff007f] font-extrabold tracking-wider">
+                    124,179
+                  </span>
                 </div>
               </div>
             </div>
@@ -646,7 +703,9 @@ export default function Home() {
                 class="inline-flex items-center gap-1.5 font-bold text-[#00f0ff] hover:text-white transition-colors group no-underline"
               >
                 <span>FULL RANKINGS</span>
-                <span class="transform group-hover:translate-x-1 transition-transform">→</span>
+                <span class="transform group-hover:translate-x-1 transition-transform">
+                  →
+                </span>
               </a>
             </div>
           </Card>
@@ -659,7 +718,9 @@ export default function Home() {
           <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-[rgba(23,42,77,0.85)] pb-3">
             <div>
               <div class="flex items-center space-x-2">
-                <span class="material-symbols-outlined text-sm text-[#00f0ff]">account_tree</span>
+                <span class="material-symbols-outlined text-sm text-[#00f0ff]">
+                  account_tree
+                </span>
                 <span class="font-mono text-xs font-bold tracking-widest text-[#00f0ff] uppercase">
                   CHASSIS ARCHITECTURE
                 </span>
@@ -669,7 +730,7 @@ export default function Home() {
               </h2>
             </div>
             <div class="font-mono text-xs text-slate-400">
-              OBSERVE REAL-TIME CHASSIS MUTATIONS & COMBAT BRANCHES //{" "}
+              OBSERVE REAL-TIME CHASSIS MUTATIONS & COMBAT BRANCHES //{' '}
               <span class="text-[#00f0ff] font-bold">PROTO-SPEC V4.1</span>
             </div>
           </div>
@@ -678,25 +739,25 @@ export default function Home() {
             <For
               each={[
                 {
-                  id: "STRIKER" as const,
-                  badge: "ASSAULT // MK.IV",
-                  icon: "bolt",
-                  subtitle: "TWIN CANNON",
-                  desc: "High-velocity twin kinetic cannons configured for relentless strafing runs and sustained target lockdown.",
+                  id: 'STRIKER' as const,
+                  badge: 'ASSAULT // MK.IV',
+                  icon: 'bolt',
+                  subtitle: 'TWIN CANNON',
+                  desc: 'High-velocity twin kinetic cannons configured for relentless strafing runs and sustained target lockdown.',
                 },
                 {
-                  id: "PHANTOM" as const,
-                  badge: "STEALTH // INFILTRATOR",
-                  icon: "visibility_off",
-                  subtitle: "PRECISION SPIKE",
-                  desc: "Optical camouflage active cloaking with sudden hyper-damage plasma spikes from behind enemy blind spots.",
+                  id: 'PHANTOM' as const,
+                  badge: 'STEALTH // INFILTRATOR',
+                  icon: 'visibility_off',
+                  subtitle: 'PRECISION SPIKE',
+                  desc: 'Optical camouflage active cloaking with sudden hyper-damage plasma spikes from behind enemy blind spots.',
                 },
                 {
-                  id: "OVERSEER" as const,
-                  badge: "DRONE SWARM // LOGIC",
-                  icon: "hub",
-                  subtitle: "DRONE CONTROL",
-                  desc: "Deploys self-guided micro-drone triangles that harass targets, protect flank angles, and breach enemy shields.",
+                  id: 'OVERSEER' as const,
+                  badge: 'DRONE SWARM // LOGIC',
+                  icon: 'hub',
+                  subtitle: 'DRONE CONTROL',
+                  desc: 'Deploys self-guided micro-drone triangles that harass targets, protect flank angles, and breach enemy shields.',
                 },
               ]}
             >
@@ -707,17 +768,21 @@ export default function Home() {
                     variant="interactive"
                     onClick={() => setActiveChassis(chassis.id)}
                     class={[
-                      "bg-[#090e21] backdrop-blur-md border rounded-xl p-5 shadow-card-inner flex flex-col justify-between relative overflow-hidden group transition-all cursor-pointer",
+                      'bg-[#090e21] backdrop-blur-md border rounded-xl p-5 shadow-card-inner flex flex-col justify-between relative overflow-hidden group transition-all cursor-pointer',
                       {
-                        "border-[#00f0ff] ring-1 ring-[#00f0ff]": isSelected(),
-                        "border-[rgba(23,42,77,0.85)] hover:border-[#00f0ff]/60": !isSelected(),
+                        'border-[#00f0ff] ring-1 ring-[#00f0ff]': isSelected(),
+                        'border-[rgba(23,42,77,0.85)] hover:border-[#00f0ff]/60':
+                          !isSelected(),
                       },
                     ]}
                   >
                     <div class="space-y-4">
                       {/* Badge Haut */}
                       <div class="flex items-center justify-between font-mono text-[11px]">
-                        <Badge variant="default" class="shadow-[0_0_8px_rgba(0,240,255,0.35)]">
+                        <Badge
+                          variant="default"
+                          class="shadow-[0_0_8px_rgba(0,240,255,0.35)]"
+                        >
                           {chassis.badge}
                         </Badge>
                         <span class="material-symbols-outlined text-[#00f0ff] text-sm">
@@ -775,7 +840,9 @@ export default function Home() {
             <div class="flex items-center justify-between border-b border-[rgba(23,42,77,0.85)] pb-2.5">
               <div>
                 <div class="flex items-center space-x-2">
-                  <span class="material-symbols-outlined text-sm text-[#00f0ff]">keyboard</span>
+                  <span class="material-symbols-outlined text-sm text-[#00f0ff]">
+                    keyboard
+                  </span>
                   <span class="font-mono text-xs font-bold text-[#00f0ff] tracking-wider uppercase">
                     KEY MAP TELEMETRY
                   </span>
@@ -784,7 +851,9 @@ export default function Home() {
                   Move. Aim. Evolve.
                 </h2>
               </div>
-              <div class="font-mono text-[10px] text-slate-400">TACTICAL CONTROL SCHEME</div>
+              <div class="font-mono text-[10px] text-slate-400">
+                TACTICAL CONTROL SCHEME
+              </div>
             </div>
 
             {/* Grille des raccourcis Kbd */}
@@ -795,7 +864,11 @@ export default function Home() {
                   <span class="text-[11px] font-bold text-slate-300 font-mono tracking-wide truncate">
                     THRUST / MOVE
                   </span>
-                  <Kbd variant="glow" size="sm" class="shrink-0 whitespace-nowrap">
+                  <Kbd
+                    variant="glow"
+                    size="sm"
+                    class="shrink-0 whitespace-nowrap"
+                  >
                     [ W A S D ]
                   </Kbd>
                 </div>
@@ -810,7 +883,11 @@ export default function Home() {
                   <span class="text-[11px] font-bold text-slate-300 font-mono tracking-wide truncate">
                     AIM TURRET
                   </span>
-                  <Kbd variant="glow" size="sm" class="shrink-0 whitespace-nowrap">
+                  <Kbd
+                    variant="glow"
+                    size="sm"
+                    class="shrink-0 whitespace-nowrap"
+                  >
                     [ MOUSE ]
                   </Kbd>
                 </div>
@@ -825,7 +902,11 @@ export default function Home() {
                   <span class="text-[11px] font-bold text-slate-300 font-mono tracking-wide truncate">
                     UPGRADE HUD
                   </span>
-                  <Kbd variant="glow" size="sm" class="shrink-0 whitespace-nowrap">
+                  <Kbd
+                    variant="glow"
+                    size="sm"
+                    class="shrink-0 whitespace-nowrap"
+                  >
                     [ TAB / ESC ]
                   </Kbd>
                 </div>
@@ -840,12 +921,19 @@ export default function Home() {
                   <span class="text-[11px] font-bold text-slate-300 font-mono tracking-wide">
                     PRIMARY FIRE
                   </span>
-                  <Kbd variant="glow" size="sm" class="shrink-0 whitespace-nowrap">
+                  <Kbd
+                    variant="glow"
+                    size="sm"
+                    class="shrink-0 whitespace-nowrap"
+                  >
                     [ L-CLICK / SPACE ]
                   </Kbd>
                 </div>
                 <div class="mt-2.5">
-                  <Badge variant="success" class="shadow-[0_0_8px_rgba(18,238,131,0.25)]">
+                  <Badge
+                    variant="success"
+                    class="shadow-[0_0_8px_rgba(18,238,131,0.25)]"
+                  >
                     AUTO-FIRE READY
                   </Badge>
                 </div>
@@ -860,7 +948,11 @@ export default function Home() {
                   <span class="text-[11px] font-bold text-slate-300 font-mono tracking-wide truncate">
                     STAT MATRIX
                   </span>
-                  <Kbd variant="glow" size="sm" class="shrink-0 whitespace-nowrap">
+                  <Kbd
+                    variant="glow"
+                    size="sm"
+                    class="shrink-0 whitespace-nowrap"
+                  >
                     [ 1 - 6 ]
                   </Kbd>
                 </div>
@@ -887,7 +979,9 @@ export default function Home() {
               <div class="flex items-center justify-between border-b border-[rgba(23,42,77,0.85)] pb-2.5">
                 <div>
                   <div class="flex items-center space-x-2">
-                    <span class="material-symbols-outlined text-sm text-[#ff007f]">flag</span>
+                    <span class="material-symbols-outlined text-sm text-[#ff007f]">
+                      flag
+                    </span>
                     <span class="font-mono text-xs font-bold text-[#ff007f] tracking-wider uppercase">
                       DAILY CHALLENGES
                     </span>
@@ -909,18 +1003,28 @@ export default function Home() {
                     </span>
                     <span class="text-[#00f0ff] font-bold">[ 3 / 5 ]</span>
                   </div>
-                  <Progress value={60} color="cyan" class="h-1.5 shadow-[0_0_8px_#00f0ff]" />
+                  <Progress
+                    value={60}
+                    color="cyan"
+                    class="h-1.5 shadow-[0_0_8px_#00f0ff]"
+                  />
                 </div>
 
                 {/* Quête 2 (Accomplie avec bouton CLAIM) */}
                 <div class="bg-[#070b19] border border-[rgba(23,42,77,0.85)] rounded-lg p-3 space-y-2">
                   <div class="flex items-center justify-between text-xs font-mono">
-                    <span class="text-slate-200">Core harvester: Absorb 50 radiant pentagons</span>
+                    <span class="text-slate-200">
+                      Core harvester: Absorb 50 radiant pentagons
+                    </span>
                     <span class="text-[#12ee83] font-bold">[ 50 / 50 ]</span>
                   </div>
                   <div class="flex items-center justify-between pt-0.5 gap-3">
                     <div class="w-3/5">
-                      <Progress value={100} color="lime" class="h-1.5 shadow-[0_0_8px_#12ee83]" />
+                      <Progress
+                        value={100}
+                        color="lime"
+                        class="h-1.5 shadow-[0_0_8px_#12ee83]"
+                      />
                     </div>
                     <Button
                       variant="default"
@@ -929,8 +1033,10 @@ export default function Home() {
                       onClick={() => setClaimedReward(true)}
                       class="px-2.5 py-1 text-[10px] font-mono font-bold bg-[#12ee83] hover:bg-[#4affa3] text-[#050711] rounded shadow-[0_0_10px_rgba(18,238,131,0.5)] transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
                     >
-                      <span class="material-symbols-outlined text-[11px]">redeem</span>
-                      {claimedReward() ? "CLAIMED" : "CLAIM REWARD"}
+                      <span class="material-symbols-outlined text-[11px]">
+                        redeem
+                      </span>
+                      {claimedReward() ? 'CLAIMED' : 'CLAIM REWARD'}
                     </Button>
                   </div>
                 </div>
@@ -938,10 +1044,16 @@ export default function Home() {
                 {/* Quête 3 */}
                 <div class="bg-[#070b19] border border-[rgba(23,42,77,0.85)] rounded-lg p-3 space-y-1.5">
                   <div class="flex items-center justify-between text-xs font-mono">
-                    <span class="text-slate-200">Apex predator: Reach top 3 on leaderboard</span>
+                    <span class="text-slate-200">
+                      Apex predator: Reach top 3 on leaderboard
+                    </span>
                     <span class="text-[#ff50df] font-bold">+250 CREDITS</span>
                   </div>
-                  <Progress value={25} color="pink" class="h-1.5 shadow-[0_0_8px_#ff50df]" />
+                  <Progress
+                    value={25}
+                    color="pink"
+                    class="h-1.5 shadow-[0_0_8px_#ff50df]"
+                  />
                 </div>
               </div>
             </div>
@@ -949,7 +1061,9 @@ export default function Home() {
             {/* Pied Quêtes */}
             <div class="pt-3 mt-3 border-t border-[rgba(23,42,77,0.85)] text-[11px] font-mono text-slate-500 flex items-center justify-between">
               <span>RESETS IN: 04H 21M</span>
-              <span class="text-[#00f0ff] font-bold tracking-wider">[ TIER 4 BONUS ACTIVE ]</span>
+              <span class="text-[#00f0ff] font-bold tracking-wider">
+                [ TIER 4 BONUS ACTIVE ]
+              </span>
             </div>
           </Card>
         </section>
