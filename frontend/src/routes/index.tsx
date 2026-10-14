@@ -438,10 +438,7 @@ export default function Home() {
                 <div class="absolute inset-0 striped-pattern opacity-30 pointer-events-none z-20" />
 
                 {/* En-tête télémétrique */}
-                <div class="flex items-center justify-between z-10 font-mono text-[11px]">
-                  <span class="text-slate-400 tracking-wider">
-                    [SYS_DIAG // {activeChassis()} MK.IV]
-                  </span>
+                <div class="flex items-center justify-end z-10 font-mono text-[11px]">
                   <span class="text-[#00f0ff] font-bold tracking-wider">
                     AIM LOCK: MOUSE
                   </span>
@@ -565,17 +562,6 @@ export default function Home() {
                 </span>
                 <span class="tracking-widest">{deployText()}</span>
               </Button>
-              <div class="font-mono text-xs text-slate-400 text-center sm:text-right">
-                <div class="text-slate-300">
-                  LOADOUT:{' '}
-                  <span class="text-[#00f0ff] font-bold">
-                    TWIN-ACCELERATOR // MK.IV
-                  </span>
-                </div>
-                <div class="text-[11px] text-slate-500">
-                  ENCRYPTED CLIENT PROTOCOL // SHA-256
-                </div>
-              </div>
             </div>
           </Card>
 
@@ -695,10 +681,6 @@ export default function Home() {
               <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white uppercase mt-1">
                 VIEW YOUR COMBAT EVOLUTION
               </h2>
-            </div>
-            <div class="font-mono text-xs text-slate-400">
-              OBSERVE REAL-TIME CHASSIS MUTATIONS & COMBAT BRANCHES //{' '}
-              <span class="text-[#00f0ff] font-bold">PROTO-SPEC V4.1</span>
             </div>
           </div>
 
