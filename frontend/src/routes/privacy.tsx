@@ -1,4 +1,4 @@
-import { createSignal, onSettled } from "solid-js";
+import { createSignal, onSettled, For } from "solid-js";
 
 const sans = "font-['Space_Grotesk',sans-serif]";
 const mono = "font-['Space_Mono',monospace]";
@@ -123,14 +123,16 @@ export default function TermOfService() {
                             Summary
                         </p>
                         <ol class={`${mono} text-xs uppercase mt-3 space-y-1`}>
-                            {sections.map((s, i) => (
+                            <For each={sections}>
+                            {(s, i) => (
                                 <li>
                                     <a href={`#${s.id}`} class="flex items-center gap-3 px-2 py-2 rounded-lg text-slate-400 transition-all hover:text-[#00f0ff] hover:bg-[#090e1f]">
-                                        <span class="text-[#00f0ff] font-bold">{String(i + 1).padStart(2, "0")}</span>
+                                        <span class="text-[#00f0ff] font-bold">{String(i() + 1).padStart(2, "0")}</span>
                                         {s.title}
                                     </a>
                                 </li>
-                            ))}
+                            )}
+                            </For>
                         </ol>
                     </nav>
                 </aside>
@@ -144,7 +146,7 @@ export default function TermOfService() {
                             </span>
                         </div>
                         <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white uppercase">
-                            <span class={`text-[#00f0ff] ${neonText}`}>Privacy</span>
+<span class={`text-[#00f0ff] ${neonText}`}>Privacy</span>
                         </h1>
                         <p class={`${mono} text-xs md:text-sm text-slate-400 uppercase`}>
                             Last updated [DATE] // Version 0.1
@@ -152,7 +154,8 @@ export default function TermOfService() {
                     </section>
 
                     <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {highlights.map((h) => (
+                        <For each={highlights}>
+                            {(h, i) => (
                             <div class={`${panel} p-5 transition-all hover:border-[#00f0ff]/50`}>
                                 <h2 class={`${mono} text-[13px] font-bold tracking-widest uppercase text-[#00f0ff] pb-2 flex items-center gap-2`}>
                                     <span class="w-1.5 h-1.5 bg-[#00f0ff] shadow-[0_0_6px_#00f0ff]" />
@@ -160,24 +163,30 @@ export default function TermOfService() {
                                 </h2>
                                 <p class="text-white text-sm leading-relaxed">{h.text}</p>
                             </div>
-                        ))}
-                    </section>
+                            )}
+                        </For>
 
-                    {sections.map((s, i) => (
+                    </section>
+                    <For each={sections}>
+                    {(s, i) => (
                         <section id={s.id} class={`${panel} p-6 sm:p-8 scroll-mt-6`}>
                             <p class={`${mono} text-xs font-bold tracking-widest uppercase text-[#00f0ff] pb-3`}>
-                                {String(i + 1).padStart(2, "0")}
+                                    #{"0" + String(i()+1)}
                             </p>
                             <h2 class="text-2xl font-bold text-white tracking-wide pb-3 border-b border-[rgba(23,42,77,0.85)]">
                                 {s.title}
                             </h2>
                             <div class="mt-4 space-y-3">
-                                {s.paragraphs.map((p) => (
+                                    <For each={s.paragraphs}>
+                                {(p) => (
                                     <p class="text-slate-300 leading-relaxed">{p}</p>
-                                ))}
+                                )}
+                                </For>
                             </div>
                         </section>
-                    ))}
+                    )}
+                    </For>
+
                 </div>
             </div>
 

@@ -347,7 +347,10 @@
     0 0 20px color-mix(in oklab, var(--color-accent-secondary) 35%, transparent);
 }
 
-.scrolled {
-    position: fixed;
-    top: 100px;
+@media (min-width: 1024px)
+{
+    .scrolled {
+        position: fixed;
+        top: 100px;
+    }
 }
