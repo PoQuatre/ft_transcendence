@@ -4,8 +4,6 @@ services:
       MODSEC_RULE_ENGINE: "Off"
 
   vault:
-    ports:
-      - 127.0.0.1:8200:8200
     networks:
       vault-pgweb:
 
