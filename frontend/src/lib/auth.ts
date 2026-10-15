@@ -6,6 +6,8 @@ export type AuthResult =
 
 export type LoginPayload = { email: string; password: string };
 export type SignupPayload = LoginPayload & { username: string };
+export type ProfilePayload = { username?: string; email?: string };
+export type PasswordPayload = { currentPassword: string; newPassword: string };
 
 // Règles de backend/internal/helpers/validator.go (password_complexity).
 export const PASSWORD_RULES = [
@@ -75,18 +77,40 @@ function toError(status: number, message: string): AuthResult {
         title: 'Already enlisted',
         message: 'Cet email ou ce nom est déjà utilisé.',
       };
+    case 'invalid password':
+      return {
+        ok: false,
+        title: 'Access denied',
+        message: 'Mot de passe actuel incorrect.',
+      };
     default:
-      return status === 400
-        ? {
-            ok: false,
-            title: 'Invalid data',
-            message: 'Vérifie les champs du formulaire.',
-          }
-        : {
-            ok: false,
-            title: 'Uplink lost',
-            message: 'Erreur serveur, réessaie plus tard.',
-          };
+      if (status === 400) {
+        return {
+          ok: false,
+          title: 'Invalid data',
+          message: 'Vérifie les champs du formulaire.',
+        };
+      }
+      if (status === 401) {
+        return {
+          ok: false,
+          title: 'Access denied',
+          message: 'Session expirée, reconnecte-toi.',
+        };
+      }
+      // Route pas encore implémentée côté backend.
+      if (status === 404 || status === 405) {
+        return {
+          ok: false,
+          title: 'Module offline',
+          message: "Cette fonction n'est pas encore disponible côté serveur.",
+        };
+      }
+      return {
+        ok: false,
+        title: 'Uplink lost',
+        message: 'Erreur serveur, réessaie plus tard.',
+      };
   }
 }
 
@@ -101,10 +125,16 @@ export const [currentUser, setCurrentUser] = createRoot(() =>
   createSignal<AuthUser | null | undefined>(undefined),
 );
 
-async function post(path: string, payload: object): Promise<AuthResult> {
+type Method = 'POST' | 'PATCH' | 'PUT';
+
+async function send(
+  method: Method,
+  path: string,
+  payload: object,
+): Promise<AuthResult> {
   try {
     const res = await fetch(path, {
-      method: 'POST',
+      method,
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include', // Envoie et reçoit les cookies de session
       body: JSON.stringify(payload),
@@ -119,6 +149,8 @@ async function post(path: string, payload: object): Promise<AuthResult> {
     };
   }
 }
+
+const post = (path: string, payload: object) => send('POST', path, payload);
 
 // 2. Récupération du profil connecté via /api/auth/me
 export async function getMe(): Promise<AuthUser | null> {
@@ -165,4 +197,26 @@ export async function logout(): Promise<void> {
   } finally {
     setCurrentUser(null);
   }
+}
+
+// 6. Profil : PATCH /api/auth/me { username?, email? } -> 200 UserResponse,
+// 400 validation, 409 "username already used" / "email already used".
+// Resynchronise currentUser dès la réussite.
+export async function updateProfile(
+  payload: ProfilePayload,
+): Promise<AuthResult> {
+  const result = await send('PATCH', '/api/auth/me', payload);
+  if (result.ok) await getMe();
+  return result;
+}
+
+// 7. Mot de passe : PUT /api/auth/password { current_password, new_password }
+// -> 204, 401 "invalid password", 400 validation (password_complexity).
+export async function changePassword(
+  payload: PasswordPayload,
+): Promise<AuthResult> {
+  return send('PUT', '/api/auth/password', {
+    current_password: payload.currentPassword,
+    new_password: payload.newPassword,
+  });
 }
