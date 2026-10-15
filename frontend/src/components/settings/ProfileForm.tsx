@@ -1,12 +1,6 @@
-import { type Component, createSignal, Show } from 'solid-js';
+import { type Component, createSignal } from 'solid-js';
 
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  Button,
-  Input,
-} from '~/components/ui';
+import { Button, Input } from '~/components/ui';
 import {
   type AuthUser,
   type ProfilePayload,
@@ -14,26 +8,9 @@ import {
   USERNAME_PATTERN,
 } from '~/lib/auth';
 
-const LABEL =
-  'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-on-surface-variant';
+import { type Feedback, FIELD_LABEL, FormFeedback, text } from './form';
 
 const USERNAME_RE = new RegExp(`^${USERNAME_PATTERN}$`);
-
-// FormData peut renvoyer un File : on ne garde que les chaînes.
-const text = (value: FormDataEntryValue | null) =>
-  typeof value === 'string' ? value.trim() : '';
-
-type Feedback = {
-  kind: 'error' | 'success' | 'info';
-  title: string;
-  message: string;
-};
-
-const ALERT_VARIANT = {
-  error: 'destructive',
-  success: 'success',
-  info: 'cyan',
-} as const;
 
 export type ProfileFormProps = { user: AuthUser };
 
@@ -46,9 +23,9 @@ export const ProfileForm: Component<ProfileFormProps> = (props) => {
 
   const submit = async (form: HTMLFormElement) => {
     const data = new FormData(form);
-    const username = text(data.get('username'));
+    const username = text(data.get('username')).trim();
     // Le backend normalise l'email en minuscules : on compare sur cette base.
-    const email = text(data.get('email')).toLowerCase();
+    const email = text(data.get('email')).trim().toLowerCase();
 
     if (!USERNAME_RE.test(username)) {
       setFeedback({
@@ -103,22 +80,10 @@ export const ProfileForm: Component<ProfileFormProps> = (props) => {
         void submit(event.currentTarget);
       }}
     >
-      <Show when={feedback()}>
-        {(fb) => (
-          <Alert variant={ALERT_VARIANT[fb().kind]}>
-            <span class="font-mono font-bold">
-              {fb().kind === 'error' ? '!' : '◆'}
-            </span>
-            <div>
-              <AlertTitle>{fb().title}</AlertTitle>
-              <AlertDescription>{fb().message}</AlertDescription>
-            </div>
-          </Alert>
-        )}
-      </Show>
+      <FormFeedback feedback={feedback()} />
 
       <label class="block" for="profile-username">
-        <span class={LABEL}>
+        <span class={FIELD_LABEL}>
           CALL-SIGN
           <span class="font-label-data text-label-data text-outline">
             3-30 · a-z A-Z 0-9 _
@@ -135,7 +100,7 @@ export const ProfileForm: Component<ProfileFormProps> = (props) => {
       </label>
 
       <label class="block" for="profile-email">
-        <span class={LABEL}>EMAIL</span>
+        <span class={FIELD_LABEL}>EMAIL</span>
         <Input
           id="profile-email"
           name="email"

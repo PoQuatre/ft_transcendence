@@ -2,10 +2,12 @@ import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
 import { createEffect, Show } from 'solid-js';
 
+import { PasswordForm } from '~/components/settings/PasswordForm';
 import { ProfileForm } from '~/components/settings/ProfileForm';
 import {
   Badge,
   Card,
+  Separator,
   Tabs,
   TabsContent,
   TabsList,
@@ -77,6 +79,8 @@ export default function Settings() {
 
                     <TabsContent value="operator" class="mt-space-md">
                       <ProfileForm user={user()} />
+                      <Separator class="my-space-lg" />
+                      <PasswordForm />
                     </TabsContent>
                     <TabsContent value="combat" class="mt-space-md">
                       <p class="font-label-data text-label-data text-outline">
