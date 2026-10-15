@@ -2,6 +2,7 @@ import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
 import { createEffect, Show } from 'solid-js';
 
+import { ProfileForm } from '~/components/settings/ProfileForm';
 import {
   Badge,
   Card,
@@ -75,9 +76,7 @@ export default function Settings() {
                     </TabsList>
 
                     <TabsContent value="operator" class="mt-space-md">
-                      <p class="font-label-data text-label-data text-outline">
-                        OPERATOR MODULE // PENDING
-                      </p>
+                      <ProfileForm user={user()} />
                     </TabsContent>
                     <TabsContent value="combat" class="mt-space-md">
                       <p class="font-label-data text-label-data text-outline">
