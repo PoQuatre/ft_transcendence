@@ -47,7 +47,7 @@ server {
     ssl_stapling_verify ${SSL_OCSP_STAPLING};
 
     client_max_body_size 1m;
-    include includes/app-routes.conf;
+    include includes_custom/app-routes.conf;
     include includes/location_common.conf;
 }
 
@@ -66,6 +66,6 @@ server {
     ssl_stapling_verify ${SSL_OCSP_STAPLING};
 
     client_max_body_size 1m;
-    include includes/app-routes.conf;
+    include includes_custom/app-routes.conf;
     include includes/location_common.conf;
 }
