@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '~/components/ui';
 // Éléments communs aux formulaires de la page settings.
 
 export const FIELD_LABEL =
-  'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-on-surface-variant';
+  'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-text-secondary';
 
 // FormData peut renvoyer un File : on ne garde que les chaînes, sans les
 // modifier (les espaces sont valides dans un mot de passe).

@@ -39,19 +39,19 @@ export default function Settings() {
           <Show
             when={currentUser()}
             fallback={
-              <p class="text-center font-label-mono-caps text-label-mono-caps text-on-surface-variant">
+              <p class="text-center font-label-mono-caps text-label-mono-caps text-text-secondary">
                 VERIFYING UPLINK…
               </p>
             }
           >
             {(user) => (
               <Card variant="chamfer">
-                <div class="flex items-center justify-between border-b border-surface-container-high/60 px-space-lg py-space-sm">
-                  <span class="font-label-data text-label-data text-outline">
+                <div class="flex items-center justify-between border-b border-border-subtle/60 px-space-lg py-space-sm">
+                  <span class="font-label-data text-label-data text-text-muted">
                     [SYS_CONFIG // {user().username}]
                   </span>
                   <Badge variant="success">
-                    <span class="h-1.5 w-1.5 animate-pulse bg-neon-green" />{' '}
+                    <span class="h-1.5 w-1.5 animate-pulse bg-success-foreground" />{' '}
                     UPLINK
                   </Badge>
                 </div>
@@ -59,11 +59,11 @@ export default function Settings() {
                 <div class="p-space-lg">
                   <h1 class="font-headline-xl text-headline-xl uppercase">
                     Pilot{' '}
-                    <span class="text-primary-container text-glow-cyan">
+                    <span class="text-accent-primary text-glow-cyan">
                       Settings
                     </span>
                   </h1>
-                  <p class="mt-space-xs font-body-sm text-body-sm text-on-surface-variant">
+                  <p class="mt-space-xs font-body-sm text-body-sm text-text-secondary">
                     Paramètres du compte et préférences de combat.
                   </p>
 
@@ -83,7 +83,7 @@ export default function Settings() {
                       <PasswordForm />
                     </TabsContent>
                     <TabsContent value="combat" class="mt-space-md">
-                      <p class="font-label-data text-label-data text-outline">
+                      <p class="font-label-data text-label-data text-text-muted">
                         COMBAT MODULE // PENDING
                       </p>
                     </TabsContent>
