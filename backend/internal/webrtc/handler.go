@@ -17,7 +17,7 @@ func RegisterRoutes(group *echo.Group, server *Server) {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid SDP offer")
 		}
 
-		answer, err := server.Answer(offer)
+		answer, err := server.Answer(c.Request().Context(), offer)
 		if err != nil {
 			if errors.Is(err, errMediaNotSupported) {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
