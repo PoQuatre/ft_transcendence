@@ -10,16 +10,17 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         // Variantes solidcn standard
-        default: 'bg-neon-cyan text-black hover:bg-neon-cyan/80',
-        secondary: 'bg-surface-high text-text-main hover:bg-surface-highest',
-        destructive: 'bg-neon-pink text-white hover:bg-neon-pink/80',
+        default: 'bg-accent-primary text-black hover:bg-accent-primary/80',
+        secondary: 'bg-surface-high text-text-primary hover:bg-surface-highest',
+        destructive:
+          'bg-accent-secondary text-white hover:bg-accent-secondary/80',
         outline:
-          'border border-surface-high bg-transparent hover:bg-surface-high text-text-main',
-        ghost: 'hover:bg-surface-high text-text-main',
-        link: 'text-neon-cyan underline-offset-4 hover:underline',
+          'border border-surface-high bg-transparent hover:bg-surface-high text-text-primary',
+        ghost: 'hover:bg-surface-high text-text-primary',
+        link: 'text-accent-primary underline-offset-4 hover:underline',
         // Variantes Cyberpunk Rider
-        cyan: 'border border-neon-cyan text-neon-cyan glow-cyan hover:bg-neon-cyan hover:text-black clip-chamfer-btn',
-        pink: 'border-neon-pink text-neon-pink glow-pink hover:bg-neon-pink hover:text-white clip-chamfer-btn',
+        cyan: 'border border-accent-primary text-accent-primary glow-cyan hover:bg-accent-primary hover:text-black clip-chamfer-btn',
+        pink: 'border-accent-secondary text-accent-secondary glow-pink hover:bg-accent-secondary hover:text-white clip-chamfer-btn',
       },
       size: {
         default: 'h-10 px-5 py-2',

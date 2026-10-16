@@ -20,11 +20,11 @@ export const Dialog: Component<DialogProps> = (props) => {
             type="button"
             aria-label="Fermer la boîte de dialogue"
             tabindex={-1}
-            class="fixed inset-0 bg-surface-container-lowest/80 backdrop-blur-md transition-opacity cursor-pointer border-0 p-0"
+            class="fixed inset-0 bg-background/80 backdrop-blur-md transition-opacity cursor-pointer border-0 p-0"
             onClick={() => props.onOpenChange(false)}
           />
           {/* Contenu modale Cyber */}
-          <div class="relative z-50 w-full max-w-lg bg-surface-container/95 border border-primary-container/40 p-space-lg rounded-xl shadow-glow-cyan-ambient text-on-surface">
+          <div class="relative z-50 w-full max-w-lg bg-surface-1/95 border border-accent-primary/40 p-space-lg rounded-xl shadow-glow-cyan-ambient text-text-primary">
             {props.children}
           </div>
         </div>
@@ -38,7 +38,7 @@ export const DialogHeader: Component<ComponentProps<'div'>> = (props) => {
   return (
     <div
       class={cn(
-        'flex flex-col gap-1.5 pb-4 border-b border-surface-container-high/40',
+        'flex flex-col gap-1.5 pb-4 border-b border-border-subtle/40',
         props.class,
       )}
       {...rest}
@@ -67,10 +67,7 @@ export const DialogDescription: Component<ComponentProps<'p'>> = (props) => {
   const rest = omit(props, 'class', 'children');
   return (
     <p
-      class={cn(
-        'font-body-sm text-body-sm text-on-surface-variant',
-        props.class,
-      )}
+      class={cn('font-body-sm text-body-sm text-text-secondary', props.class)}
       {...rest}
     >
       {props.children}
@@ -83,7 +80,7 @@ export const DialogFooter: Component<ComponentProps<'div'>> = (props) => {
   return (
     <div
       class={cn(
-        'flex items-center justify-end gap-space-sm pt-4 border-t border-surface-container-high/40',
+        'flex items-center justify-end gap-space-sm pt-4 border-t border-border-subtle/40',
         props.class,
       )}
       {...rest}

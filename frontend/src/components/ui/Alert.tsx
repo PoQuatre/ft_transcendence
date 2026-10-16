@@ -9,13 +9,14 @@ export const alertVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          'bg-surface-container/70 border-surface-container-high/60 text-on-surface',
-        cyan: 'bg-primary-container/10 border-primary-container/40 text-primary shadow-glow-cyan-sm',
+        default: 'bg-surface-1/70 border-border-subtle/60 text-text-primary',
+        cyan: 'bg-accent-primary/10 border-accent-primary/40 text-text-primary shadow-glow-cyan-sm',
         destructive:
-          'bg-error-container/20 border-error/40 text-error shadow-glow-pink-sm',
-        warning: 'bg-neon-amber/10 border-neon-amber/40 text-neon-amber',
-        success: 'bg-neon-green/10 border-neon-green/40 text-neon-green',
+          'bg-error-background/20 border-error-border/40 text-error-foreground shadow-glow-pink-sm',
+        warning:
+          'bg-warning-foreground/10 border-warning-border/40 text-warning-foreground',
+        success:
+          'bg-success-foreground/10 border-success-border/40 text-success-foreground',
       },
     },
     defaultVariants: {
@@ -58,7 +59,7 @@ export const AlertDescription: Component<ComponentProps<'div'>> = (props) => {
   return (
     <div
       class={cn(
-        'font-body-sm text-body-sm text-on-surface-variant leading-relaxed',
+        'font-body-sm text-body-sm text-text-secondary leading-relaxed',
         props.class,
       )}
       {...rest}
