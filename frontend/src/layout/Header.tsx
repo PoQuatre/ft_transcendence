@@ -54,7 +54,7 @@ export const Header: Component = () => {
         <nav class="hidden md:flex items-center space-x-6 font-mono text-xs font-bold tracking-wider uppercase text-text-muted">
           <a
             href={paths()}
-            class="px-3 py-1 rounded bg-accent-primary text-accent-primary-on shadow-glow-cyan no-underline font-extrabold tracking-widest"
+            class="px-3 py-1 rounded-sm bg-accent-primary text-accent-primary-on shadow-glow-cyan no-underline font-extrabold tracking-widest"
           >
             PLAY
           </a>
@@ -103,8 +103,8 @@ export const Header: Component = () => {
             }
           >
             {/* 1. Badge [ONLINE] vert pulsant */}
-            <div class="flex items-center gap-2 px-2.5 py-1 rounded bg-success-background/40 border border-success-border/40">
-              <span class="w-2 h-2 rounded-full bg-success-foreground shadow-glow-green-xs animate-pulse" />
+            <div class="flex items-center gap-2 px-2.5 py-1 rounded-sm bg-success-background/40 border border-success-border/40">
+              <span class="w-2 h-2 rounded-pill bg-success-foreground shadow-glow-green-xs animate-pulse" />
               <span class="text-success-foreground font-bold text-[11px] tracking-widest">
                 [ONLINE]
               </span>
@@ -117,7 +117,7 @@ export const Header: Component = () => {
                 onClick={() => setSettingsOpen(!settingsOpen())}
                 title="Paramètres du pilote"
                 class={[
-                  'p-1.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center',
+                  'p-1.5 rounded-md border transition-all cursor-pointer flex items-center justify-center',
                   {
                     'bg-accent-primary-subtle/70 border-accent-primary text-accent-primary shadow-glow-cyan-md':
                       settingsOpen(),
@@ -140,12 +140,12 @@ export const Header: Component = () => {
                 />
 
                 {/* Boîte du menu */}
-                <div class="absolute right-0 top-full mt-2 w-72 bg-surface-2/95 backdrop-blur-xl border border-border-subtle/90 rounded-xl p-4 shadow-2xl z-50 font-mono space-y-3">
+                <div class="absolute right-0 top-full mt-2 w-72 bg-surface-2/95 backdrop-blur-xl border border-border-subtle/90 rounded-lg p-4 shadow-2xl z-50 font-mono space-y-3">
                   {/* Bouton LOGOUT au-dessus */}
                   <button
                     type="button"
                     onClick={() => void handleLogout()}
-                    class="w-full py-2 px-3 rounded-lg bg-error-background/40 hover:bg-error-background/80 border border-error-border/50 hover:border-error-foreground text-error-foreground font-bold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-glow-pink-sm hover:shadow-glow-pink-md"
+                    class="w-full py-2 px-3 rounded-md bg-error-background/40 hover:bg-error-background/80 border border-error-border/50 hover:border-error-foreground text-error-foreground font-bold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-glow-pink-sm hover:shadow-glow-pink-md"
                   >
                     <span class="material-symbols-outlined text-sm">
                       logout
@@ -161,11 +161,11 @@ export const Header: Component = () => {
                       <span class="tracking-widest uppercase">
                         OPERATOR PROTOCOL
                       </span>
-                      <span class="w-1.5 h-1.5 rounded-full bg-success-foreground shadow-glow-green-xs" />
+                      <span class="w-1.5 h-1.5 rounded-pill bg-success-foreground shadow-glow-green-xs" />
                     </div>
 
                     {/* Pseudo / Call-sign */}
-                    <div class="bg-background border border-border-subtle/85 rounded-lg p-2.5">
+                    <div class="bg-background border border-border-subtle/85 rounded-md p-2.5">
                       <div class="text-[10px] text-text-muted font-bold">
                         CALL-SIGN
                       </div>
@@ -175,7 +175,7 @@ export const Header: Component = () => {
                     </div>
 
                     {/* Email du compte */}
-                    <div class="bg-background border border-border-subtle/85 rounded-lg p-2.5">
+                    <div class="bg-background border border-border-subtle/85 rounded-md p-2.5">
                       <div class="text-[10px] text-text-muted font-bold">
                         EMAIL PILOTE
                       </div>

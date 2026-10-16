@@ -15,7 +15,7 @@ import { cn } from '~/lib/utils';
 type Mode = 'login' | 'signup';
 
 const TAB_BASE =
-  'flex-1 px-space-sm py-space-xs font-label-mono-caps text-label-mono-caps transition-all rounded flex flex-col items-center gap-1 no-underline';
+  'flex-1 px-space-sm py-space-xs font-label-mono-caps text-label-mono-caps transition-all rounded-sm flex flex-col items-center gap-1 no-underline';
 const TAB_ON =
   'bg-accent-primary/20 text-accent-primary font-bold shadow-glow-cyan-sm border border-accent-primary/40';
 const TAB_OFF =
@@ -64,7 +64,7 @@ export const AuthCard: Component<AuthCardProps> = (props) => {
             </p>
 
             {/* Même rendu que TabsList / TabsTrigger, mais en liens : chaque onglet est une route. */}
-            <nav class="mt-space-lg inline-flex w-full items-center gap-1 rounded border border-border-subtle/40 bg-surface-1 p-1">
+            <nav class="mt-space-lg inline-flex w-full items-center gap-1 rounded-sm border border-border-subtle/40 bg-surface-1 p-1">
               <a
                 href="/login"
                 aria-current={isLogin() ? 'page' : undefined}
