@@ -5,7 +5,7 @@ import { type Component, omit } from 'solid-js';
 import { cn } from '~/lib/utils';
 
 export const badgeVariants = cva(
-  'inline-flex items-center gap-1.5 px-2 py-0.5 font-label-mono-caps text-[11px] font-bold uppercase tracking-wider transition-colors',
+  'inline-flex items-center gap-2 px-2 py-1 font-label-mono-caps text-[11px] font-bold uppercase tracking-wider transition-colors',
   {
     variants: {
       variant: {

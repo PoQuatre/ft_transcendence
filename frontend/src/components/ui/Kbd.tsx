@@ -16,7 +16,7 @@ export const kbdVariants = cva(
       },
       size: {
         sm: 'h-5 min-w-[20px] px-1 text-[10px]',
-        default: 'h-6 min-w-[24px] px-1.5 text-xs',
+        default: 'h-6 min-w-[24px] px-2 text-xs',
         lg: 'h-8 min-w-[32px] px-2 text-sm',
       },
     },
