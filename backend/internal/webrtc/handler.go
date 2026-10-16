@@ -1,6 +1,7 @@
 package webrtc
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -29,6 +30,9 @@ func RegisterRoutes(group *echo.Group, server *Server) {
 			case http.StatusServiceUnavailable:
 				slog.Warn("WebRTC service unavailable", "error", err)
 				return echo.NewHTTPError(http.StatusServiceUnavailable, "WebRTC service unavailable")
+			case http.StatusGatewayTimeout:
+				slog.Warn("WebRTC signaling timed out", "error", err)
+				return echo.NewHTTPError(http.StatusGatewayTimeout, "WebRTC signaling timed out")
 			default:
 				slog.Error("answer WebRTC offer", "error", err)
 				return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
@@ -45,6 +49,8 @@ func answerErrorStatus(err error) int {
 		return http.StatusBadRequest
 	case errors.Is(err, errServerClosed):
 		return http.StatusServiceUnavailable
+	case errors.Is(err, context.DeadlineExceeded):
+		return http.StatusGatewayTimeout
 	default:
 		return http.StatusInternalServerError
 	}

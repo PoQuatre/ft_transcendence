@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/pion/ice/v4"
 	pion "github.com/pion/webrtc/v4"
@@ -17,6 +18,8 @@ var (
 	errMediaNotSupported = errors.New("audio and video are not supported")
 	errServerClosed      = errors.New("WebRTC server is closed")
 )
+
+const signalingTimeout = 10 * time.Second
 
 type Server struct {
 	api       *pion.API
@@ -93,6 +96,9 @@ func (s *Server) Close() error {
 }
 
 func (s *Server) Answer(ctx context.Context, offer pion.SessionDescription) (*pion.SessionDescription, error) {
+	ctx, cancel := context.WithTimeout(ctx, signalingTimeout)
+	defer cancel()
+
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
