@@ -38,7 +38,7 @@ export const DialogHeader: Component<ComponentProps<'div'>> = (props) => {
   return (
     <div
       class={cn(
-        'flex flex-col gap-1.5 pb-4 border-b border-border-subtle/40',
+        'flex flex-col gap-2 pb-4 border-b border-border-subtle/40',
         props.class,
       )}
       {...rest}

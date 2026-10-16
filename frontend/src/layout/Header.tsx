@@ -37,7 +37,7 @@ export const Header: Component = () => {
               class="w-9 h-9 object-contain drop-shadow-glow-cyan"
             />
             <div>
-              <div class="flex items-center gap-1.5 font-sans font-extrabold text-sm tracking-wider text-white">
+              <div class="flex items-center gap-2 font-sans font-extrabold text-sm tracking-wider text-white">
                 <span>TRANSCEDANCE</span>
                 <span class="text-accent-primary">ARENA</span>
               </div>
@@ -103,7 +103,7 @@ export const Header: Component = () => {
             }
           >
             {/* 1. Badge [ONLINE] vert pulsant */}
-            <div class="flex items-center gap-2 px-2.5 py-1 rounded-sm bg-success-background/40 border border-success-border/40">
+            <div class="flex items-center gap-2 px-3 py-1 rounded-sm bg-success-background/40 border border-success-border/40">
               <span class="w-2 h-2 rounded-pill bg-success-foreground shadow-glow-green-xs animate-pulse" />
               <span class="text-success-foreground font-bold text-[11px] tracking-widest">
                 [ONLINE]
@@ -117,7 +117,7 @@ export const Header: Component = () => {
                 onClick={() => setSettingsOpen(!settingsOpen())}
                 title="Paramètres du pilote"
                 class={[
-                  'p-1.5 rounded-md border transition-all cursor-pointer flex items-center justify-center',
+                  'p-2 rounded-md border transition-all cursor-pointer flex items-center justify-center',
                   {
                     'bg-accent-primary-subtle/70 border-accent-primary text-accent-primary shadow-glow-cyan-md':
                       settingsOpen(),
@@ -165,21 +165,21 @@ export const Header: Component = () => {
                     </div>
 
                     {/* Pseudo / Call-sign */}
-                    <div class="bg-background border border-border-subtle/85 rounded-md p-2.5">
+                    <div class="bg-background border border-border-subtle/85 rounded-md p-3">
                       <div class="text-[10px] text-text-muted font-bold">
                         CALL-SIGN
                       </div>
-                      <div class="text-sm font-bold text-accent-primary tracking-wider truncate mt-0.5">
+                      <div class="text-sm font-bold text-accent-primary tracking-wider truncate mt-1">
                         {currentUser()?.username}
                       </div>
                     </div>
 
                     {/* Email du compte */}
-                    <div class="bg-background border border-border-subtle/85 rounded-md p-2.5">
+                    <div class="bg-background border border-border-subtle/85 rounded-md p-3">
                       <div class="text-[10px] text-text-muted font-bold">
                         EMAIL PILOTE
                       </div>
-                      <div class="text-xs text-text-secondary truncate mt-0.5">
+                      <div class="text-xs text-text-secondary truncate mt-1">
                         {currentUser()?.email}
                       </div>
                     </div>
