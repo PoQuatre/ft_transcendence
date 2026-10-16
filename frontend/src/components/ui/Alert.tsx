@@ -5,7 +5,7 @@ import { type Component, omit } from 'solid-js';
 import { cn } from '~/lib/utils';
 
 export const alertVariants = cva(
-  'relative w-full rounded-xl p-space-md border backdrop-blur-md flex items-start gap-space-sm',
+  'relative w-full rounded-lg p-space-md border backdrop-blur-md flex items-start gap-space-sm',
   {
     variants: {
       variant: {

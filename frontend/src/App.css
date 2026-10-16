@@ -44,6 +44,13 @@
   --text-stat-counter--line-height: 22px;
   --text-stat-counter--letter-spacing: -0.02em;
 
+  /* Rayons (Figma 04) : sm = petits contrôles, md = boutons et champs,
+     lg = cartes et dialogs, pill = badges. */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+
   /* Espacements tactiques du Design System */
   --spacing-space-xs: 0.25rem;
   --spacing-space-sm: 0.5rem;

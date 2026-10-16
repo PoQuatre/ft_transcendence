@@ -24,7 +24,7 @@ export const Dialog: Component<DialogProps> = (props) => {
             onClick={() => props.onOpenChange(false)}
           />
           {/* Contenu modale Cyber */}
-          <div class="relative z-50 w-full max-w-lg bg-surface-1/95 border border-accent-primary/40 p-space-lg rounded-xl shadow-glow-cyan-ambient text-text-primary">
+          <div class="relative z-50 w-full max-w-lg bg-surface-1/95 border border-accent-primary/40 p-space-lg rounded-lg shadow-glow-cyan-ambient text-text-primary">
             {props.children}
           </div>
         </div>

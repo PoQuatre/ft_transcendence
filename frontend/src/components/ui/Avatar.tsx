@@ -16,7 +16,7 @@ export const Avatar: Component<AvatarProps> = (props) => {
   return (
     <div
       class={cn(
-        'relative flex h-8 w-8 shrink-0 overflow-hidden rounded-full border border-accent-primary/40 bg-surface-1 shadow-glow-cyan-sm',
+        'relative flex h-8 w-8 shrink-0 overflow-hidden rounded-pill border border-accent-primary/40 bg-surface-1 shadow-glow-cyan-sm',
         props.class,
       )}
       {...rest}

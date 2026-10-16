@@ -5,7 +5,7 @@ export const Ticker: Component = () => {
     <div class="relative z-10 w-full bg-surface-1/90 backdrop-blur-md px-margin py-space-xs flex items-center justify-between overflow-x-auto shadow-sm border-b border-border-subtle/30">
       <div class="flex items-center gap-space-lg min-w-max">
         <div class="flex items-center gap-space-xs">
-          <span class="w-2 h-2 rounded-full bg-success-foreground animate-ping" />
+          <span class="w-2 h-2 rounded-pill bg-success-foreground animate-ping" />
           <span class="font-label-mono-caps text-label-mono-caps text-text-primary tracking-widest">
             NETWORK: PRIME [ONLINE]
           </span>

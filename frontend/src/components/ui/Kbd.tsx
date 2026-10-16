@@ -5,7 +5,7 @@ import { type Component, omit } from 'solid-js';
 import { cn } from '~/lib/utils';
 
 export const kbdVariants = cva(
-  'inline-flex items-center justify-center font-mono font-bold uppercase rounded border select-none transition-colors',
+  'inline-flex items-center justify-center font-mono font-bold uppercase rounded-sm border select-none transition-colors',
   {
     variants: {
       variant: {

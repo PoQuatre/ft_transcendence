@@ -192,9 +192,9 @@ export default function Home() {
 
       {/* Arrière-plans d'ambiance et grille tactique */}
       <div class="fixed inset-0 tactical-grid pointer-events-none opacity-80 z-0" />
-      <div class="fixed -top-40 -left-32 w-96 h-96 bg-accent-primary/15 rounded-full blur-3xl pointer-events-none" />
-      <div class="fixed top-1/3 -right-40 w-96 h-96 bg-accent-secondary/15 rounded-full blur-3xl pointer-events-none" />
-      <div class="fixed -bottom-40 left-1/3 w-96 h-96 bg-accent-secondary/10 rounded-full blur-3xl pointer-events-none" />
+      <div class="fixed -top-40 -left-32 w-96 h-96 bg-accent-primary/15 rounded-pill blur-3xl pointer-events-none" />
+      <div class="fixed top-1/3 -right-40 w-96 h-96 bg-accent-secondary/15 rounded-pill blur-3xl pointer-events-none" />
+      <div class="fixed -bottom-40 left-1/3 w-96 h-96 bg-accent-secondary/10 rounded-pill blur-3xl pointer-events-none" />
 
       {/* Conteneur principal */}
       <div class="relative z-10 max-w-7xl mx-auto px-4 lg:px-8 py-7 space-y-7">
@@ -226,7 +226,7 @@ export default function Home() {
           {/* CARTE GAUCHE : SÉLECTEUR DE MODE & RADAR (8 colonnes) */}
           <Card
             variant="default"
-            class="lg:col-span-8 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-xl p-5 sm:p-6 shadow-card-inner flex flex-col justify-between"
+            class="lg:col-span-8 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-5 sm:p-6 shadow-card-inner flex flex-col justify-between"
           >
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Colonne commandes modes (6 cols internes) */}
@@ -243,13 +243,13 @@ export default function Home() {
                       </span>
                     </div>
                     <div class="flex items-center gap-1.5 text-success-foreground font-bold">
-                      <span class="w-1.5 h-1.5 rounded-full bg-success-foreground shadow-glow-green-xs" />
+                      <span class="w-1.5 h-1.5 rounded-pill bg-success-foreground shadow-glow-green-xs" />
                       <span>12,482 PILOTS</span>
                     </div>
                   </div>
 
                   {/* Call-sign (lecture seule) */}
-                  <div class="flex items-center px-3.5 py-2.5 rounded-lg bg-background border border-border-subtle/85 font-mono text-xs">
+                  <div class="flex items-center px-3.5 py-2.5 rounded-md bg-background border border-border-subtle/85 font-mono text-xs">
                     <div class="flex items-center space-x-2 text-white">
                       <span class="text-accent-primary font-bold">[</span>
                       <span class="font-bold tracking-widest text-accent-primary">
@@ -260,7 +260,7 @@ export default function Home() {
                   </div>
 
                   {/* Classe Active */}
-                  <div class="mt-3 px-3 py-2 rounded-lg bg-surface-1 border border-border-subtle/85 flex items-center justify-between font-mono text-xs">
+                  <div class="mt-3 px-3 py-2 rounded-md bg-surface-1 border border-border-subtle/85 flex items-center justify-between font-mono text-xs">
                     <div class="flex items-center gap-2">
                       <span class="material-symbols-outlined text-sm text-accent-primary">
                         view_in_ar
@@ -321,7 +321,7 @@ export default function Home() {
                             type="button"
                             onClick={() => setSelectedMode(mode.id)}
                             class={[
-                              'group text-left px-3 py-2.5 rounded-lg border transition-all relative overflow-hidden cursor-pointer',
+                              'group text-left px-3 py-2.5 rounded-md border transition-all relative overflow-hidden cursor-pointer',
                               {
                                 'border-accent-primary bg-accent-primary/15 shadow-glow-cyan-md text-white':
                                   isActive(),
@@ -366,12 +366,12 @@ export default function Home() {
                   </div>
 
                   {/* Commutateur Casual vs Ranked */}
-                  <div class="mt-4 bg-surface-1 p-1 rounded-lg border border-border-subtle/85 flex items-center">
+                  <div class="mt-4 bg-surface-1 p-1 rounded-md border border-border-subtle/85 flex items-center">
                     <button
                       type="button"
                       onClick={() => setSubMode('casual')}
                       class={[
-                        'flex-1 py-1.5 text-xs font-mono font-bold rounded text-center transition-all cursor-pointer',
+                        'flex-1 py-1.5 text-xs font-mono font-bold rounded-sm text-center transition-all cursor-pointer',
                         {
                           'text-accent-primary bg-accent-primary-subtle/60 border border-accent-primary/60 shadow-glow-cyan-sm':
                             subMode() === 'casual',
@@ -386,7 +386,7 @@ export default function Home() {
                       type="button"
                       onClick={() => setSubMode('ranked')}
                       class={[
-                        'flex-1 py-1.5 text-xs font-mono font-bold rounded text-center transition-all cursor-pointer',
+                        'flex-1 py-1.5 text-xs font-mono font-bold rounded-sm text-center transition-all cursor-pointer',
                         {
                           'text-accent-primary bg-accent-primary-subtle/60 border border-accent-primary/60 shadow-glow-cyan-sm':
                             subMode() === 'ranked',
@@ -413,7 +413,7 @@ export default function Home() {
               </div>
 
               {/* Colonne droite HUD Radar (6 cols internes) */}
-              <div class="md:col-span-6 flex flex-col justify-between bg-surface-2 rounded-xl border border-border-subtle/85 p-4 relative overflow-hidden">
+              <div class="md:col-span-6 flex flex-col justify-between bg-surface-2 rounded-lg border border-border-subtle/85 p-4 relative overflow-hidden">
                 <div class="absolute inset-0 striped-pattern opacity-30 pointer-events-none z-20" />
 
                 {/* En-tête télémétrique */}
@@ -425,9 +425,9 @@ export default function Home() {
 
                 {/* Viseur Radar & Tank Interactif */}
                 <div class="relative w-full aspect-square max-w-[250px] mx-auto my-1 flex items-center justify-center">
-                  <div class="absolute inset-2 rounded-full border border-accent-primary-subtle/70 pointer-events-none" />
-                  <div class="absolute inset-6 rounded-full border border-accent-primary-pressed/40 pointer-events-none" />
-                  <div class="absolute inset-10 rounded-full border border-accent-primary-pressed/40 border-dashed pointer-events-none" />
+                  <div class="absolute inset-2 rounded-pill border border-accent-primary-subtle/70 pointer-events-none" />
+                  <div class="absolute inset-6 rounded-pill border border-accent-primary-pressed/40 pointer-events-none" />
+                  <div class="absolute inset-10 rounded-pill border border-accent-primary-pressed/40 border-dashed pointer-events-none" />
 
                   {/* Pivot de rotation vers la souris */}
                   <div
@@ -458,9 +458,9 @@ export default function Home() {
                       <strong class="text-success-foreground ml-1">74%</strong>
                     </span>
                   </div>
-                  <div class="w-full bg-surface-1 h-1.5 rounded-full overflow-hidden flex gap-0.5">
+                  <div class="w-full bg-surface-1 h-1.5 rounded-pill overflow-hidden flex gap-0.5">
                     <div
-                      class="bg-accent-primary h-full rounded-l transition-all duration-300"
+                      class="bg-accent-primary h-full rounded-l-sm transition-all duration-300"
                       style={{ width: '45%' }}
                     />
                     <div
@@ -468,7 +468,7 @@ export default function Home() {
                       style={{ width: '35%' }}
                     />
                     <div
-                      class="bg-success-foreground h-full rounded-r transition-all duration-300"
+                      class="bg-success-foreground h-full rounded-r-sm transition-all duration-300"
                       style={{ width: '20%' }}
                     />
                   </div>
@@ -498,7 +498,7 @@ export default function Home() {
                               onClick={() => setSelectedColor(col)}
                               title={col.name}
                               class={[
-                                'rounded-full relative transition-transform hover:scale-110 focus:outline-none cursor-pointer',
+                                'rounded-pill relative transition-transform hover:scale-110 focus:outline-none cursor-pointer',
                                 {
                                   'w-6 h-6 ring-2 ring-offset-2 ring-offset-surface-2':
                                     isColActive(),
@@ -512,7 +512,7 @@ export default function Home() {
                                   : 'none',
                               }}
                             >
-                              <span class="striped-pattern absolute inset-0 rounded-full opacity-40" />
+                              <span class="striped-pattern absolute inset-0 rounded-pill opacity-40" />
                             </button>
                           );
                         }}
@@ -529,7 +529,7 @@ export default function Home() {
                 variant="default"
                 onClick={handleDeploy}
                 disabled={deploying()}
-                class="w-full sm:w-80 py-3.5 px-6 rounded-lg bg-accent-primary hover:bg-accent-primary-hover text-accent-primary-on font-extrabold text-sm md:text-base tracking-wider font-mono uppercase shadow-glow-cyan hover:shadow-glow-cyan-lg transform active:scale-95 transition-all flex items-center justify-center gap-3 border border-accent-primary-hover"
+                class="w-full sm:w-80 py-3.5 px-6 rounded-md bg-accent-primary hover:bg-accent-primary-hover text-accent-primary-on font-extrabold text-sm md:text-base tracking-wider font-mono uppercase shadow-glow-cyan hover:shadow-glow-cyan-lg transform active:scale-95 transition-all flex items-center justify-center gap-3 border border-accent-primary-hover"
               >
                 <span class="material-symbols-outlined font-extrabold text-lg">
                   bolt
@@ -542,7 +542,7 @@ export default function Home() {
           {/* CARTE DROITE : DAILY CHALLENGES (4 colonnes) */}
           <Card
             variant="default"
-            class="lg:col-span-4 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-xl p-5 sm:p-6 shadow-card-inner flex flex-col justify-between"
+            class="lg:col-span-4 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-5 sm:p-6 shadow-card-inner flex flex-col justify-between"
           >
             <div>
               {/* En-tête Défis */}
@@ -566,7 +566,7 @@ export default function Home() {
               {/* Liste des Quêtes */}
               <div class="mt-4 space-y-3">
                 {/* Quête 1 */}
-                <div class="bg-surface-1 border border-border-subtle/85 rounded-lg p-3 space-y-1.5">
+                <div class="bg-surface-1 border border-border-subtle/85 rounded-md p-3 space-y-1.5">
                   <div class="flex items-center justify-between text-xs font-mono">
                     <span class="text-text-primary">
                       First strike: Destroy 5 predator tanks in FFA
@@ -581,7 +581,7 @@ export default function Home() {
                 </div>
 
                 {/* Quête 2 (Accomplie avec bouton CLAIM) */}
-                <div class="bg-surface-1 border border-border-subtle/85 rounded-lg p-3 space-y-2">
+                <div class="bg-surface-1 border border-border-subtle/85 rounded-md p-3 space-y-2">
                   <div class="flex items-center justify-between text-xs font-mono">
                     <span class="text-text-primary">
                       Core harvester: Absorb 50 radiant pentagons
@@ -603,7 +603,7 @@ export default function Home() {
                       size="sm"
                       disabled={claimedReward()}
                       onClick={() => setClaimedReward(true)}
-                      class="px-2.5 py-1 text-[10px] font-mono font-bold bg-success-foreground hover:bg-success-foreground/80 text-accent-primary-on rounded shadow-glow-green-sm transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
+                      class="px-2.5 py-1 text-[10px] font-mono font-bold bg-success-foreground hover:bg-success-foreground/80 text-accent-primary-on rounded-sm shadow-glow-green-sm transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
                     >
                       <span class="material-symbols-outlined text-[11px]">
                         redeem
@@ -614,7 +614,7 @@ export default function Home() {
                 </div>
 
                 {/* Quête 3 */}
-                <div class="bg-surface-1 border border-border-subtle/85 rounded-lg p-3 space-y-1.5">
+                <div class="bg-surface-1 border border-border-subtle/85 rounded-md p-3 space-y-1.5">
                   <div class="flex items-center justify-between text-xs font-mono">
                     <span class="text-text-primary">
                       Apex predator: Reach top 3 on leaderboard
@@ -695,7 +695,7 @@ export default function Home() {
                     variant="interactive"
                     onClick={() => setActiveChassis(chassis.id)}
                     class={[
-                      'bg-surface-2 backdrop-blur-md border rounded-xl p-5 shadow-card-inner flex flex-col justify-between relative overflow-hidden group transition-all cursor-pointer',
+                      'bg-surface-2 backdrop-blur-md border rounded-lg p-5 shadow-card-inner flex flex-col justify-between relative overflow-hidden group transition-all cursor-pointer',
                       {
                         'border-accent-primary ring-1 ring-focus-primary':
                           isSelected(),
@@ -716,10 +716,10 @@ export default function Home() {
                       </div>
 
                       {/* Baie d'illustration Vectorielle */}
-                      <div class="relative w-full aspect-[4/3] rounded-lg bg-surface-1 border border-border-subtle/85 group-hover:border-accent-primary/40 flex items-center justify-center overflow-hidden transition-colors">
+                      <div class="relative w-full aspect-[4/3] rounded-md bg-surface-1 border border-border-subtle/85 group-hover:border-accent-primary/40 flex items-center justify-center overflow-hidden transition-colors">
                         <div class="absolute inset-0 tactical-grid opacity-50 pointer-events-none" />
-                        <div class="absolute inset-4 rounded-full border border-accent-primary/20 pointer-events-none" />
-                        <div class="absolute inset-10 rounded-full border border-accent-primary/30 border-dashed pointer-events-none" />
+                        <div class="absolute inset-4 rounded-pill border border-accent-primary/20 pointer-events-none" />
+                        <div class="absolute inset-10 rounded-pill border border-accent-primary/30 border-dashed pointer-events-none" />
 
                         <div class="relative z-10 w-28 h-28 flex items-center justify-center">
                           <ChassisVector
@@ -760,7 +760,7 @@ export default function Home() {
           {/* CARTE GAUCHE : CONTRÔLES TACTIQUES (7 colonnes) */}
           <Card
             variant="default"
-            class="lg:col-span-7 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-xl p-5 sm:p-6 shadow-card-inner space-y-4"
+            class="lg:col-span-7 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-5 sm:p-6 shadow-card-inner space-y-4"
           >
             <div class="flex items-center justify-between border-b border-border-subtle/85 pb-2.5">
               <div>
@@ -784,7 +784,7 @@ export default function Home() {
             {/* Grille des raccourcis Kbd */}
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 font-mono">
               {/* 1. THRUST */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-lg p-3 sm:p-3.5 transition-colors flex flex-col justify-between">
+              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-3.5 transition-colors flex flex-col justify-between">
                 <div class="flex items-center justify-between gap-1 w-full">
                   <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
                     THRUST / MOVE
@@ -803,7 +803,7 @@ export default function Home() {
               </div>
 
               {/* 2. AIM TURRET */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-lg p-3 sm:p-3.5 transition-colors flex flex-col justify-between">
+              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-3.5 transition-colors flex flex-col justify-between">
                 <div class="flex items-center justify-between gap-1 w-full">
                   <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
                     AIM TURRET
@@ -822,7 +822,7 @@ export default function Home() {
               </div>
 
               {/* 3. UPGRADE HUD */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-lg p-3 sm:p-3.5 transition-colors flex flex-col justify-between">
+              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-3.5 transition-colors flex flex-col justify-between">
                 <div class="flex items-center justify-between gap-1 w-full">
                   <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
                     UPGRADE HUD
@@ -841,7 +841,7 @@ export default function Home() {
               </div>
 
               {/* 4. PRIMARY FIRE (spans 2 cols on md) */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-lg p-3 sm:p-3.5 transition-colors md:col-span-2 flex flex-col justify-between">
+              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-3.5 transition-colors md:col-span-2 flex flex-col justify-between">
                 <div class="flex items-center justify-between gap-2 w-full">
                   <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide">
                     PRIMARY FIRE
@@ -865,7 +865,7 @@ export default function Home() {
               </div>
 
               {/* 5. STAT MATRIX */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-lg p-3 sm:p-3.5 transition-colors flex flex-col justify-between">
+              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-3.5 transition-colors flex flex-col justify-between">
                 <div class="flex items-center justify-between gap-1 w-full">
                   <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
                     STAT MATRIX
@@ -886,7 +886,7 @@ export default function Home() {
 
             {/* Détection Manette */}
             <div class="pt-2 text-[11px] font-mono text-text-muted flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-accent-primary shadow-glow-cyan animate-pulse" />
+              <span class="w-2 h-2 rounded-pill bg-accent-primary shadow-glow-cyan animate-pulse" />
               <span>CONTROLLER: DETECTED (DUAL ANALOG OVERDRIVE ACTIVE)</span>
             </div>
           </Card>
@@ -894,7 +894,7 @@ export default function Home() {
           {/* CARTE DROITE : ARENA APEX LEADERBOARD (5 colonnes) */}
           <Card
             variant="default"
-            class="lg:col-span-5 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-xl p-5 shadow-card-inner flex flex-col justify-between"
+            class="lg:col-span-5 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-5 shadow-card-inner flex flex-col justify-between"
           >
             <div>
               {/* En-tête Apex */}
@@ -904,7 +904,7 @@ export default function Home() {
                   <span>ARENA APEX</span>
                 </div>
                 <Badge variant="danger" class="animate-pulse">
-                  <span class="w-1.5 h-1.5 rounded-full bg-error-foreground mr-1" />
+                  <span class="w-1.5 h-1.5 rounded-pill bg-error-foreground mr-1" />
                   LIVE TELEMETRY
                 </Badge>
               </div>
@@ -922,9 +922,9 @@ export default function Home() {
               {/* Liste Top 5 */}
               <div class="mt-3.5 space-y-2 font-mono text-xs">
                 {/* 01 */}
-                <div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-surface-2 border border-accent-primary/50 text-white shadow-glow-cyan-sm">
+                <div class="flex items-center justify-between px-3 py-2.5 rounded-md bg-surface-2 border border-accent-primary/50 text-white shadow-glow-cyan-sm">
                   <div class="flex items-center space-x-2.5">
-                    <span class="text-accent-primary font-extrabold px-1 bg-accent-primary-subtle/80 rounded border border-accent-primary/40">
+                    <span class="text-accent-primary font-extrabold px-1 bg-accent-primary-subtle/80 rounded-sm border border-accent-primary/40">
                       01
                     </span>
                     <span class="material-symbols-outlined text-xs text-accent-primary">
@@ -941,9 +941,9 @@ export default function Home() {
                 </div>
 
                 {/* 02 */}
-                <div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-surface-2 border border-accent-secondary/40 text-text-primary shadow-glow-magenta-sm">
+                <div class="flex items-center justify-between px-3 py-2.5 rounded-md bg-surface-2 border border-accent-secondary/40 text-text-primary shadow-glow-magenta-sm">
                   <div class="flex items-center space-x-2.5">
-                    <span class="text-accent-secondary font-extrabold px-1 bg-accent-secondary-subtle/80 rounded border border-accent-secondary/40">
+                    <span class="text-accent-secondary font-extrabold px-1 bg-accent-secondary-subtle/80 rounded-sm border border-accent-secondary/40">
                       02
                     </span>
                     <span class="material-symbols-outlined text-xs text-accent-secondary">
@@ -960,9 +960,9 @@ export default function Home() {
                 </div>
 
                 {/* 03 */}
-                <div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-surface-2 border border-accent-secondary-hover/40 text-text-secondary">
+                <div class="flex items-center justify-between px-3 py-2.5 rounded-md bg-surface-2 border border-accent-secondary-hover/40 text-text-secondary">
                   <div class="flex items-center space-x-2.5">
-                    <span class="text-accent-secondary-hover font-extrabold px-1 bg-accent-secondary-subtle/80 rounded border border-accent-secondary-hover/40">
+                    <span class="text-accent-secondary-hover font-extrabold px-1 bg-accent-secondary-subtle/80 rounded-sm border border-accent-secondary-hover/40">
                       03
                     </span>
                     <span class="material-symbols-outlined text-xs text-accent-secondary-hover">
@@ -979,7 +979,7 @@ export default function Home() {
                 </div>
 
                 {/* 04 */}
-                <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-surface-1 border border-border-subtle/85 text-text-muted">
+                <div class="flex items-center justify-between px-3 py-2 rounded-md bg-surface-1 border border-border-subtle/85 text-text-muted">
                   <div class="flex items-center space-x-2.5">
                     <span class="text-text-muted font-bold">04</span>
                     <span class="tracking-wide text-text-secondary">
@@ -991,7 +991,7 @@ export default function Home() {
                 </div>
 
                 {/* 05 */}
-                <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-surface-1 border border-border-subtle/85 text-text-muted">
+                <div class="flex items-center justify-between px-3 py-2 rounded-md bg-surface-1 border border-border-subtle/85 text-text-muted">
                   <div class="flex items-center space-x-2.5">
                     <span class="text-text-muted font-bold">05</span>
                     <span class="tracking-wide text-text-secondary">
@@ -1003,7 +1003,7 @@ export default function Home() {
                 </div>
 
                 {/* Ligne Joueur Actuel (#142) */}
-                <div class="mt-3 flex items-center justify-between px-3 py-2.5 rounded-lg bg-gradient-to-r from-accent-secondary-subtle/40 via-surface-2 to-accent-primary-subtle/40 border border-accent-secondary shadow-glow-magenta text-white">
+                <div class="mt-3 flex items-center justify-between px-3 py-2.5 rounded-md bg-gradient-to-r from-accent-secondary-subtle/40 via-surface-2 to-accent-primary-subtle/40 border border-accent-secondary shadow-glow-magenta text-white">
                   <div class="flex items-center space-x-2.5">
                     <span class="text-accent-secondary font-extrabold tracking-wider">
                       #142

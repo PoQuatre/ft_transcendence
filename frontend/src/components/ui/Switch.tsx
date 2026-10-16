@@ -19,7 +19,7 @@ export const Switch: Component<SwitchProps> = (props) => {
       aria-checked={props.checked ? 'true' : 'false'}
       onClick={() => props.onCheckedChange?.(!props.checked)}
       class={cn(
-        'inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-primary',
+        'inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-pill border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-primary',
         props.checked
           ? 'bg-accent-primary shadow-glow-cyan-md'
           : 'bg-surface-2',
@@ -28,7 +28,7 @@ export const Switch: Component<SwitchProps> = (props) => {
     >
       <span
         class={cn(
-          'pointer-events-none block h-4 w-4 rounded-full bg-background transition-transform',
+          'pointer-events-none block h-4 w-4 rounded-pill bg-background transition-transform',
           props.checked ? 'translate-x-5' : 'translate-x-0.5',
         )}
       />
