@@ -18,8 +18,12 @@ func TestValidateOfferRejectsMedia(t *testing.T) {
 			"m=audio 9 UDP/TLS/RTP/SAVPF 111\r\n",
 	}
 
-	if err := validateOffer(offer); !errors.Is(err, errMediaNotSupported) {
+	err := validateOffer(offer)
+	if !errors.Is(err, errMediaNotSupported) {
 		t.Errorf("validateOffer() error = %v, want %v", err, errMediaNotSupported)
+	}
+	if !errors.Is(err, errInvalidOffer) {
+		t.Errorf("validateOffer() error = %v, want %v", err, errInvalidOffer)
 	}
 }
 

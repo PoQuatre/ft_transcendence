@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	errInvalidOffer      = errors.New("invalid SDP offer")
 	errMediaNotSupported = errors.New("audio and video are not supported")
 	errServerClosed      = errors.New("WebRTC server is closed")
 )
@@ -187,16 +188,16 @@ func (s *Server) removePeer(peer *pion.PeerConnection) {
 
 func validateOffer(offer pion.SessionDescription) error {
 	if offer.Type != pion.SDPTypeOffer {
-		return errors.New("expected an SDP offer")
+		return fmt.Errorf("%w: expected an SDP offer", errInvalidOffer)
 	}
 
 	description, err := offer.Unmarshal()
 	if err != nil {
-		return fmt.Errorf("parse SDP offer: %w", err)
+		return fmt.Errorf("%w: parse SDP offer: %w", errInvalidOffer, err)
 	}
 	for _, media := range description.MediaDescriptions {
 		if media.MediaName.Media != "application" {
-			return errMediaNotSupported
+			return fmt.Errorf("%w: %w", errInvalidOffer, errMediaNotSupported)
 		}
 	}
 
