@@ -242,7 +242,7 @@ export default function Home() {
                       </span>
                     </div>
                     <div class="flex items-center gap-1.5 text-neon-green font-bold">
-                      <span class="w-1.5 h-1.5 rounded-full bg-neon-green shadow-[0_0_6px_#39ff14]" />
+                      <span class="w-1.5 h-1.5 rounded-full bg-neon-green shadow-glow-green-xs" />
                       <span>12,482 PILOTS</span>
                     </div>
                   </div>
@@ -322,7 +322,7 @@ export default function Home() {
                             class={[
                               'group text-left px-3 py-2.5 rounded-lg border transition-all relative overflow-hidden cursor-pointer',
                               {
-                                'border-neon-cyan bg-neon-cyan/15 shadow-[0_0_15px_rgba(0,240,255,0.25)] text-white':
+                                'border-neon-cyan bg-neon-cyan/15 shadow-glow-cyan-md text-white':
                                   isActive(),
                                 'border-hud-line/85 bg-hud-raised text-slate-300 hover:text-white hover:border-neon-cyan/60':
                                   !isActive(),
@@ -371,7 +371,7 @@ export default function Home() {
                       class={[
                         'flex-1 py-1.5 text-xs font-mono font-bold rounded text-center transition-all cursor-pointer',
                         {
-                          'text-neon-cyan bg-cyan-950/60 border border-neon-cyan/60 shadow-[0_0_10px_rgba(0,240,255,0.25)]':
+                          'text-neon-cyan bg-cyan-950/60 border border-neon-cyan/60 shadow-glow-cyan-sm':
                             subMode() === 'casual',
                           'text-slate-400 hover:text-white':
                             subMode() !== 'casual',
@@ -386,7 +386,7 @@ export default function Home() {
                       class={[
                         'flex-1 py-1.5 text-xs font-mono font-bold rounded text-center transition-all cursor-pointer',
                         {
-                          'text-neon-cyan bg-cyan-950/60 border border-neon-cyan/60 shadow-[0_0_10px_rgba(0,240,255,0.25)]':
+                          'text-neon-cyan bg-cyan-950/60 border border-neon-cyan/60 shadow-glow-cyan-sm':
                             subMode() === 'ranked',
                           'text-slate-400 hover:text-white':
                             subMode() !== 'ranked',
@@ -401,7 +401,7 @@ export default function Home() {
                 {/* Description du Mode */}
                 <div class="space-y-1.5 pt-3 border-t border-hud-line/85">
                   <div class="font-mono text-xs font-bold text-neon-cyan tracking-wider flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 bg-neon-cyan shadow-[0_0_6px_#00f0ff]" />
+                    <span class="w-1.5 h-1.5 bg-neon-cyan shadow-glow-cyan-xs" />
                     <span>{modeDetails[selectedMode()].badge}</span>
                   </div>
                   <p class="text-xs text-slate-300 leading-relaxed font-mono">
@@ -572,7 +572,7 @@ export default function Home() {
                   <Progress
                     value={60}
                     color="cyan"
-                    class="h-1.5 shadow-[0_0_8px_#00f0ff]"
+                    class="h-1.5 shadow-glow-cyan-xs"
                   />
                 </div>
 
@@ -589,7 +589,7 @@ export default function Home() {
                       <Progress
                         value={100}
                         color="lime"
-                        class="h-1.5 shadow-[0_0_8px_#12ee83]"
+                        class="h-1.5 shadow-glow-green-xs"
                       />
                     </div>
                     <Button
@@ -597,7 +597,7 @@ export default function Home() {
                       size="sm"
                       disabled={claimedReward()}
                       onClick={() => setClaimedReward(true)}
-                      class="px-2.5 py-1 text-[10px] font-mono font-bold bg-neon-green hover:bg-neon-green/80 text-hud-deep rounded shadow-[0_0_10px_rgba(18,238,131,0.5)] transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
+                      class="px-2.5 py-1 text-[10px] font-mono font-bold bg-neon-green hover:bg-neon-green/80 text-hud-deep rounded shadow-glow-green-sm transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
                     >
                       <span class="material-symbols-outlined text-[11px]">
                         redeem
@@ -620,7 +620,7 @@ export default function Home() {
                   <Progress
                     value={25}
                     color="pink"
-                    class="h-1.5 shadow-[0_0_8px_#ff50df]"
+                    class="h-1.5 shadow-glow-magenta-xs"
                   />
                 </div>
               </div>
@@ -700,10 +700,7 @@ export default function Home() {
                     <div class="space-y-4">
                       {/* Badge Haut */}
                       <div class="flex items-center justify-between font-mono text-[11px]">
-                        <Badge
-                          variant="default"
-                          class="shadow-[0_0_8px_rgba(0,240,255,0.35)]"
-                        >
+                        <Badge variant="default" class="shadow-glow-cyan-sm">
                           {chassis.badge}
                         </Badge>
                         <span class="material-symbols-outlined text-neon-cyan text-sm">
@@ -851,10 +848,7 @@ export default function Home() {
                   </Kbd>
                 </div>
                 <div class="mt-2.5">
-                  <Badge
-                    variant="success"
-                    class="shadow-[0_0_8px_rgba(18,238,131,0.25)]"
-                  >
+                  <Badge variant="success" class="shadow-glow-green-sm">
                     AUTO-FIRE READY
                   </Badge>
                 </div>
@@ -921,7 +915,7 @@ export default function Home() {
               {/* Liste Top 5 */}
               <div class="mt-3.5 space-y-2 font-mono text-xs">
                 {/* 01 */}
-                <div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-hud-raised border border-neon-cyan/50 text-white shadow-[0_0_12px_rgba(0,240,255,0.2)]">
+                <div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-hud-raised border border-neon-cyan/50 text-white shadow-glow-cyan-sm">
                   <div class="flex items-center space-x-2.5">
                     <span class="text-neon-cyan font-extrabold px-1 bg-cyan-950/80 rounded border border-neon-cyan/40">
                       01
@@ -940,7 +934,7 @@ export default function Home() {
                 </div>
 
                 {/* 02 */}
-                <div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-hud-raised border border-neon-magenta/40 text-slate-200 shadow-[0_0_10px_rgba(255,0,127,0.15)]">
+                <div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-hud-raised border border-neon-magenta/40 text-slate-200 shadow-glow-magenta-sm">
                   <div class="flex items-center space-x-2.5">
                     <span class="text-neon-magenta font-extrabold px-1 bg-fuchsia-950/80 rounded border border-neon-magenta/40">
                       02

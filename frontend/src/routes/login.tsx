@@ -73,8 +73,9 @@ export default function Login() {
               onInput={(e) => setEmailValue(e.currentTarget.value)}
               placeholder="pilote@cybercore.net"
               class={{
-                'border-neon-magenta shadow-[0_0_10px_rgba(255,0,127,0.4)]':
-                  Boolean(error()?.title?.includes('EMAIL')),
+                'border-neon-magenta shadow-glow-magenta-sm': Boolean(
+                  error()?.title?.includes('EMAIL'),
+                ),
               }}
             />
             <p class="text-[11px] text-slate-400 font-mono mt-1">

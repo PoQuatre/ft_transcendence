@@ -11,7 +11,7 @@ export const cardVariants = cva(
       variant: {
         default:
           'bg-surface-container/70 backdrop-blur-xl border border-surface-container-high/60 shadow-xl',
-        glow: 'bg-surface-container/70 backdrop-blur-xl border border-primary-container/30 shadow-[0_0_20px_rgba(0,240,255,0.15)]',
+        glow: 'bg-surface-container/70 backdrop-blur-xl border border-primary-container/30 shadow-glow-cyan-ambient',
         interactive:
           'bg-surface-container/70 hover:bg-surface-container-high/80 backdrop-blur-xl border border-surface-container-high/50 hover:border-primary-container/50 shadow-xl cursor-pointer',
         chamfer:

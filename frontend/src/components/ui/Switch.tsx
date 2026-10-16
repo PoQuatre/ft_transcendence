@@ -21,7 +21,7 @@ export const Switch: Component<SwitchProps> = (props) => {
       class={cn(
         'inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container',
         props.checked
-          ? 'bg-primary-container shadow-[0_0_10px_rgba(0,240,255,0.5)]'
+          ? 'bg-primary-container shadow-glow-cyan-md'
           : 'bg-surface-container-high',
         props.class,
       )}

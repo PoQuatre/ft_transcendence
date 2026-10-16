@@ -10,7 +10,7 @@ export const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-primary-container/20 text-primary-container shadow-[0_0_10px_rgba(0,240,255,0.3)]',
+          'bg-primary-container/20 text-primary-container shadow-glow-cyan-sm',
         secondary: 'bg-secondary-container/20 text-secondary',
         tertiary: 'bg-tertiary-fixed-dim/20 text-tertiary-fixed',
         success: 'bg-neon-green/20 text-neon-green',
