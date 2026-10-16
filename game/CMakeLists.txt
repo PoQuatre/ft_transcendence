@@ -83,7 +83,27 @@ FetchContent_Declare(
 set(GLM_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(raylib EnTT spdlog glm)
+FetchContent_Declare(
+	box2d
+    GIT_REPOSITORY https://github.com/erincatto/box2d.git
+    GIT_TAG v3.1.1
+    GIT_SHALLOW TRUE
+)
+set(BOX2D_SAMPLES OFF CACHE BOOL "" FORCE)
+set(BOX2D_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+	nanosvg
+    GIT_REPOSITORY https://github.com/memononen/nanosvg.git
+	GIT_TAG master
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(raylib EnTT spdlog glm box2d nanosvg)
+
+target_include_directories(nanosvg PUBLIC
+    $<BUILD_INTERFACE:${nanosvg_SOURCE_DIR}/src>
+)
 
 include(CTest)
 
@@ -98,6 +118,10 @@ if(BUILD_TESTING)
 
     FetchContent_MakeAvailable(Catch2)
     include(Catch)
+endif()
+
+if(NOT EXISTS "${CMAKE_SOURCE_DIR}/src/renderer/assets/textures/space_grotesk.ttf")
+	execute_process(COMMAND wget https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj62UUsj.ttf -O "${CMAKE_SOURCE_DIR}/src/renderer/assets/textures/space_grotesk.ttf")
 endif()
 
 # ------------------------------------------------------------------------------

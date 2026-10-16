@@ -5,6 +5,7 @@ add_subdirectory(core)
 
 add_executable(game main.cpp)
 
+
 target_link_libraries(game PUBLIC glm::glm PRIVATE game::base game::core)
 
 if(EMSCRIPTEN)
@@ -17,5 +18,6 @@ if(EMSCRIPTEN)
             -sEXPORTED_RUNTIME_METHODS=requestFullscreen
             -sUSE_GLFW=3
             -sALLOW_MEMORY_GROWTH=1
+			--embed-file "${CMAKE_SOURCE_DIR}/src/renderer/assets/"
     )
 endif()

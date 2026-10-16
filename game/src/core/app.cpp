@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:46 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/09 06:44:48 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/14 09:22:03 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,11 +29,13 @@ bool App::initialize()
     if (!platform_.initialize()) {
         return false;
     }
+    renderer_.init();
     this->tank_name_ = "test";
     simulation::Tank tank {
         .name = tank_name_,
         .size = 20,
         .dir = glm::vec2(0),
+        .type = simulation::TankType::TANK_BASIC,
     };
     simulation_.create_player_tank(tank,
         simulation::Transform {
@@ -118,12 +120,16 @@ void App::update_player()
 
 void App::iterate()
 {
+    if (GetScreenHeight() == 0 || GetScreenWidth() == 0) {
+        SPDLOG_INFO("caca mini");
+        return;
+    }
     const double delta_seconds = platform::Platform::delta_seconds();
     platform_.update_inputs();
     update_player();
 
     simulation_.update(delta_seconds);
-    renderer::Renderer::draw(simulation_);
+    renderer_.draw(simulation_);
 }
 
 } // namespace game::core

@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:41 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/09 06:49:45 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/14 20:08:21 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,20 +18,20 @@
 #include <glm/geometric.hpp>
 #include <random>
 
-#include "game/collision.hpp"
+#include "game/colors.hpp"
 #include "game/platform.hpp"
+#include "game/renderer.hpp"
 
 namespace game::simulation {
 
 Simulation::Simulation()
 {
-    quad_tree_ = SpatialGrid(map_bounds_);
     std::random_device rd;
     std::default_random_engine eng(rd());
 
     std::uniform_real_distribution<float> random_pos(
         map_bounds_.min_x, map_bounds_.max_x);
-    std::uniform_int_distribution<int> random_col(0, 255);
+    std::uniform_int_distribution<int> random_col(0, 3);
     std::uniform_int_distribution<int> random_shape_type(0, 1);
     std::uniform_int_distribution<int> random_shape_size(1, 100);
 
@@ -53,11 +53,12 @@ Simulation::Simulation()
             .acc = glm::vec2(0),
             .rotation = 0,
         };
+        auto color_tmp = renderer::Colors::colors[1 + random_col(eng)];
         Color col = {
-            .r = static_cast<unsigned char>(random_col(eng)),
-            .g = static_cast<unsigned char>(random_col(eng)),
-            .b = static_cast<unsigned char>(random_col(eng)),
-            .a = 255,
+            .r = color_tmp.r,
+            .g = color_tmp.b,
+            .b = color_tmp.g,
+            .a = color_tmp.a,
         };
         SPDLOG_INFO("Pos {} {}", transform.pos.x, transform.pos.y);
         SPDLOG_INFO("Col {} {} {}", col.r, col.g, col.b);
@@ -68,160 +69,20 @@ Simulation::Simulation()
     }
 }
 
-collision::CollisionHit Simulation::collide_objects(Transform transform_a,
-    Shape shape_a, ShapeType type_a, Transform transform_b, Shape shape_b,
-    ShapeType type_b)
-{
-
-    if (type_a == ShapeType::SHAPE_CIRCLE) {
-        if (type_b == ShapeType::SHAPE_RECT) {
-            return collision::circle_to_rect(
-                transform_a, shape_a.circle, transform_b, shape_b.rect);
-        }
-        if (type_b == ShapeType::SHAPE_CIRCLE) {
-            return collision::circle_to_circle(
-                transform_a, shape_a.circle, transform_b, shape_b.circle);
-        }
-    }
-    if (type_a == ShapeType::SHAPE_RECT) {
-        if (type_b == ShapeType::SHAPE_RECT) {
-            return collision::rect_to_rect(
-                transform_b, shape_b.rect, transform_a, shape_a.rect);
-        }
-        if (type_b == ShapeType::SHAPE_CIRCLE) {
-            auto result = collision::circle_to_rect(
-                transform_b, shape_b.circle, transform_a, shape_a.rect);
-            result.normal = result.normal;
-            return result;
-        }
-    }
-    return collision::CollisionHit { };
-}
-
-void Simulation::resolve_collision(
-    entt::entity a, entt::entity b, const collision::CollisionHit &collision)
-{
-    if (collision.penetration <= 0.001F) {
-        return;
-    }
-
-    auto transform_a = registry_.get<Transform>(a);
-    auto transform_b = registry_.get<Transform>(b);
-
-    auto &position_a = transform_a.pos;
-    auto &position_b = transform_b.pos;
-
-    auto &velocity_a = transform_a.vel;
-    auto &velocity_b = transform_b.vel;
-
-    auto &physics_a = registry_.get<PhysicalObject>(a);
-    auto &physics_b = registry_.get<PhysicalObject>(b);
-
-    const float inverse_mass_a
-        = physics_a.is_static ? 0.0F : 1.0F / (physics_a.mass + 0.00001F);
-    const float inverse_mass_b
-        = physics_b.is_static ? 0.0F : 1.0F / (physics_b.mass + 0.00001F);
-    const float inverse_mass_sum = inverse_mass_a + inverse_mass_b;
-
-    if (inverse_mass_sum <= 0.0F)
-        return;
-
-    physics_b.dirty = true;
-    physics_a.dirty = true;
-
-    const glm::vec2 correction
-        = collision.normal * (collision.penetration / inverse_mass_sum);
-
-    position_a -= correction * inverse_mass_a;
-    position_b += correction * inverse_mass_b;
-
-    const glm::vec2 relative_velocity = velocity_b - velocity_a;
-    const float velocity_along_normal
-        = glm::dot(relative_velocity, collision.normal);
-    if (velocity_along_normal > 0.0F) {
-        return;
-    }
-
-    const float restitution
-        = std::min(physics_a.restitution, physics_b.restitution);
-    const float impulse_magnitude
-        = -(1.0F + restitution) * velocity_along_normal / inverse_mass_sum;
-    const glm::vec2 impulse = collision.normal * impulse_magnitude;
-
-    velocity_a -= impulse * inverse_mass_a;
-    velocity_b += impulse * inverse_mass_b;
-
-    auto *proj_a = registry_.try_get<Projectile>(a);
-    auto *proj_b = registry_.try_get<Projectile>(b);
-    auto *res_a = registry_.try_get<Ressource>(a);
-    auto *res_b = registry_.try_get<Ressource>(b);
-    if ((proj_a != nullptr && res_b != nullptr)) {
-        res_b->health -= proj_a->damage;
-        auto &state_a = registry_.get<State>(a);
-        state_a = State::STATE_DESTROYED;
-        return;
-    }
-    if ((proj_b != nullptr && res_a != nullptr)) {
-        res_a->health -= proj_b->damage;
-        auto &state_b = registry_.get<State>(b);
-        state_b = State::STATE_DESTROYED;
-        return;
-    }
-}
-
 void Simulation::update_physics(float delta_seconds)
 {
-    const int simulation_steps = 10;
-    const float sub_delta = delta_seconds / simulation_steps;
+    // const int simulation_steps = 10;
     const auto &view
         = registry_.view<Transform, PhysicalObject, ShapeType, Shape, State>();
+    for (auto [entity, transform, physics, shape_type, shape, state] :
+        view.each()) {
 
-    for (int step = 0; step < simulation_steps; ++step) {
-        quad_tree_.clear();
+        transform.vel += transform.acc * delta_seconds;
 
-        for (auto [entity, transform, physics, shape_type, shape, state] :
-            view.each()) {
+        transform.vel *= std::max(0.0F, 1.0F - (physics.drag * delta_seconds));
 
-            transform.vel += transform.acc * sub_delta;
-
-            transform.vel *= std::max(0.0F, 1.0F - (physics.drag * sub_delta));
-
-            if (!physics.is_static) {
-                transform.pos += transform.vel * sub_delta;
-            }
-            const AABB bounds = get_aabb(transform, shape_type, shape);
-            quad_tree_.insert(entity, bounds);
-        }
-
-        std::vector<entt::entity> candidates;
-
-        for (auto [entity, transform, physics, shape_type, shape, state] :
-            view.each()) {
-
-            candidates.clear();
-
-            const AABB bounds = get_aabb(transform, shape_type, shape);
-            quad_tree_.query(bounds, candidates);
-
-            for (auto entity_b_ : candidates) {
-                if (entity == entity_b_)
-                    continue;
-
-                auto comp = view[entity_b_];
-                auto transform_b = std::get<0>(comp);
-                auto physics_b = std::get<1>(comp);
-                auto shape_type_b = std::get<2>(comp);
-                auto shape_b = std::get<3>(comp);
-
-                if ((physics_b.layer & physics.mask) == 0)
-                    continue;
-
-                const auto collision = collide_objects(transform, shape,
-                    shape_type, transform_b, shape_b, shape_type_b);
-                resolve_collision(entity_b_, entity, collision);
-            }
-
-            physics.dirty = false;
+        if (!physics.is_static) {
+            transform.pos += transform.vel * delta_seconds;
         }
     }
 }
@@ -263,7 +124,7 @@ void Simulation::create_player_tank(Tank &tank, Transform transform, Color col)
     (void)this;
     player_tank_ = registry_.create();
     registry_.emplace<Transform>(player_tank_, transform);
-    registry_.emplace<ShapeType>(player_tank_, ShapeType::SHAPE_CIRCLE);
+    registry_.emplace<ShapeType>(player_tank_, ShapeType::SHAPE_TANK);
     registry_.emplace<Shape>(
         player_tank_, Shape { .circle = { .size = tank.size } });
     registry_.emplace<PhysicalObject>(player_tank_,
@@ -293,7 +154,7 @@ void Simulation::fire_player_tank()
     auto &player_dir = registry_.get<Tank>(player_tank_).dir;
     auto &player_col = registry_.get<Color>(player_tank_);
     // auto &tank = registry_.get<Tank>(player_tank);
-    const float bullet_speed = 1000.F;
+    const float bullet_speed = 500.F;
     glm::vec2 bullet_vel = -player_dir * bullet_speed;
 
     registry_.emplace<Transform>(bullet,
@@ -304,8 +165,13 @@ void Simulation::fire_player_tank()
             .rotation = 0,
         });
     registry_.emplace<Color>(bullet, player_col);
-    registry_.emplace<Projectile>(
-        bullet, 10.F, 2.F, platform::Platform::get_time());
+    registry_.emplace<Projectile>(bullet,
+        Projectile {
+            .damage = 10.F,
+            .lifetime = 2.F,
+            .creation_time = platform::Platform::get_time(),
+            .type = ProjectileType::PROJECTILE_BASIC,
+        });
     registry_.emplace<ShapeType>(bullet, ShapeType::SHAPE_CIRCLE);
     registry_.emplace<Shape>(bullet, Shape { .circle = { .size = 10.F } });
     registry_.emplace<PhysicalObject>(bullet,
@@ -366,29 +232,6 @@ void Simulation::create_obstacle(
             .layer = COLLISION_LAYER_OBSTACLE,
         });
     registry_.emplace<State>(obstacle, State::STATE_OK);
-}
-
-AABB Simulation::get_aabb(
-    Transform transform, ShapeType shape_type, Shape shape)
-{
-
-    switch (shape_type) {
-    case ShapeType::SHAPE_CIRCLE:
-        return {
-            .min_x = transform.pos.x,
-            .min_y = transform.pos.y,
-            .max_x = transform.pos.x + shape.circle.size,
-            .max_y = transform.pos.y + shape.circle.size,
-        };
-    case ShapeType::SHAPE_RECT:
-        return {
-            .min_x = transform.pos.x,
-            .min_y = transform.pos.y,
-            .max_x = transform.pos.x + shape.rect.width,
-            .max_y = transform.pos.y + shape.rect.height,
-        };
-    }
-    return { .min_x = 0, .min_y = 0, .max_x = 0, .max_y = 0 };
 }
 
 } // namespace game::simulation
