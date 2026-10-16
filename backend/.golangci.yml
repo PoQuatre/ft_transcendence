@@ -50,6 +50,8 @@ linters:
       rules:
         - name: exported
           disabled: true
+    exhaustive:
+      default-signifies-exhaustive: true
     # staticcheck:
     #   checks:
     #     - all

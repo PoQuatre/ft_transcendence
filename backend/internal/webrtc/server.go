@@ -2,19 +2,29 @@
 package webrtc
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 
 	"github.com/pion/ice/v4"
 	pion "github.com/pion/webrtc/v4"
 )
 
-var errMediaNotSupported = errors.New("audio and video are not supported")
+var (
+	errMediaNotSupported = errors.New("audio and video are not supported")
+	errServerClosed      = errors.New("WebRTC server is closed")
+)
 
 type Server struct {
-	api *pion.API
-	mux *ice.MultiUDPMuxDefault
+	api       *pion.API
+	mux       *ice.MultiUDPMuxDefault
+	peers     map[*pion.PeerConnection]struct{}
+	closeErr  error
+	closeOnce sync.Once
+	mu        sync.Mutex
+	closed    bool
 }
 
 func New(port int, external []string) (*Server, error) {
@@ -52,16 +62,39 @@ func New(port int, external []string) (*Server, error) {
 	}
 
 	return &Server{
-		api: pion.NewAPI(pion.WithSettingEngine(se)),
-		mux: mux,
+		api:   pion.NewAPI(pion.WithSettingEngine(se)),
+		mux:   mux,
+		peers: make(map[*pion.PeerConnection]struct{}),
 	}, nil
 }
 
 func (s *Server) Close() error {
-	return s.mux.Close()
+	s.closeOnce.Do(func() {
+		s.mu.Lock()
+		s.closed = true
+		peers := s.peers
+		s.peers = nil
+		s.mu.Unlock()
+
+		errs := make([]error, 0, len(peers)+1)
+		for peer := range peers {
+			if err := peer.Close(); err != nil {
+				errs = append(errs, fmt.Errorf("close WebRTC peer: %w", err))
+			}
+		}
+		if err := s.mux.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close WebRTC UDP listener: %w", err))
+		}
+		s.closeErr = errors.Join(errs...)
+	})
+
+	return s.closeErr
 }
 
-func (s *Server) Answer(offer pion.SessionDescription) (*pion.SessionDescription, error) {
+func (s *Server) Answer(ctx context.Context, offer pion.SessionDescription) (*pion.SessionDescription, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if err := validateOffer(offer); err != nil {
 		return nil, err
 	}
@@ -73,19 +106,16 @@ func (s *Server) Answer(offer pion.SessionDescription) (*pion.SessionDescription
 	closePeer := true
 	defer func() {
 		if closePeer {
+			s.removePeer(peer)
 			if closeErr := peer.Close(); closeErr != nil {
 				slog.Debug("close incomplete WebRTC peer", "error", closeErr)
 			}
 		}
 	}()
 
-	peer.OnICEConnectionStateChange(func(state pion.ICEConnectionState) {
-		if state == pion.ICEConnectionStateFailed {
-			if closeErr := peer.Close(); closeErr != nil {
-				slog.Debug("close WebRTC peer", "error", closeErr)
-			}
-		}
-	})
+	if err := s.managePeer(peer); err != nil {
+		return nil, err
+	}
 	peer.OnDataChannel(func(channel *pion.DataChannel) {
 		channel.OnMessage(func(message pion.DataChannelMessage) {
 			var sendErr error
@@ -114,10 +144,45 @@ func (s *Server) Answer(offer pion.SessionDescription) (*pion.SessionDescription
 	if localDescriptionErr != nil {
 		return nil, fmt.Errorf("set local description: %w", localDescriptionErr)
 	}
-	<-gatherComplete
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-gatherComplete:
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+	}
 
 	closePeer = false
 	return peer.LocalDescription(), nil
+}
+
+func (s *Server) managePeer(peer *pion.PeerConnection) error {
+	peer.OnConnectionStateChange(func(state pion.PeerConnectionState) {
+		switch state {
+		case pion.PeerConnectionStateFailed:
+			if err := peer.Close(); err != nil {
+				slog.Debug("close failed WebRTC peer", "error", err)
+			}
+		case pion.PeerConnectionStateClosed:
+			s.removePeer(peer)
+		default:
+		}
+	})
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return errServerClosed
+	}
+	s.peers[peer] = struct{}{}
+	return nil
+}
+
+func (s *Server) removePeer(peer *pion.PeerConnection) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.peers, peer)
 }
 
 func validateOffer(offer pion.SessionDescription) error {

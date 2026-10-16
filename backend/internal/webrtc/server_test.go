@@ -1,6 +1,7 @@
 package webrtc
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -19,5 +20,67 @@ func TestValidateOfferRejectsMedia(t *testing.T) {
 
 	if err := validateOffer(offer); !errors.Is(err, errMediaNotSupported) {
 		t.Errorf("validateOffer() error = %v, want %v", err, errMediaNotSupported)
+	}
+}
+
+func TestAnswerReturnsCanceledContext(t *testing.T) {
+	server, err := New(0, []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if closeErr := server.Close(); closeErr != nil {
+			t.Error(closeErr)
+		}
+	})
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	if _, err := server.Answer(ctx, pion.SessionDescription{}); !errors.Is(err, context.Canceled) {
+		t.Errorf("Answer() error = %v, want %v", err, context.Canceled)
+	}
+}
+
+func TestServerCloseClosesManagedPeers(t *testing.T) {
+	server, err := New(0, []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	peer, err := server.api.NewPeerConnection(pion.Configuration{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := server.managePeer(peer); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := server.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if state := peer.ConnectionState(); state != pion.PeerConnectionStateClosed {
+		t.Errorf("peer connection state = %s, want %s", state, pion.PeerConnectionStateClosed)
+	}
+}
+
+func TestServerDoesNotManagePeersAfterClose(t *testing.T) {
+	server, err := New(0, []string{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = server.Close(); err != nil {
+		t.Fatal(err)
+	}
+	peer, err := server.api.NewPeerConnection(pion.Configuration{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if closeErr := peer.Close(); closeErr != nil {
+			t.Error(closeErr)
+		}
+	})
+
+	if err := server.managePeer(peer); !errors.Is(err, errServerClosed) {
+		t.Errorf("managePeer() error = %v, want %v", err, errServerClosed)
 	}
 }
