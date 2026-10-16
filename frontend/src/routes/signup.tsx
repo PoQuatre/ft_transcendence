@@ -129,7 +129,7 @@ export default function Signup() {
               {(rule) => (
                 <li
                   class={
-                    rule.test(password()) ? 'text-[#39ff14]' : 'text-outline'
+                    rule.test(password()) ? 'text-neon-green' : 'text-outline'
                   }
                 >
                   {rule.test(password()) ? '◆' : '◇'} {rule.label}
@@ -160,7 +160,7 @@ export default function Signup() {
             // text-label-data pour une couleur et l'écraserait par la couleur.
             class={[
               '-mt-space-sm min-h-[14px] font-label-data text-label-data',
-              confirmOk() ? 'text-[#39ff14]' : 'text-neon-pink',
+              confirmOk() ? 'text-neon-green' : 'text-neon-pink',
             ]}
           >
             <Show when={showConfirm()}>

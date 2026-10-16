@@ -14,8 +14,8 @@ export const alertVariants = cva(
         cyan: 'bg-primary-container/10 border-primary-container/40 text-primary shadow-[0_0_15px_rgba(0,240,255,0.15)]',
         destructive:
           'bg-error-container/20 border-error/40 text-error shadow-[0_0_15px_rgba(255,74,141,0.2)]',
-        warning: 'bg-[#ffb703]/10 border-[#ffb703]/40 text-[#ffb703]',
-        success: 'bg-[#39ff14]/10 border-[#39ff14]/40 text-[#39ff14]',
+        warning: 'bg-neon-amber/10 border-neon-amber/40 text-neon-amber',
+        success: 'bg-neon-green/10 border-neon-green/40 text-neon-green',
       },
     },
     defaultVariants: {
