@@ -7,7 +7,7 @@ import { Button, Input, Kbd, PasswordInput } from '~/components/ui';
 import { type AuthResult, login } from '~/lib/auth';
 
 const LABEL =
-  'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-on-surface-variant';
+  'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-text-secondary';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -59,7 +59,7 @@ export default function Login() {
           <label class="block" for="email">
             <span class={LABEL}>
               <span>EMAIL DU PILOTE</span>
-              <span class="text-[10px] text-neon-cyan font-mono font-bold tracking-wider">
+              <span class="text-[10px] text-accent-primary font-mono font-bold tracking-wider">
                 [ PAS DE CALL-SIGN ]
               </span>
             </span>
@@ -73,12 +73,12 @@ export default function Login() {
               onInput={(e) => setEmailValue(e.currentTarget.value)}
               placeholder="pilote@cybercore.net"
               class={{
-                'border-neon-magenta shadow-glow-magenta-sm': Boolean(
+                'border-accent-secondary shadow-glow-magenta-sm': Boolean(
                   error()?.title?.includes('EMAIL'),
                 ),
               }}
             />
-            <p class="text-[11px] text-slate-400 font-mono mt-1">
+            <p class="text-[11px] text-text-muted font-mono mt-1">
               ⚠️ Entrez l'adresse email renseignée à l'inscription.
             </p>
           </label>

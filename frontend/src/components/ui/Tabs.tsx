@@ -61,7 +61,7 @@ export const TabsList: Component<TabsListProps> = (props) => {
   return (
     <div
       class={cn(
-        'inline-flex items-center gap-1 rounded bg-surface-container-low p-1 border border-surface-container-high/40',
+        'inline-flex items-center gap-1 rounded bg-surface-1 p-1 border border-border-subtle/40',
         props.class,
       )}
       {...rest}
@@ -87,8 +87,8 @@ export const TabsTrigger: Component<TabsTriggerProps> = (props) => {
       class={cn(
         'px-space-sm py-space-xs font-label-mono-caps text-label-mono-caps transition-all cursor-pointer rounded flex flex-col items-center gap-1',
         isSelected()
-          ? 'bg-primary-container/20 text-primary-container font-bold shadow-glow-cyan-sm border border-primary-container/40'
-          : 'bg-surface-container-high/60 text-on-surface-variant hover:text-white hover:bg-surface-container-high border border-transparent',
+          ? 'bg-accent-primary/20 text-accent-primary font-bold shadow-glow-cyan-sm border border-accent-primary/40'
+          : 'bg-surface-2/60 text-text-secondary hover:text-white hover:bg-surface-2 border border-transparent',
         props.class,
       )}
       {...rest}

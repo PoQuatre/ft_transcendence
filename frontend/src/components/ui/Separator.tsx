@@ -16,7 +16,7 @@ export const Separator: Component<SeparatorProps> = (props) => {
     <hr
       aria-orientation={props.orientation ?? 'horizontal'}
       class={cn(
-        'shrink-0 border-0 bg-surface-container-high/40',
+        'shrink-0 border-0 bg-surface-2/40',
         isHorizontal() ? 'h-[1px] w-full' : 'h-full w-[1px]',
         props.class,
       )}

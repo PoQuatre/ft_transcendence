@@ -28,8 +28,8 @@ export const PasswordInput: Component<PasswordInputProps> = (props) => {
         onClick={() => setVisible((v) => !v)}
         class={cn(
           'absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-8 w-8 items-center justify-center cursor-pointer transition-colors',
-          'hover:text-primary-container focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-container',
-          visible() ? 'text-primary-container' : 'text-outline',
+          'hover:text-accent-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-focus-primary',
+          visible() ? 'text-accent-primary' : 'text-text-muted',
         )}
       >
         <svg

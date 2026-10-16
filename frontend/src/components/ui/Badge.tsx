@@ -9,15 +9,14 @@ export const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          'bg-primary-container/20 text-primary-container shadow-glow-cyan-sm',
-        secondary: 'bg-secondary-container/20 text-secondary',
-        tertiary: 'bg-tertiary-fixed-dim/20 text-tertiary-fixed',
-        success: 'bg-neon-green/20 text-neon-green',
-        warning: 'bg-neon-amber/20 text-neon-amber',
-        danger: 'bg-error-container/40 text-error',
-        outline: 'border border-outline/40 text-outline',
-        surface: 'bg-surface-container-low text-on-surface-variant',
+        default: 'bg-accent-primary/20 text-accent-primary shadow-glow-cyan-sm',
+        secondary: 'bg-accent-secondary/20 text-accent-secondary',
+        tertiary: 'bg-accent-secondary-hover/20 text-accent-secondary-hover',
+        success: 'bg-success-foreground/20 text-success-foreground',
+        warning: 'bg-warning-foreground/20 text-warning-foreground',
+        danger: 'bg-error-background/40 text-error-foreground',
+        outline: 'border border-border-strong/40 text-text-muted',
+        surface: 'bg-surface-1 text-text-secondary',
       },
     },
     defaultVariants: {

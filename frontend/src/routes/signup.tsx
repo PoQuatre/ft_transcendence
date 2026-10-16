@@ -13,7 +13,7 @@ import {
 import { cn } from '~/lib/utils';
 
 const LABEL =
-  'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-on-surface-variant';
+  'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-text-secondary';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -71,7 +71,7 @@ export default function Signup() {
           <label class="block" for="username">
             <span class={LABEL}>
               CALL-SIGN
-              <span class="font-label-data text-label-data text-outline">
+              <span class="font-label-data text-label-data text-text-muted">
                 3-30 · a-z A-Z 0-9 _
               </span>
             </span>
@@ -102,7 +102,7 @@ export default function Signup() {
           <label class="block" for="password">
             <span class={LABEL}>
               PASSWORD
-              <span class="font-label-data text-label-data text-outline">
+              <span class="font-label-data text-label-data text-text-muted">
                 {score()}/{PASSWORD_RULES.length}
               </span>
             </span>
@@ -129,7 +129,9 @@ export default function Signup() {
               {(rule) => (
                 <li
                   class={
-                    rule.test(password()) ? 'text-neon-green' : 'text-outline'
+                    rule.test(password())
+                      ? 'text-success-foreground'
+                      : 'text-text-muted'
                   }
                 >
                   {rule.test(password()) ? '◆' : '◇'} {rule.label}
@@ -150,7 +152,9 @@ export default function Signup() {
               aria-describedby="confirm-msg"
               aria-invalid={showConfirm() && !confirmOk() ? 'true' : 'false'}
               onInput={(e) => setConfirm(e.currentTarget.value)}
-              class={cn(showConfirm() && !confirmOk() && 'border-neon-pink')}
+              class={cn(
+                showConfirm() && !confirmOk() && 'border-accent-secondary',
+              )}
             />
           </label>
           <p
@@ -160,7 +164,7 @@ export default function Signup() {
             // text-label-data pour une couleur et l'écraserait par la couleur.
             class={[
               '-mt-space-sm min-h-[14px] font-label-data text-label-data',
-              confirmOk() ? 'text-neon-green' : 'text-neon-pink',
+              confirmOk() ? 'text-success-foreground' : 'text-accent-secondary',
             ]}
           >
             <Show when={showConfirm()}>

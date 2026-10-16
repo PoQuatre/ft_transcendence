@@ -17,7 +17,7 @@ export const Slider: Component<SliderProps> = (props) => {
       value={props.value ?? 50}
       onInput={(e) => props.onValueChange?.(Number(e.currentTarget.value))}
       class={cn(
-        'h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-surface-container-lowest accent-primary-container focus:outline-none',
+        'h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-background accent-primary-container focus:outline-none',
         props.class,
       )}
       {...rest}

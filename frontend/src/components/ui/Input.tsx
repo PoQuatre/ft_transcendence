@@ -11,8 +11,8 @@ export const Input: Component<InputProps> = (props) => {
   return (
     <input
       class={cn(
-        'w-full bg-surface-container-lowest/90 px-4 py-3 font-label-mono-caps text-body-lg text-primary placeholder:text-outline/40',
-        'border border-surface-container-high focus:border-primary-container focus:outline-none focus:ring-1 focus:ring-primary-container/80',
+        'w-full bg-background/90 px-4 py-3 font-label-mono-caps text-body-lg text-text-primary placeholder:text-text-muted/40',
+        'border border-border-subtle focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-focus-primary/80',
         'transition-all tracking-wider disabled:cursor-not-allowed disabled:opacity-50',
         props.class,
       )}

@@ -29,7 +29,7 @@ export default function Document(props: ParentProps) {
 
         <HydrationScript />
       </head>
-      <body class="bg-surface-container-lowest font-sans text-on-surface antialiased selection:bg-neon-cyan selection:text-on-primary">
+      <body class="bg-background font-sans text-text-primary antialiased selection:bg-accent-primary selection:text-accent-primary-on">
         {props.children}
       </body>
     </html>

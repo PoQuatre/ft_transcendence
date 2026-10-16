@@ -10,9 +10,9 @@ export const kbdVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-surface-container-high text-primary-fixed border-surface-container-highest shadow-inner',
-        glow: 'bg-primary-container/10 text-primary-container border-primary-container/40 shadow-glow-cyan-sm',
-        outline: 'bg-transparent text-outline border-outline/30',
+          'bg-surface-2 text-accent-primary-hover border-border-default shadow-inner',
+        glow: 'bg-accent-primary/10 text-accent-primary border-accent-primary/40 shadow-glow-cyan-sm',
+        outline: 'bg-transparent text-text-muted border-border-strong/30',
       },
       size: {
         sm: 'h-5 min-w-[20px] px-1 text-[10px]',

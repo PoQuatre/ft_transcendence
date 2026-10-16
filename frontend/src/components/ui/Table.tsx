@@ -22,10 +22,7 @@ export const TableHeader: Component<ComponentProps<'thead'>> = (props) => {
   const rest = omit(props, 'class');
   return (
     <thead
-      class={cn(
-        '[&_tr]:border-b border-surface-container-high/60',
-        props.class,
-      )}
+      class={cn('[&_tr]:border-b border-border-subtle/60', props.class)}
       {...rest}
     />
   );
@@ -43,7 +40,7 @@ export const TableRow: Component<ComponentProps<'tr'>> = (props) => {
   return (
     <tr
       class={cn(
-        'border-b border-surface-container-high/30 transition-colors hover:bg-surface-container-high/40',
+        'border-b border-border-subtle/30 transition-colors hover:bg-surface-2/40',
         props.class,
       )}
       {...rest}
@@ -56,7 +53,7 @@ export const TableHead: Component<ComponentProps<'th'>> = (props) => {
   return (
     <th
       class={cn(
-        'h-10 px-3 text-left align-middle font-bold text-outline text-[11px] tracking-wider uppercase',
+        'h-10 px-3 text-left align-middle font-bold text-text-muted text-[11px] tracking-wider uppercase',
         props.class,
       )}
       {...rest}
@@ -68,7 +65,7 @@ export const TableCell: Component<ComponentProps<'td'>> = (props) => {
   const rest = omit(props, 'class');
   return (
     <td
-      class={cn('p-3 align-middle text-on-surface text-body-sm', props.class)}
+      class={cn('p-3 align-middle text-text-primary text-body-sm', props.class)}
       {...rest}
     />
   );

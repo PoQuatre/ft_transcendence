@@ -11,7 +11,7 @@ export default function App() {
   return (
     <Router>
       {(props) => (
-        <div class="min-h-screen bg-surface-container-lowest font-body-lg text-on-surface antialiased selection:bg-primary-container selection:text-on-primary relative flex flex-col">
+        <div class="min-h-screen bg-background font-body-lg text-text-primary antialiased selection:bg-accent-primary selection:text-accent-primary-on relative flex flex-col">
           <Title>CYBERCORE // NEURAL ARENA</Title>
 
           {/* Calque de scanlines CRT global (auto-fermant) */}
@@ -24,7 +24,7 @@ export default function App() {
           <main class="w-full pt-16 flex-1 flex flex-col">
             <Loading
               fallback={
-                <div class="flex-1 flex items-center justify-center p-12 text-primary-container text-glow-cyan font-label-mono-caps font-bold">
+                <div class="flex-1 flex items-center justify-center p-12 text-accent-primary text-glow-cyan font-label-mono-caps font-bold">
                   CHARGEMENT DU CYBERSPACE...
                 </div>
               }

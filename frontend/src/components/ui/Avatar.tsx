@@ -16,7 +16,7 @@ export const Avatar: Component<AvatarProps> = (props) => {
   return (
     <div
       class={cn(
-        'relative flex h-8 w-8 shrink-0 overflow-hidden rounded-full border border-primary-container/40 bg-surface-container-low shadow-glow-cyan-sm',
+        'relative flex h-8 w-8 shrink-0 overflow-hidden rounded-full border border-accent-primary/40 bg-surface-1 shadow-glow-cyan-sm',
         props.class,
       )}
       {...rest}
@@ -29,7 +29,7 @@ export const Avatar: Component<AvatarProps> = (props) => {
           class="aspect-square h-full w-full object-cover"
         />
       ) : (
-        <div class="flex h-full w-full items-center justify-center font-label-mono-caps text-xs font-bold text-primary">
+        <div class="flex h-full w-full items-center justify-center font-label-mono-caps text-xs font-bold text-text-primary">
           {props.fallback ?? 'OP'}
         </div>
       )}

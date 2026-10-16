@@ -5,15 +5,15 @@ import { type Component, omit } from 'solid-js';
 import { cn } from '~/lib/utils';
 
 export const progressVariants = cva(
-  'h-1.5 w-full bg-surface-container-lowest overflow-hidden',
+  'h-1.5 w-full bg-background overflow-hidden',
   {
     variants: {
       color: {
-        cyan: 'bg-primary-container',
-        pink: 'bg-secondary-container',
-        lime: 'bg-neon-green',
-        amber: 'bg-neon-amber',
-        purple: 'bg-tertiary-fixed',
+        cyan: 'bg-accent-primary',
+        pink: 'bg-accent-secondary',
+        lime: 'bg-success-foreground',
+        amber: 'bg-warning-foreground',
+        purple: 'bg-accent-secondary-hover',
       },
     },
     defaultVariants: {
@@ -38,10 +38,7 @@ export const Progress: Component<ProgressProps> = (props) => {
 
   return (
     <div
-      class={cn(
-        'h-1.5 w-full bg-surface-container-lowest overflow-hidden',
-        props.class,
-      )}
+      class={cn('h-1.5 w-full bg-background overflow-hidden', props.class)}
       {...rest}
     >
       <div

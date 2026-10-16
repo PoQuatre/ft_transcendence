@@ -17,9 +17,9 @@ type Mode = 'login' | 'signup';
 const TAB_BASE =
   'flex-1 px-space-sm py-space-xs font-label-mono-caps text-label-mono-caps transition-all rounded flex flex-col items-center gap-1 no-underline';
 const TAB_ON =
-  'bg-primary-container/20 text-primary-container font-bold shadow-glow-cyan-sm border border-primary-container/40';
+  'bg-accent-primary/20 text-accent-primary font-bold shadow-glow-cyan-sm border border-accent-primary/40';
 const TAB_OFF =
-  'bg-surface-container-high/60 text-on-surface-variant hover:text-white hover:bg-surface-container-high border border-transparent';
+  'bg-surface-2/60 text-text-secondary hover:text-white hover:bg-surface-2 border border-transparent';
 
 export type AuthCardProps = {
   mode: Mode;
@@ -35,8 +35,8 @@ export const AuthCard: Component<AuthCardProps> = (props) => {
     <section class="relative z-10 flex flex-1 items-center justify-center px-4 py-12">
       <div class="w-full max-w-md">
         <Card variant="chamfer">
-          <div class="flex items-center justify-between border-b border-surface-container-high/60 px-space-lg py-space-sm">
-            <span class="font-label-data text-label-data text-outline">
+          <div class="flex items-center justify-between border-b border-border-subtle/60 px-space-lg py-space-sm">
+            <span class="font-label-data text-label-data text-text-muted">
               {isLogin() ? '[AUTH_01 // LOGIN]' : '[AUTH_02 // ENLIST]'}
             </span>
             <Show
@@ -44,7 +44,8 @@ export const AuthCard: Component<AuthCardProps> = (props) => {
               fallback={<Badge variant="secondary">NEW PILOT</Badge>}
             >
               <Badge variant="success">
-                <span class="h-1.5 w-1.5 animate-pulse bg-neon-green" /> UPLINK
+                <span class="h-1.5 w-1.5 animate-pulse bg-success-foreground" />{' '}
+                UPLINK
               </Badge>
             </Show>
           </div>
@@ -52,18 +53,18 @@ export const AuthCard: Component<AuthCardProps> = (props) => {
           <div class="p-space-lg">
             <h1 class="font-headline-xl text-headline-xl uppercase">
               {isLogin() ? 'Operator ' : 'Pilot '}
-              <span class="text-primary-container text-glow-cyan">
+              <span class="text-accent-primary text-glow-cyan">
                 {isLogin() ? 'Login' : 'Enlistment'}
               </span>
             </h1>
-            <p class="mt-space-xs font-body-sm text-body-sm text-on-surface-variant">
+            <p class="mt-space-xs font-body-sm text-body-sm text-text-secondary">
               {isLogin()
                 ? "Reconnecte ton call-sign pour rejoindre l'arène."
                 : "Crée ton call-sign pour entrer dans l'arène."}
             </p>
 
             {/* Même rendu que TabsList / TabsTrigger, mais en liens : chaque onglet est une route. */}
-            <nav class="mt-space-lg inline-flex w-full items-center gap-1 rounded border border-surface-container-high/40 bg-surface-container-low p-1">
+            <nav class="mt-space-lg inline-flex w-full items-center gap-1 rounded border border-border-subtle/40 bg-surface-1 p-1">
               <a
                 href="/login"
                 aria-current={isLogin() ? 'page' : undefined}
@@ -96,13 +97,13 @@ export const AuthCard: Component<AuthCardProps> = (props) => {
 
             <Separator class="my-space-lg" />
 
-            <p class="text-center font-body-sm text-body-sm text-on-surface-variant">
+            <p class="text-center font-body-sm text-body-sm text-text-secondary">
               {isLogin()
                 ? 'Pas encore de call-sign ? '
                 : 'Déjà un call-sign ? '}
               <a
                 href={isLogin() ? '/signup' : '/login'}
-                class="font-bold uppercase text-neon-cyan underline-offset-4 hover:underline"
+                class="font-bold uppercase text-accent-primary underline-offset-4 hover:underline"
               >
                 {isLogin() ? 'Sign up' : 'Log in'}
               </a>
