@@ -56,6 +56,126 @@
   --spacing-margin: 1.5rem;
   --spacing-margin-mobile: 0.75rem;
 
+  /* Primitives (Figma 01 / Neon primitives) : 6 familles, 11 pas.
+     Elles remplacent les familles Tailwind du même nom. Utiliser les rôles
+     ci-dessous dans les composants, pas les primitives. */
+  --color-neutral-50: #faf7ff;
+  --color-neutral-100: #eee8f5;
+  --color-neutral-200: #d8cfe2;
+  --color-neutral-300: #bdafcd;
+  --color-neutral-400: #a08cb5;
+  --color-neutral-500: #78648e;
+  --color-neutral-600: #594768;
+  --color-neutral-700: #3b2f49;
+  --color-neutral-800: #241c30;
+  --color-neutral-900: #15101e;
+  --color-neutral-950: #0b0811;
+
+  --color-cyan-50: #edfeff;
+  --color-cyan-100: #d5fcff;
+  --color-cyan-200: #abf8ff;
+  --color-cyan-300: #7cf3ff;
+  --color-cyan-400: #4bedff;
+  --color-cyan-500: #00e5ff;
+  --color-cyan-600: #00b5d4;
+  --color-cyan-700: #0087a1;
+  --color-cyan-800: #075a70;
+  --color-cyan-900: #063747;
+  --color-cyan-950: #03212d;
+
+  --color-pink-50: #fff0fa;
+  --color-pink-100: #ffdcf3;
+  --color-pink-200: #ffb9e8;
+  --color-pink-300: #ff91dd;
+  --color-pink-400: #ff80ed;
+  --color-pink-500: #ff50df;
+  --color-pink-600: #ff4ddd;
+  --color-pink-700: #ab0d6c;
+  --color-pink-800: #780e4e;
+  --color-pink-900: #490c31;
+  --color-pink-950: #2d071e;
+
+  --color-green-50: #edfff5;
+  --color-green-100: #ceffe7;
+  --color-green-200: #a2ffcf;
+  --color-green-300: #75ffba;
+  --color-green-400: #4affa3;
+  --color-green-500: #12ee83;
+  --color-green-600: #00ba64;
+  --color-green-700: #008c4d;
+  --color-green-800: #07623b;
+  --color-green-900: #063d28;
+  --color-green-950: #032719;
+
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fff3cc;
+  --color-amber-200: #ffe9a3;
+  --color-amber-300: #ffdd7a;
+  --color-amber-400: #ffcf57;
+  --color-amber-500: #ffbb24;
+  --color-amber-600: #db9000;
+  --color-amber-700: #a86800;
+  --color-amber-800: #76470a;
+  --color-amber-900: #482c07;
+  --color-amber-950: #2e1b03;
+
+  --color-red-50: #fff1f3;
+  --color-red-100: #ffdce1;
+  --color-red-200: #ffbdc6;
+  --color-red-300: #ff9ba8;
+  --color-red-400: #ff7c8d;
+  --color-red-500: #ff4d68;
+  --color-red-600: #de254a;
+  --color-red-700: #ad1739;
+  --color-red-800: #7b1430;
+  --color-red-900: #4c1022;
+  --color-red-950: #300916;
+
+  /* Rôles (Figma 02 / Dark, by design) : fonds et surfaces */
+  --color-background: var(--color-neutral-950);
+  --color-surface-1: var(--color-neutral-900);
+  --color-surface-2: var(--color-neutral-800);
+
+  /* Rôles : texte */
+  --color-text-primary: var(--color-neutral-50);
+  --color-text-secondary: var(--color-neutral-200);
+  --color-text-muted: var(--color-neutral-400);
+
+  /* Rôles : bordures */
+  --color-border-subtle: var(--color-neutral-700);
+  --color-border-default: var(--color-neutral-600);
+  --color-border-strong: var(--color-neutral-500);
+
+  /* Rôles : accents néon. on = texte sombre posé sur l'accent plein */
+  --color-accent-primary: var(--color-cyan-500);
+  --color-accent-primary-hover: var(--color-cyan-400);
+  --color-accent-primary-pressed: var(--color-cyan-600);
+  --color-accent-primary-subtle: var(--color-cyan-950);
+  --color-accent-primary-on: var(--color-neutral-950);
+  --color-accent-secondary: var(--color-pink-500);
+  --color-accent-secondary-hover: var(--color-pink-400);
+  --color-accent-secondary-pressed: var(--color-pink-600);
+  --color-accent-secondary-subtle: var(--color-pink-950);
+  --color-accent-secondary-on: var(--color-neutral-950);
+
+  /* Rôles : feedback, toujours avec un libellé ou une icône */
+  --color-success-background: var(--color-green-950);
+  --color-success-foreground: var(--color-green-400);
+  --color-success-border: var(--color-green-600);
+  --color-warning-background: var(--color-amber-950);
+  --color-warning-foreground: var(--color-amber-400);
+  --color-warning-border: var(--color-amber-600);
+  --color-error-background: var(--color-red-950);
+  --color-error-foreground: var(--color-red-400);
+  --color-error-border: var(--color-red-600);
+  --color-information-background: var(--color-cyan-950);
+  --color-information-foreground: var(--color-cyan-400);
+  --color-information-border: var(--color-cyan-600);
+
+  /* Rôles : focus, même famille que l'accent du contrôle */
+  --color-focus-primary: var(--color-accent-primary);
+  --color-focus-secondary: var(--color-accent-secondary);
+
   /* Palette Cybercore Arena Complète */
   --color-surface-container-lowest: #0b0e18;
   --color-surface-container-low: #191b26;
