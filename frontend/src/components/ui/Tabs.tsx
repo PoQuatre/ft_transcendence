@@ -87,7 +87,7 @@ export const TabsTrigger: Component<TabsTriggerProps> = (props) => {
       class={cn(
         'px-space-sm py-space-xs font-label-mono-caps text-label-mono-caps transition-all cursor-pointer rounded flex flex-col items-center gap-1',
         isSelected()
-          ? 'bg-primary-container/20 text-primary-container font-bold shadow-[0_0_12px_rgba(0,240,255,0.25)] border border-primary-container/40'
+          ? 'bg-primary-container/20 text-primary-container font-bold shadow-glow-cyan-sm border border-primary-container/40'
           : 'bg-surface-container-high/60 text-on-surface-variant hover:text-white hover:bg-surface-container-high border border-transparent',
         props.class,
       )}

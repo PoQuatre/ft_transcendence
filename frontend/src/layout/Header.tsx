@@ -34,7 +34,7 @@ export const Header: Component = () => {
             <img
               src={basicTankLogo}
               alt="Cybercore Tank Logo"
-              class="w-9 h-9 object-contain drop-shadow-[0_0_8px_#00E5FF]"
+              class="w-9 h-9 object-contain drop-shadow-glow-cyan"
             />
             <div>
               <div class="flex items-center gap-1.5 font-sans font-extrabold text-sm tracking-wider text-white">
@@ -104,7 +104,7 @@ export const Header: Component = () => {
           >
             {/* 1. Badge [ONLINE] vert pulsant */}
             <div class="flex items-center gap-2 px-2.5 py-1 rounded bg-emerald-950/40 border border-emerald-500/40">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#39ff14] animate-pulse" />
+              <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-glow-green-xs animate-pulse" />
               <span class="text-emerald-400 font-bold text-[11px] tracking-widest">
                 [ONLINE]
               </span>
@@ -119,7 +119,7 @@ export const Header: Component = () => {
                 class={[
                   'p-1.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center',
                   {
-                    'bg-cyan-950/70 border-neon-cyan text-neon-cyan shadow-[0_0_12px_rgba(0,240,255,0.4)]':
+                    'bg-cyan-950/70 border-neon-cyan text-neon-cyan shadow-glow-cyan-md':
                       settingsOpen(),
                     'bg-hud-panel border-hud-line/85 text-slate-400 hover:text-neon-cyan hover:border-neon-cyan/50':
                       !settingsOpen(),
@@ -145,7 +145,7 @@ export const Header: Component = () => {
                   <button
                     type="button"
                     onClick={() => void handleLogout()}
-                    class="w-full py-2 px-3 rounded-lg bg-rose-950/40 hover:bg-rose-950/80 border border-rose-500/50 hover:border-rose-400 text-rose-400 font-bold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_10px_rgba(244,63,94,0.25)] hover:shadow-[0_0_14px_rgba(244,63,94,0.45)]"
+                    class="w-full py-2 px-3 rounded-lg bg-rose-950/40 hover:bg-rose-950/80 border border-rose-500/50 hover:border-rose-400 text-rose-400 font-bold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-glow-pink-sm hover:shadow-glow-pink-md"
                   >
                     <span class="material-symbols-outlined text-sm">
                       logout
@@ -161,7 +161,7 @@ export const Header: Component = () => {
                       <span class="tracking-widest uppercase">
                         OPERATOR PROTOCOL
                       </span>
-                      <span class="w-1.5 h-1.5 rounded-full bg-neon-green shadow-[0_0_6px_#39ff14]" />
+                      <span class="w-1.5 h-1.5 rounded-full bg-neon-green shadow-glow-green-xs" />
                     </div>
 
                     {/* Pseudo / Call-sign */}

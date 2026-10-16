@@ -11,7 +11,7 @@ export const kbdVariants = cva(
       variant: {
         default:
           'bg-surface-container-high text-primary-fixed border-surface-container-highest shadow-inner',
-        glow: 'bg-primary-container/10 text-primary-container border-primary-container/40 shadow-[0_0_8px_rgba(0,240,255,0.25)]',
+        glow: 'bg-primary-container/10 text-primary-container border-primary-container/40 shadow-glow-cyan-sm',
         outline: 'bg-transparent text-outline border-outline/30',
       },
       size: {

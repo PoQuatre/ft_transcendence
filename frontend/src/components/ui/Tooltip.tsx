@@ -27,7 +27,7 @@ export const Tooltip: Component<TooltipProps> = (props) => {
         <div
           role="tooltip"
           class={cn(
-            'absolute z-50 pointer-events-none px-2 py-1 font-label-mono-caps text-[10px] text-primary whitespace-nowrap bg-surface-container-lowest/95 border border-primary-container/40 rounded shadow-[0_0_10px_rgba(0,240,255,0.25)] left-1/2 -translate-x-1/2',
+            'absolute z-50 pointer-events-none px-2 py-1 font-label-mono-caps text-[10px] text-primary whitespace-nowrap bg-surface-container-lowest/95 border border-primary-container/40 rounded shadow-glow-cyan-sm left-1/2 -translate-x-1/2',
             side() === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5',
             props.class,
           )}

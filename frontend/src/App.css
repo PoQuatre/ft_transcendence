@@ -123,6 +123,35 @@
   --color-hud-raised: #090e1f;
   --color-hud-card: #0a0f21;
   --color-hud-line: #172a4d;
+
+  /* Halos néon : chaque --shadow-* génère shadow-glow-* et ses variantes
+     hover:. xs = trait net, sm/md = halo, ambient = diffus et large. */
+  --shadow-glow-cyan-xs: 0 0 6px var(--color-neon-cyan);
+  --shadow-glow-cyan-sm: 0 0 10px
+    color-mix(in oklab, var(--color-neon-cyan) 25%, transparent);
+  --shadow-glow-cyan-md: 0 0 15px
+    color-mix(in oklab, var(--color-neon-cyan) 40%, transparent);
+  --shadow-glow-cyan-ambient: 0 0 30px
+    color-mix(in oklab, var(--color-neon-cyan) 20%, transparent);
+  --shadow-glow-cyan: 0 0 20px -2px
+    color-mix(in oklab, var(--color-neon-cyan) 45%, transparent);
+  --shadow-glow-cyan-lg: 0 0 35px 2px
+    color-mix(in oklab, var(--color-neon-cyan) 65%, transparent);
+  --shadow-glow-green-xs: 0 0 6px var(--color-neon-green);
+  --shadow-glow-green-sm: 0 0 10px
+    color-mix(in oklab, var(--color-neon-green) 40%, transparent);
+  --shadow-glow-lime: 0 0 20px -2px
+    color-mix(in oklab, var(--color-neon-green) 45%, transparent);
+  --shadow-glow-magenta-xs: 0 0 8px var(--color-neon-magenta);
+  --shadow-glow-magenta-sm: 0 0 10px
+    color-mix(in oklab, var(--color-neon-magenta) 30%, transparent);
+  --shadow-glow-magenta: 0 0 20px -2px
+    color-mix(in oklab, var(--color-neon-magenta) 50%, transparent);
+  --shadow-glow-pink-sm: 0 0 10px
+    color-mix(in oklab, var(--color-neon-pink) 25%, transparent);
+  --shadow-glow-pink-md: 0 0 15px
+    color-mix(in oklab, var(--color-neon-pink) 45%, transparent);
+  --drop-shadow-glow-cyan: 0 0 8px var(--color-neon-cyan);
   --color-neon-green: #39ff14;
   --color-neon-amber: #ffb703;
   --color-text-main: #e1e1f1;
@@ -231,10 +260,7 @@
     drop-shadow(0 0 32px var(--tank-glow-color, rgba(0, 240, 255, 0.4)));
 }
 
-/* 4. Ombres néon spécifiques (box-shadow) */
-.shadow-glow-cyan {
-  box-shadow: 0 0 20px -2px rgba(0, 240, 255, 0.45);
-}
+/* 4. Les halos néon (shadow-glow-*) sont des tokens --shadow-* du @theme. */
 
 .shadow-glow-cyan-lg {
   box-shadow: 0 0 35px 2px rgba(0, 240, 255, 0.65);
