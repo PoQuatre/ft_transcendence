@@ -59,7 +59,7 @@ export default function Login() {
           <label class="block" for="email">
             <span class={LABEL}>
               <span>EMAIL DU PILOTE</span>
-              <span class="text-[10px] text-[#00f0ff] font-mono font-bold tracking-wider">
+              <span class="text-[10px] text-neon-cyan font-mono font-bold tracking-wider">
                 [ PAS DE CALL-SIGN ]
               </span>
             </span>
@@ -73,7 +73,7 @@ export default function Login() {
               onInput={(e) => setEmailValue(e.currentTarget.value)}
               placeholder="pilote@cybercore.net"
               class={{
-                'border-[#ff007f] shadow-[0_0_10px_rgba(255,0,127,0.4)]':
+                'border-neon-magenta shadow-[0_0_10px_rgba(255,0,127,0.4)]':
                   Boolean(error()?.title?.includes('EMAIL')),
               }}
             />

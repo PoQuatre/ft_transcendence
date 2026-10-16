@@ -44,7 +44,7 @@ export const AuthCard: Component<AuthCardProps> = (props) => {
               fallback={<Badge variant="secondary">NEW PILOT</Badge>}
             >
               <Badge variant="success">
-                <span class="h-1.5 w-1.5 animate-pulse bg-[#39ff14]" /> UPLINK
+                <span class="h-1.5 w-1.5 animate-pulse bg-neon-green" /> UPLINK
               </Badge>
             </Show>
           </div>

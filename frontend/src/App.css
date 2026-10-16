@@ -115,6 +115,14 @@
   --color-neon-cyan: #00f0ff;
   --color-neon-pink: #ff4a8d;
   --color-neon-purple: #dcb8ff;
+  --color-neon-magenta: #ff007f;
+
+  /* Surfaces et lignes du HUD tactique (lobby, header, formulaires) */
+  --color-hud-deep: #050711;
+  --color-hud-panel: #070b19;
+  --color-hud-raised: #090e1f;
+  --color-hud-card: #0a0f21;
+  --color-hud-line: #172a4d;
   --color-neon-green: #39ff14;
   --color-neon-amber: #ffb703;
   --color-text-main: #e1e1f1;

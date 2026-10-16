@@ -23,7 +23,7 @@ export const Header: Component = () => {
   };
 
   return (
-    <header class="fixed top-0 left-0 right-0 z-50 bg-[#070b18]/90 backdrop-blur-md border-b border-[rgba(23,42,77,0.85)] px-4 lg:px-8 py-3">
+    <header class="fixed top-0 left-0 right-0 z-50 bg-hud-panel/90 backdrop-blur-md border-b border-hud-line/85 px-4 lg:px-8 py-3">
       <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
         {/* =================================================================
             1. IDENTIFIANT & LOGO TRANSCEDANCE ARENA
@@ -39,7 +39,7 @@ export const Header: Component = () => {
             <div>
               <div class="flex items-center gap-1.5 font-sans font-extrabold text-sm tracking-wider text-white">
                 <span>TRANSCEDANCE</span>
-                <span class="text-[#00f0ff]">ARENA</span>
+                <span class="text-neon-cyan">ARENA</span>
               </div>
               <div class="font-mono text-[10px] text-slate-500 tracking-widest uppercase">
                 TACTICAL NET // SEC-00
@@ -54,7 +54,7 @@ export const Header: Component = () => {
         <nav class="hidden md:flex items-center space-x-6 font-mono text-xs font-bold tracking-wider uppercase text-slate-400">
           <a
             href={paths()}
-            class="px-3 py-1 rounded bg-[#00f0ff] text-[#050711] shadow-glow-cyan no-underline font-extrabold tracking-widest"
+            class="px-3 py-1 rounded bg-neon-cyan text-hud-deep shadow-glow-cyan no-underline font-extrabold tracking-widest"
           >
             PLAY
           </a>
@@ -66,13 +66,13 @@ export const Header: Component = () => {
           </a>
           <a
             href="#leaderboard"
-            class="hover:text-[#00f0ff] transition-colors no-underline"
+            class="hover:text-neon-cyan transition-colors no-underline"
           >
             LEADERBOARD
           </a>
           <a
             href="#classes"
-            class="hover:text-[#00f0ff] transition-colors no-underline"
+            class="hover:text-neon-cyan transition-colors no-underline"
           >
             CLASSES
           </a>
@@ -95,7 +95,7 @@ export const Header: Component = () => {
                 </a>
                 <a
                   href="/signup"
-                  class="font-mono text-xs font-bold text-[#00f0ff] hover:underline no-underline"
+                  class="font-mono text-xs font-bold text-neon-cyan hover:underline no-underline"
                 >
                   SIGN UP
                 </a>
@@ -119,9 +119,9 @@ export const Header: Component = () => {
                 class={[
                   'p-1.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center',
                   {
-                    'bg-cyan-950/70 border-[#00f0ff] text-[#00f0ff] shadow-[0_0_12px_rgba(0,240,255,0.4)]':
+                    'bg-cyan-950/70 border-neon-cyan text-neon-cyan shadow-[0_0_12px_rgba(0,240,255,0.4)]':
                       settingsOpen(),
-                    'bg-[#070b1a] border-[rgba(23,42,77,0.85)] text-slate-400 hover:text-[#00f0ff] hover:border-[#00f0ff]/50':
+                    'bg-hud-panel border-hud-line/85 text-slate-400 hover:text-neon-cyan hover:border-neon-cyan/50':
                       !settingsOpen(),
                   },
                 ]}
@@ -140,7 +140,7 @@ export const Header: Component = () => {
                 />
 
                 {/* Boîte du menu */}
-                <div class="absolute right-0 top-full mt-2 w-72 bg-[#080d1e]/95 backdrop-blur-xl border border-[rgba(23,42,77,0.9)] rounded-xl p-4 shadow-2xl z-50 font-mono space-y-3">
+                <div class="absolute right-0 top-full mt-2 w-72 bg-hud-raised/95 backdrop-blur-xl border border-hud-line/90 rounded-xl p-4 shadow-2xl z-50 font-mono space-y-3">
                   {/* Bouton LOGOUT au-dessus */}
                   <button
                     type="button"
@@ -153,7 +153,7 @@ export const Header: Component = () => {
                     <span>LOG OUT</span>
                   </button>
 
-                  <div class="border-t border-[rgba(23,42,77,0.8)] pt-2" />
+                  <div class="border-t border-hud-line/80 pt-2" />
 
                   {/* Informations du Pilote Connecté */}
                   <div class="space-y-2">
@@ -161,21 +161,21 @@ export const Header: Component = () => {
                       <span class="tracking-widest uppercase">
                         OPERATOR PROTOCOL
                       </span>
-                      <span class="w-1.5 h-1.5 rounded-full bg-[#39ff14] shadow-[0_0_6px_#39ff14]" />
+                      <span class="w-1.5 h-1.5 rounded-full bg-neon-green shadow-[0_0_6px_#39ff14]" />
                     </div>
 
                     {/* Pseudo / Call-sign */}
-                    <div class="bg-[#050711] border border-[rgba(23,42,77,0.85)] rounded-lg p-2.5">
+                    <div class="bg-hud-deep border border-hud-line/85 rounded-lg p-2.5">
                       <div class="text-[10px] text-slate-500 font-bold">
                         CALL-SIGN
                       </div>
-                      <div class="text-sm font-bold text-[#00f0ff] tracking-wider truncate mt-0.5">
+                      <div class="text-sm font-bold text-neon-cyan tracking-wider truncate mt-0.5">
                         {currentUser()?.username}
                       </div>
                     </div>
 
                     {/* Email du compte */}
-                    <div class="bg-[#050711] border border-[rgba(23,42,77,0.85)] rounded-lg p-2.5">
+                    <div class="bg-hud-deep border border-hud-line/85 rounded-lg p-2.5">
                       <div class="text-[10px] text-slate-500 font-bold">
                         EMAIL PILOTE
                       </div>

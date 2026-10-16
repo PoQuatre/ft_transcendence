@@ -11,8 +11,8 @@ export const progressVariants = cva(
       color: {
         cyan: 'bg-primary-container',
         pink: 'bg-secondary-container',
-        lime: 'bg-[#39ff14]',
-        amber: 'bg-[#ffb703]',
+        lime: 'bg-neon-green',
+        amber: 'bg-neon-amber',
         purple: 'bg-tertiary-fixed',
       },
     },
