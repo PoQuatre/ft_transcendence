@@ -51,7 +51,7 @@ export default function Settings() {
                     [SYS_CONFIG // {user().username}]
                   </span>
                   <Badge variant="success">
-                    <span class="h-1.5 w-1.5 animate-pulse bg-[#39ff14]" />{' '}
+                    <span class="h-1.5 w-1.5 animate-pulse bg-neon-green" />{' '}
                     UPLINK
                   </Badge>
                 </div>
