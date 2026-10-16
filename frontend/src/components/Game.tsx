@@ -42,7 +42,9 @@ function GameView(props: { buildId: string }) {
       wasmUrl.searchParams.set('v', props.buildId);
       const { default: createGame } = (await import(
         /* @vite-ignore */ gameUrl.href
-      )) as { default: GameFactory };
+      )) as {
+        default: GameFactory;
+      };
       if (disposed) return;
 
       const instance = await createGame({

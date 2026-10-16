@@ -29,7 +29,7 @@ export default function User(props: RouteProps<'/users/:id'>) {
       <p>{user().title}</p>
       <p class="my-4">
         <a
-          class="font-semibold text-sky-700 underline decoration-sky-400 decoration-2 underline-offset-4 transition-colors hover:text-sky-900 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-600"
+          class="font-semibold text-accent-primary underline decoration-accent-primary decoration-2 underline-offset-4 transition-colors hover:text-accent-primary-hover focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus-primary"
           href={paths.users(Number(props.params.id) + 1)}
         >
           Next user

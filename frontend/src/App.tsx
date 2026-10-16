@@ -1,42 +1,41 @@
 import { Title } from '@solidjs/meta';
 import { Loading } from 'solid-js';
 
-import { paths, Router } from './router';
+import { Footer } from './layout/Footer';
+import { Header } from './layout/Header';
+import { Router } from './router';
 
 import './App.css';
 
-// The app root: the router and the site-wide layout live here. Pages are
-// the modules under src/routes.
 export default function App() {
   return (
     <Router>
       {(props) => (
-        <>
-          <Title>Solid App</Title>
-          <nav class="bg-slate-800 p-4">
-            <a
-              class="mx-0.5 inline-block rounded-lg px-3 py-1.5 font-semibold text-sky-300 no-underline transition-colors hover:bg-white/10 hover:text-sky-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-600"
-              href={paths()}
+        <div class="min-h-screen bg-background font-body-lg text-text-primary antialiased selection:bg-accent-primary selection:text-accent-primary-on relative flex flex-col">
+          <Title>CYBERCORE // NEURAL ARENA</Title>
+
+          {/* Calque de scanlines CRT global (auto-fermant) */}
+          <div class="fixed inset-0 scanlines z-40 pointer-events-none opacity-40" />
+
+          {/* En-tête de navigation */}
+          <Header />
+
+          {/* Contenu principal */}
+          <main class="w-full pt-16 flex-1 flex flex-col">
+            <Loading
+              fallback={
+                <div class="flex-1 flex items-center justify-center p-12 text-accent-primary text-glow-cyan font-label-mono-caps font-bold">
+                  CHARGEMENT DU CYBERSPACE...
+                </div>
+              }
             >
-              Home
-            </a>
-            <a
-              class="mx-0.5 inline-block rounded-lg px-3 py-1.5 font-semibold text-sky-300 no-underline transition-colors hover:bg-white/10 hover:text-sky-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-600"
-              href={paths.users(1)}
-            >
-              Users
-            </a>
-            <a
-              class="mx-0.5 inline-block rounded-lg px-3 py-1.5 font-semibold text-sky-300 no-underline transition-colors hover:bg-white/10 hover:text-sky-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-600"
-              href="/game"
-            >
-              Game
-            </a>
-          </nav>
-          <Loading fallback={<main class="px-4 py-12">Loading…</main>}>
-            {props.children}
-          </Loading>
-        </>
+              {props.children}
+            </Loading>
+          </main>
+
+          {/* Pied de page */}
+          <Footer />
+        </div>
       )}
     </Router>
   );

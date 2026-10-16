@@ -65,6 +65,14 @@ export default defineConfig({
     /*
      * General JS
      */
+    /*
+     * Accessibilité : Input et PasswordInput rendent un <input>.
+     */
+
+    'jsx-a11y/label-has-associated-control': [
+      'error',
+      { controlComponents: ['Input', 'PasswordInput'] },
+    ],
 
     'eslint/eqeqeq': ['error', 'always'],
 
