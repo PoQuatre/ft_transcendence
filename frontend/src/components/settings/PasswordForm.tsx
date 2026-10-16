@@ -110,7 +110,7 @@ export const PasswordForm: Component = () => {
       <label class="block" for="new-password">
         <span class={FIELD_LABEL}>
           NEW PASSWORD
-          <span class="font-label-data text-label-data text-outline">
+          <span class="font-label-data text-label-data text-text-muted">
             {score()}/{PASSWORD_RULES.length}
           </span>
         </span>
@@ -135,7 +135,11 @@ export const PasswordForm: Component = () => {
         <For each={PASSWORD_RULES}>
           {(rule) => (
             <li
-              class={rule.test(password()) ? 'text-neon-green' : 'text-outline'}
+              class={
+                rule.test(password())
+                  ? 'text-success-foreground'
+                  : 'text-text-muted'
+              }
             >
               {rule.test(password()) ? '◆' : '◇'} {rule.label}
             </li>
@@ -154,7 +158,7 @@ export const PasswordForm: Component = () => {
           aria-describedby="confirm-password-msg"
           aria-invalid={showConfirm() && !confirmOk() ? 'true' : 'false'}
           onInput={(e) => setConfirm(e.currentTarget.value)}
-          class={cn(showConfirm() && !confirmOk() && 'border-neon-pink')}
+          class={cn(showConfirm() && !confirmOk() && 'border-accent-secondary')}
         />
       </label>
       <p
@@ -164,7 +168,7 @@ export const PasswordForm: Component = () => {
         // text-label-data pour une couleur et l'écraserait par la couleur.
         class={[
           '-mt-space-sm min-h-[14px] font-label-data text-label-data',
-          confirmOk() ? 'text-neon-green' : 'text-neon-pink',
+          confirmOk() ? 'text-success-foreground' : 'text-accent-secondary',
         ]}
       >
         <Show when={showConfirm()}>

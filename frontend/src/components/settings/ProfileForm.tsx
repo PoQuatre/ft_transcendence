@@ -85,7 +85,7 @@ export const ProfileForm: Component<ProfileFormProps> = (props) => {
       <label class="block" for="profile-username">
         <span class={FIELD_LABEL}>
           CALL-SIGN
-          <span class="font-label-data text-label-data text-outline">
+          <span class="font-label-data text-label-data text-text-muted">
             3-30 · a-z A-Z 0-9 _
           </span>
         </span>
