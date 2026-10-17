@@ -9,6 +9,9 @@ import {
 
 type ConnectionState = RTCPeerConnectionState | 'idle';
 
+const INITIAL_RECONNECT_DELAY_MS = 1_000;
+const MAX_RECONNECT_DELAY_MS = 30_000;
+
 interface WebRTCContextValue {
   state: Accessor<ConnectionState>;
   getPeer: () => RTCPeerConnection;
@@ -51,8 +54,6 @@ async function connect(peer: RTCPeerConnection) {
 
   const answer: RTCSessionDescriptionInit = await response.json();
   await peer.setRemoteDescription(answer);
-
-  console.log('WebRTC answer applied');
 }
 
 export function useWebRTC() {
@@ -62,6 +63,43 @@ export function useWebRTC() {
 export function WebRTCProvider(props: ParentProps) {
   const [state, setState] = createSignal<ConnectionState>('idle');
   let peer: RTCPeerConnection | null = null;
+  let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+  let reconnectAttempt = 0;
+  let stopped = false;
+
+  function cancelReconnect() {
+    if (reconnectTimer === undefined) return;
+
+    clearTimeout(reconnectTimer);
+    reconnectTimer = undefined;
+  }
+
+  function startConnection() {
+    const currentPeer = getPeer();
+    void connect(currentPeer).catch(() => {
+      if (peer === currentPeer) scheduleReconnect();
+    });
+  }
+
+  function scheduleReconnect() {
+    if (stopped || reconnectTimer !== undefined) return;
+
+    const delay = Math.min(
+      INITIAL_RECONNECT_DELAY_MS * 2 ** reconnectAttempt,
+      MAX_RECONNECT_DELAY_MS,
+    );
+    reconnectAttempt += 1;
+
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = undefined;
+      if (stopped) return;
+
+      const previousPeer = peer;
+      peer = null;
+      previousPeer?.close();
+      startConnection();
+    }, delay);
+  }
 
   function getPeer() {
     if (peer && peer.signalingState !== 'closed') {
@@ -73,23 +111,34 @@ export function WebRTCProvider(props: ParentProps) {
 
     setState(currentPeer.connectionState);
     currentPeer.onconnectionstatechange = () => {
-      console.log(`WebRTC: connection state: ${currentPeer.connectionState}`);
+      if (peer !== currentPeer) return;
+
       setState(currentPeer.connectionState);
+
+      if (currentPeer.connectionState === 'connected') {
+        reconnectAttempt = 0;
+        cancelReconnect();
+      } else if (
+        currentPeer.connectionState === 'failed' ||
+        currentPeer.connectionState === 'disconnected'
+      ) {
+        scheduleReconnect();
+      }
     };
     return currentPeer;
   }
 
   function disconnect() {
+    stopped = true;
+    cancelReconnect();
     peer?.close();
     peer = null;
     setState('closed');
   }
 
   onSettled(() => {
-    const currentPeer = getPeer();
-    connect(currentPeer).catch((err) =>
-      console.error('WebRTC negotiation failed:', err),
-    );
+    stopped = false;
+    startConnection();
     return disconnect;
   });
 
