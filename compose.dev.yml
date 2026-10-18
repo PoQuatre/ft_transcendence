@@ -68,6 +68,8 @@ services:
       context: ./backend
       dockerfile: ./Containerfile
       target: dev
+    environment:
+      - ENABLE_EMAILS=true
     volumes:
       - ./backend:/app:ro,Z
       - backend-tmp:/app/tmp:Z

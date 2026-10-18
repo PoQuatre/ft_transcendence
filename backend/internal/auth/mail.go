@@ -19,7 +19,7 @@ func SendMail(to, from, subj, body string) error {
 	m.SetBodyString(mail.TypeTextPlain, body)
 
 	// NOTE: mailpit version (for dev and tests ig)
-	c, err := mail.NewClient("localhost",
+	c, err := mail.NewClient("host.containers.internal",
 		mail.WithPort(1025),
 		mail.WithTLSPortPolicy(mail.NoTLS),
 	)
