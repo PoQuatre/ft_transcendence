@@ -12,8 +12,8 @@ import (
 	"github.com/uptrace/bun"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
+	"github.com/PoQuatre/ft_transcendence/backend/internal/game/webrtc"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
-	"github.com/PoQuatre/ft_transcendence/backend/internal/webrtc"
 )
 
 type config struct {
