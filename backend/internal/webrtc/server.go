@@ -21,6 +21,22 @@ var (
 
 const signalingTimeout = 10 * time.Second
 
+var dataChannelDeclarationTimeout = 10 * time.Second
+
+var unreliableMaxRetransmits = uint16(0)
+
+type dataChannelConfig struct {
+	maxRetransmits *uint16
+	ordered        bool
+}
+
+var expectedDataChannels = map[string]dataChannelConfig{
+	"control": {ordered: true},
+	"event":   {ordered: true},
+	"state":   {ordered: false, maxRetransmits: &unreliableMaxRetransmits},
+	"sync":    {ordered: false},
+}
+
 type Server struct {
 	api       *pion.API
 	mux       *ice.MultiUDPMuxDefault
@@ -120,10 +136,14 @@ func (s *Server) Answer(ctx context.Context, offer pion.SessionDescription) (*pi
 		}
 	}()
 
-	if err := s.managePeer(peer); err != nil {
+	channels := newDataChannelValidator(peer)
+	if err := s.managePeer(peer, channels); err != nil {
 		return nil, err
 	}
 	peer.OnDataChannel(func(channel *pion.DataChannel) {
+		if !channels.add(channel) {
+			return
+		}
 		channel.OnMessage(func(message pion.DataChannelMessage) {
 			var sendErr error
 			if message.IsString {
@@ -164,8 +184,11 @@ func (s *Server) Answer(ctx context.Context, offer pion.SessionDescription) (*pi
 	return peer.LocalDescription(), nil
 }
 
-func (s *Server) managePeer(peer *pion.PeerConnection) error {
+func (s *Server) managePeer(peer *pion.PeerConnection, validator *dataChannelValidator) error {
 	peer.OnConnectionStateChange(func(state pion.PeerConnectionState) {
+		if validator != nil {
+			validator.connectionStateChanged(state)
+		}
 		switch state {
 		case pion.PeerConnectionStateFailed:
 			if err := peer.Close(); err != nil {
@@ -184,6 +207,89 @@ func (s *Server) managePeer(peer *pion.PeerConnection) error {
 	}
 	s.peers[peer] = struct{}{}
 	return nil
+}
+
+type dataChannelValidator struct {
+	peer     *pion.PeerConnection
+	timer    *time.Timer
+	seen     map[string]struct{}
+	mu       sync.Mutex
+	rejected bool
+}
+
+func newDataChannelValidator(peer *pion.PeerConnection) *dataChannelValidator {
+	return &dataChannelValidator{peer: peer, seen: make(map[string]struct{})}
+}
+
+func (v *dataChannelValidator) add(channel *pion.DataChannel) bool {
+	if !expectedDataChannel(channel.Label(), channel.Ordered(), channel.MaxRetransmits(), channel.MaxPacketLifeTime()) {
+		v.reject()
+		return false
+	}
+
+	v.mu.Lock()
+	_, duplicate := v.seen[channel.Label()]
+	if !v.rejected && !duplicate {
+		v.seen[channel.Label()] = struct{}{}
+		if len(v.seen) == len(expectedDataChannels) && v.timer != nil {
+			v.timer.Stop()
+		}
+	}
+	rejected := v.rejected || duplicate
+	v.mu.Unlock()
+	if rejected {
+		v.reject()
+	}
+	return !rejected
+}
+
+func (v *dataChannelValidator) connectionStateChanged(state pion.PeerConnectionState) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if state == pion.PeerConnectionStateConnected && len(v.seen) != len(expectedDataChannels) && v.timer == nil && !v.rejected {
+		v.timer = time.AfterFunc(dataChannelDeclarationTimeout, v.expire)
+	}
+	if state == pion.PeerConnectionStateClosed && v.timer != nil {
+		v.timer.Stop()
+	}
+}
+
+func (v *dataChannelValidator) expire() {
+	v.mu.Lock()
+	complete := len(v.seen) == len(expectedDataChannels) || v.rejected
+	v.mu.Unlock()
+	if !complete {
+		v.reject()
+	}
+}
+
+func (v *dataChannelValidator) reject() {
+	v.mu.Lock()
+	if v.rejected {
+		v.mu.Unlock()
+		return
+	}
+	v.rejected = true
+	if v.timer != nil {
+		v.timer.Stop()
+	}
+	v.mu.Unlock()
+
+	if err := v.peer.Close(); err != nil {
+		slog.Debug("close WebRTC peer with invalid data channels", "error", err)
+	}
+}
+
+func expectedDataChannel(label string, ordered bool, maxRetransmits, maxPacketLifeTime *uint16) bool {
+	expected, ok := expectedDataChannels[label]
+	return ok &&
+		ordered == expected.ordered &&
+		equalUint16Pointers(maxRetransmits, expected.maxRetransmits) &&
+		maxPacketLifeTime == nil
+}
+
+func equalUint16Pointers(left, right *uint16) bool {
+	return left == nil && right == nil || left != nil && right != nil && *left == *right
 }
 
 func (s *Server) removePeer(peer *pion.PeerConnection) {
