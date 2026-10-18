@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 
@@ -34,11 +35,14 @@ func toUserResponse(user *User) *UserResponse {
 
 func (s *Service) SendVerificationEmail(ctx context.Context, userID uuid.UUID, email string) error {
 	if os.Getenv("ENABLE_EMAILS") != "true" {
+		fmt.Println("ENABLE_EMAILS = `" + os.Getenv("ENABLE_EMAILS") + "`")
 		return s.repo.MarkEmailAsVerified(ctx, userID)
 	}
 
 	// TODO: Envoyer le mail, generer le lien vers la page du front qui fera le post sur /api/auth/verify-email/confirm, je sais pas encore exactement comment faire ca
-	SendMail(email, "transcendance@transcendance.com", "Email verification transcendence", "This is not fully implemented yet.")
+	if err := SendMail(email, "transcendance@transcendance.com", "Email verification transcendence", "This is not fully implemented yet."); err != nil {
+		return err
+	}
 	return nil
 }
 
