@@ -8,12 +8,15 @@ import {
 } from 'solid-js';
 
 type ConnectionState = RTCPeerConnectionState | 'idle';
+type ChannelName = 'control' | 'event' | 'state' | 'sync';
+type DataChannels = Partial<Record<ChannelName, RTCDataChannel>>;
 
 const INITIAL_RECONNECT_DELAY_MS = 1_000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 
 interface WebRTCContextValue {
   state: Accessor<ConnectionState>;
+  channels: Accessor<DataChannels>;
   getPeer: () => RTCPeerConnection;
   disconnect: () => void;
 }
@@ -36,8 +39,19 @@ function waitForIceGathering(peer: RTCPeerConnection): Promise<void> {
   });
 }
 
-async function connect(peer: RTCPeerConnection) {
-  peer.createDataChannel('cli');
+async function connect(
+  peer: RTCPeerConnection,
+  setChannels: (channels: DataChannels) => void,
+) {
+  setChannels({
+    control: peer.createDataChannel('control'),
+    event: peer.createDataChannel('event'),
+    state: peer.createDataChannel('state', {
+      ordered: false,
+      maxRetransmits: 0,
+    }),
+    sync: peer.createDataChannel('sync', { ordered: false }),
+  });
 
   const offer = await peer.createOffer();
   await peer.setLocalDescription(offer);
@@ -62,6 +76,7 @@ export function useWebRTC() {
 
 export function WebRTCProvider(props: ParentProps) {
   const [state, setState] = createSignal<ConnectionState>('idle');
+  const [channels, setChannels] = createSignal<DataChannels>({});
   let peer: RTCPeerConnection | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
   let reconnectAttempt = 0;
@@ -76,8 +91,11 @@ export function WebRTCProvider(props: ParentProps) {
 
   function startConnection() {
     const currentPeer = getPeer();
-    void connect(currentPeer).catch(() => {
-      if (peer === currentPeer) scheduleReconnect();
+    void connect(currentPeer, setChannels).catch(() => {
+      if (peer === currentPeer) {
+        setChannels({});
+        scheduleReconnect();
+      }
     });
   }
 
@@ -122,6 +140,7 @@ export function WebRTCProvider(props: ParentProps) {
         currentPeer.connectionState === 'failed' ||
         currentPeer.connectionState === 'disconnected'
       ) {
+        setChannels({});
         scheduleReconnect();
       }
     };
@@ -133,6 +152,7 @@ export function WebRTCProvider(props: ParentProps) {
     cancelReconnect();
     peer?.close();
     peer = null;
+    setChannels({});
     setState('closed');
   }
 
@@ -143,7 +163,7 @@ export function WebRTCProvider(props: ParentProps) {
   });
 
   return (
-    <WebRTCContext value={{ state, getPeer, disconnect }}>
+    <WebRTCContext value={{ state, channels, getPeer, disconnect }}>
       {props.children}
     </WebRTCContext>
   );

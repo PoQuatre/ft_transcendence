@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	pion "github.com/pion/webrtc/v4"
 )
@@ -54,7 +55,7 @@ func TestServerCloseClosesManagedPeers(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := server.managePeer(peer); err != nil {
+	if err := server.managePeer(peer, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -84,7 +85,66 @@ func TestServerDoesNotManagePeersAfterClose(t *testing.T) {
 		}
 	})
 
-	if err := server.managePeer(peer); !errors.Is(err, errServerClosed) {
+	if err := server.managePeer(peer, nil); !errors.Is(err, errServerClosed) {
 		t.Errorf("managePeer() error = %v, want %v", err, errServerClosed)
+	}
+}
+
+func TestExpectedDataChannel(t *testing.T) {
+	zero := uint16(0)
+	one := uint16(1)
+	tests := []struct {
+		name                         string
+		label                        string
+		ordered                      bool
+		maxRetransmits, maxPacketAge *uint16
+		want                         bool
+	}{
+		{name: "control", label: "control", ordered: true, want: true},
+		{name: "event", label: "event", ordered: true, want: true},
+		{name: "state", label: "state", maxRetransmits: &zero, want: true},
+		{name: "sync", label: "sync", want: true},
+		{name: "unknown", label: "unknown", want: false},
+		{name: "ordered state", label: "state", ordered: true, maxRetransmits: &zero, want: false},
+		{name: "reliable state", label: "state", want: false},
+		{name: "limited retries", label: "state", maxRetransmits: &one, want: false},
+		{name: "max packet age", label: "sync", maxPacketAge: &zero, want: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := expectedDataChannel(test.label, test.ordered, test.maxRetransmits, test.maxPacketAge); got != test.want {
+				t.Errorf("expectedDataChannel() = %t, want %t", got, test.want)
+			}
+		})
+	}
+}
+
+func TestDataChannelValidatorRejectsMissingChannels(t *testing.T) {
+	originalTimeout := dataChannelDeclarationTimeout
+	dataChannelDeclarationTimeout = time.Millisecond
+	t.Cleanup(func() { dataChannelDeclarationTimeout = originalTimeout })
+
+	peer, err := pion.NewPeerConnection(pion.Configuration{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	closed := make(chan struct{})
+	peer.OnConnectionStateChange(func(state pion.PeerConnectionState) {
+		if state == pion.PeerConnectionStateClosed {
+			close(closed)
+		}
+	})
+	t.Cleanup(func() {
+		if closeErr := peer.Close(); closeErr != nil {
+			t.Error(closeErr)
+		}
+	})
+
+	newDataChannelValidator(peer).connectionStateChanged(pion.PeerConnectionStateConnected)
+	select {
+	case <-closed:
+	case <-time.After(time.Second):
+		t.Fatal("peer was not closed for missing data channels")
 	}
 }
