@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/database"
+	"github.com/PoQuatre/ft_transcendence/backend/internal/game/webrtc"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/server"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/vault"
-	"github.com/PoQuatre/ft_transcendence/backend/internal/webrtc"
 
 	"github.com/spf13/cobra"
 )
