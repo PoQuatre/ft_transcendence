@@ -14,7 +14,7 @@ import (
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
 
-	"github.com/PoQuatre/ft_transcendence/backend/internal/webrtc"
+	"github.com/PoQuatre/ft_transcendence/backend/internal/game/webrtc"
 )
 
 func TestNewHealthzWithoutDatabase(t *testing.T) {
