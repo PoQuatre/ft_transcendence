@@ -1,7 +1,7 @@
 import { render } from '@solidjs/testing-library';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
-import { WebRTCProvider } from './WebRTCContext';
+import { useWebRTC, WebRTCProvider } from './WebRTCContext';
 
 class MockPeerConnection {
   static instances: MockPeerConnection[] = [];
@@ -11,6 +11,7 @@ class MockPeerConnection {
   localDescription: RTCSessionDescriptionInit | null = null;
   onconnectionstatechange: (() => void) | null = null;
   signalingState: RTCSignalingState = 'stable';
+  dataChannels: Array<{ label: string; options?: RTCDataChannelInit }> = [];
 
   constructor() {
     MockPeerConnection.instances.push(this);
@@ -20,7 +21,8 @@ class MockPeerConnection {
     this.signalingState = 'closed';
   }
 
-  createDataChannel() {
+  createDataChannel(label: string, options?: RTCDataChannelInit) {
+    this.dataChannels.push({ label, options });
     return {} as RTCDataChannel;
   }
 
@@ -55,6 +57,42 @@ afterEach(() => {
 });
 
 describe('<WebRTCProvider />', () => {
+  test('creates the configured data channels', async () => {
+    vi.stubGlobal('RTCPeerConnection', MockPeerConnection);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ type: 'answer', sdp: 'answer' }),
+      }),
+    );
+    let channels: NonNullable<ReturnType<typeof useWebRTC>>['channels'];
+    const Probe = () => {
+      channels = useWebRTC().channels;
+      return null;
+    };
+
+    render(() => (
+      <WebRTCProvider>
+        <Probe />
+      </WebRTCProvider>
+    ));
+    await settle();
+
+    expect(MockPeerConnection.instances[0]?.dataChannels).toEqual([
+      { label: 'control', options: undefined },
+      { label: 'event', options: undefined },
+      { label: 'state', options: { ordered: false, maxRetransmits: 0 } },
+      { label: 'sync', options: { ordered: false } },
+    ]);
+    expect(Object.keys(channels!())).toEqual([
+      'control',
+      'event',
+      'state',
+      'sync',
+    ]);
+  });
+
   test('retries with exponential backoff and resets after connecting', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('RTCPeerConnection', MockPeerConnection);

@@ -83,10 +83,7 @@ func TestWebRTCOfferEchoesMessage(t *testing.T) {
 		}
 	})
 
-	channel, err := client.CreateDataChannel("echo", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	channel := createExpectedDataChannels(t, client)
 	received := make(chan pion.DataChannelMessage, 1)
 	channel.OnMessage(func(message pion.DataChannelMessage) { received <- message })
 	opened := make(chan struct{})
@@ -143,6 +140,33 @@ func TestWebRTCOfferEchoesMessage(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("did not receive echoed data-channel message")
 	}
+}
+
+func createExpectedDataChannels(t *testing.T, peer *pion.PeerConnection) *pion.DataChannel {
+	t.Helper()
+	control, err := peer.CreateDataChannel("control", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, label := range []string{"event", "sync"} {
+		options := (*pion.DataChannelInit)(nil)
+		if label == "sync" {
+			ordered := false
+			options = &pion.DataChannelInit{Ordered: &ordered}
+		}
+		if _, err := peer.CreateDataChannel(label, options); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ordered := false
+	maxRetransmits := uint16(0)
+	if _, err := peer.CreateDataChannel("state", &pion.DataChannelInit{
+		Ordered:        &ordered,
+		MaxRetransmits: &maxRetransmits,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return control
 }
 
 func serve(t *testing.T, handler http.Handler, method, target string) *httptest.ResponseRecorder {
