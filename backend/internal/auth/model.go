@@ -9,6 +9,24 @@ import (
 )
 
 //nolint:govet // Field order follows the database column order.
+type UserVerify struct {
+	bun.BaseModel `bun:"table:user_verifications,alias:uv"`
+
+	UserID uuid.UUID `bun:",type:uuid,pk"`
+	Code   string    `bun:",notnull"`
+	EndsAt time.Time `bun:",nullzero,notnull"`
+}
+
+var _ bun.BeforeAppendModelHook = (*UserVerify)(nil)
+
+func (u *UserVerify) BeforeAppendModel(_ context.Context, query bun.Query) error {
+	if _, ok := query.(*bun.InsertQuery); ok && u.EndsAt.IsZero() {
+		u.EndsAt = time.Now().Add(10 * time.Minute)
+	}
+	return nil
+}
+
+//nolint:govet // Field order follows the database column order.
 type User struct {
 	bun.BaseModel `bun:"table:users,alias:u"`
 

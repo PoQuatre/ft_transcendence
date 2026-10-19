@@ -2,12 +2,18 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
+	"math/big"
+	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/labstack/echo/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -33,16 +39,67 @@ func toUserResponse(user *User) *UserResponse {
 	}
 }
 
+func (s *Service) CheckVerificationEmail(ctx context.Context, userID uuid.UUID, code string) error {
+	user, err := s.repo.GetUserVerificationByID(ctx, userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
+	}
+	if user.EndsAt.Before(time.Now()) {
+		return echo.NewHTTPError(http.StatusBadRequest, "timeout")
+	}
+	if user.Code != code {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid code")
+	}
+	if err := s.repo.MarkEmailAsVerified(ctx, userID); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return nil
+}
+
+// TODO: Turn to a cool html message
+func createMail(code string) string {
+	rep := "Hello,\n\nThank you for signing up with ft_transcendence.\n\nHere is your verification code to enter on the authentication page:\n["
+	rep += code
+	rep += "]\nThis code is valid for 10 minutes. If you did not request this code, you can safely ignore this email.\n\nBest regards,\nThe ft_transcendence Team"
+	return rep
+}
+
+func generateCode() (string, error) {
+	n, err := rand.Int(rand.Reader, big.NewInt(900000))
+	if err != nil {
+		return "", fmt.Errorf("failed to generate random code: %w", err)
+	}
+
+	code := int(n.Int64()) + 100000
+	codeStr := strconv.Itoa(code)
+
+	return codeStr, nil
+}
+
 func (s *Service) SendVerificationEmail(ctx context.Context, userID uuid.UUID, email string) error {
 	if os.Getenv("ENABLE_EMAILS") != "true" {
 		fmt.Println("ENABLE_EMAILS = `" + os.Getenv("ENABLE_EMAILS") + "`")
 		return s.repo.MarkEmailAsVerified(ctx, userID)
 	}
 
-	// TODO: Envoyer le mail, generer le lien vers la page du front qui fera le post sur /api/auth/verify-email/confirm, je sais pas encore exactement comment faire ca
-	if err := SendMail(email, "transcendance@transcendance.com", "Email verification transcendence", "This is not fully implemented yet."); err != nil {
+	code, err := generateCode()
+	if err != nil {
 		return err
 	}
+	userVerif := &UserVerify{
+		UserID: userID,
+		Code:   code,
+	}
+
+	mailContent := createMail(code)
+	if _, err = s.repo.CreateUserVerification(ctx, userVerif); err != nil {
+		return err
+	}
+	// remplacer transcendence@transcendence par le vrai mail une fois quon a un mail bien setup
+	if err := SendMail(ctx, email, "transcendence@transcendence.com", "Your verification code - ft_transcendence", mailContent); err != nil {
+		return err
+	}
+
 	return nil
 }
 
