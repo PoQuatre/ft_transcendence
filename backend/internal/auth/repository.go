@@ -25,6 +25,9 @@ type Repository interface {
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
 
+	GetUserVerificationByID(ctx context.Context, id uuid.UUID) (*UserVerify, error)
+	CreateUserVerification(ctx context.Context, user *UserVerify) (*UserVerify, error)
+
 	MarkEmailAsVerified(ctx context.Context, UserID uuid.UUID) error
 }
 
@@ -71,6 +74,32 @@ func (r *bunRepository) CreateUser(ctx context.Context, user *User) (*User, erro
 			default:
 				return nil, ErrAlreadyExists
 			}
+		}
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *bunRepository) CreateUserVerification(ctx context.Context, user *UserVerify) (*UserVerify, error) {
+	_, err := r.db.NewInsert().
+		Model(user).
+		On("CONFLICT (user_id) DO UPDATE").
+		Set("code = EXCLUDED.code").
+		Set("ends_at = EXCLUDED.ends_at").
+		Returning("*").
+		Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *bunRepository) GetUserVerificationByID(ctx context.Context, id uuid.UUID) (*UserVerify, error) {
+	user := new(UserVerify)
+	err := r.db.NewSelect().Model(user).Where("user_id = ?", id).Scan(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
 		}
 		return nil, err
 	}
