@@ -58,7 +58,7 @@ export default function Login() {
         >
           <label class="block" for="email">
             <span class={LABEL}>
-              <span>EMAIL DU PILOTE</span>
+              EMAIL DU PILOTE
               <span class="text-[10px] text-accent-primary font-mono font-bold tracking-wider">
                 [ PAS DE CALL-SIGN ]
               </span>
@@ -78,9 +78,6 @@ export default function Login() {
                 ),
               }}
             />
-            <p class="text-[11px] text-text-muted font-mono mt-1">
-              ⚠️ Entrez l'adresse email renseignée à l'inscription.
-            </p>
           </label>
 
           <label class="block" for="password">
