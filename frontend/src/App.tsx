@@ -12,7 +12,7 @@ export default function App() {
     <Router>
       {(props) => (
         <div class="min-h-screen bg-background font-body-lg text-text-primary antialiased selection:bg-accent-primary selection:text-accent-primary-on relative flex flex-col">
-          <Title>CYBERCORE // NEURAL ARENA</Title>
+          <Title>FT_TRANSCENDENCE</Title>
 
           {/* Calque de scanlines CRT global (auto-fermant) */}
           <div class="fixed inset-0 scanlines z-40 pointer-events-none opacity-40" />

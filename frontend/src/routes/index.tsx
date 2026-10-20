@@ -188,7 +188,7 @@ export default function Home() {
         '--tank-stroke-color': selectedColor().hex,
       }}
     >
-      <Title>CYBERCORE // Tactical Net Arena</Title>
+      <Title>FT_TRANSCENDENCE</Title>
 
       {/* Arrière-plans d'ambiance et grille tactique */}
       <div class="fixed inset-0 tactical-grid pointer-events-none opacity-80 z-0" />
@@ -205,7 +205,7 @@ export default function Home() {
           <div class="flex items-center space-x-2">
             <span class="inline-block w-2.5 h-2.5 bg-accent-primary shadow-glow-cyan" />
             <span class="font-mono text-xs font-bold tracking-widest text-accent-primary uppercase">
-              // TRANSCENDANCE ARENA
+              // FT_TRANSCENDENCE
             </span>
           </div>
           <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white uppercase mt-1">
