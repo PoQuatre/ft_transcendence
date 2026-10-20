@@ -9,7 +9,7 @@ export default function Document(props: ParentProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="alternate icon" href="/favicon.ico" />
-        <title>CYBERCORE // NEURAL ARENA</title>
+        <title>FT_TRANSCENDENCE</title>
 
         {/* Polices et icônes du Design System */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

@@ -26,7 +26,7 @@ export default function Login() {
         ok: false,
         title: 'EMAIL REQUIS (PAS LE PSEUDO)',
         message:
-          'Veuillez saisir votre adresse email complète (ex: pilote@cybercore.net) et non votre Call-Sign.',
+          'Veuillez saisir votre adresse email complète (ex: pilote@example.com) et non votre Call-Sign.',
       });
       return;
     }
@@ -45,7 +45,7 @@ export default function Login() {
 
   return (
     <>
-      <Title>Log in - Cybercore</Title>
+      <Title>Log in - FT_TRANSCENDENCE</Title>
       <AuthCard mode="login" error={error()}>
         {/* novalidate empêche l'infobulle invisible du navigateur */}
         <form
@@ -71,7 +71,7 @@ export default function Login() {
               autocomplete="email"
               value={emailValue()}
               onInput={(e) => setEmailValue(e.currentTarget.value)}
-              placeholder="pilote@cybercore.net"
+              placeholder="pilote@example.com"
               class={{
                 'border-accent-secondary shadow-glow-magenta-sm': Boolean(
                   error()?.title?.includes('EMAIL'),

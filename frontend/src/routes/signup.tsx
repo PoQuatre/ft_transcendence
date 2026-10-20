@@ -59,7 +59,7 @@ export default function Signup() {
 
   return (
     <>
-      <Title>Sign up - Cybercore</Title>
+      <Title>Sign up - FT_TRANSCENDENCE</Title>
       <AuthCard mode="signup" error={error()}>
         <form
           class="mt-space-lg space-y-space-md"
@@ -95,7 +95,7 @@ export default function Signup() {
               type="email"
               required
               autocomplete="email"
-              placeholder="pilot@cybercore.net"
+              placeholder="pilot@example.com"
             />
           </label>
 
