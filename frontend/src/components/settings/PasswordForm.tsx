@@ -15,9 +15,16 @@ export const PasswordForm: Component = () => {
   const [password, setPassword] = createSignal('');
   const [confirm, setConfirm] = createSignal('');
   const [submitted, setSubmitted] = createSignal(false);
+  // Règles et correspondance n'apparaissent qu'une fois le champ touché
+  // (focus : clic, tap ou Tab), puis restent visibles. L'envoi les révèle aussi.
+  const [passwordTouched, setPasswordTouched] = createSignal(false);
+  const [confirmTouched, setConfirmTouched] = createSignal(false);
 
   const score = () => PASSWORD_RULES.filter((r) => r.test(password())).length;
-  const showConfirm = () => submitted() || confirm() !== '';
+  const showRules = () => submitted() || passwordTouched();
+  // Rien tant que la confirmation est vide : pas d'erreur avant la saisie.
+  const showConfirm = () =>
+    submitted() || (confirmTouched() && confirm() !== '');
   const confirmOk = () => confirm() !== '' && confirm() === password();
 
   let confirmRef: HTMLInputElement | undefined;
@@ -72,6 +79,8 @@ export const PasswordForm: Component = () => {
       setPassword('');
       setConfirm('');
       setSubmitted(false);
+      setPasswordTouched(false);
+      setConfirmTouched(false);
       setFeedback({
         kind: 'success',
         title: 'Password updated',
@@ -110,9 +119,11 @@ export const PasswordForm: Component = () => {
       <label class="block" for="new-password">
         <span class={FIELD_LABEL}>
           NEW PASSWORD
-          <span class="font-label-data text-label-data text-text-muted">
-            {score()}/{PASSWORD_RULES.length}
-          </span>
+          <Show when={showRules()}>
+            <span class="font-label-data text-label-data text-text-muted">
+              {score()}/{PASSWORD_RULES.length}
+            </span>
+          </Show>
         </span>
         <PasswordInput
           id="new-password"
@@ -121,31 +132,34 @@ export const PasswordForm: Component = () => {
           maxlength={72}
           autocomplete="new-password"
           placeholder="••••••••••"
+          onFocus={() => setPasswordTouched(true)}
           onInput={(e) => setPassword(e.currentTarget.value)}
         />
       </label>
 
-      <Progress
-        value={score()}
-        max={PASSWORD_RULES.length}
-        color={score() === PASSWORD_RULES.length ? 'lime' : 'pink'}
-      />
+      <Show when={showRules()}>
+        <Progress
+          value={score()}
+          max={PASSWORD_RULES.length}
+          color={score() === PASSWORD_RULES.length ? 'lime' : 'pink'}
+        />
 
-      <ul class="grid grid-cols-2 gap-x-space-md gap-y-space-xs font-label-data text-label-data">
-        <For each={PASSWORD_RULES}>
-          {(rule) => (
-            <li
-              class={
-                rule.test(password())
-                  ? 'text-success-foreground'
-                  : 'text-text-muted'
-              }
-            >
-              {rule.test(password()) ? '◆' : '◇'} {rule.label}
-            </li>
-          )}
-        </For>
-      </ul>
+        <ul class="grid grid-cols-2 gap-x-space-md gap-y-space-xs font-label-data text-label-data">
+          <For each={PASSWORD_RULES}>
+            {(rule) => (
+              <li
+                class={
+                  rule.test(password())
+                    ? 'text-success-foreground'
+                    : 'text-text-muted'
+                }
+              >
+                {rule.test(password()) ? '◆' : '◇'} {rule.label}
+              </li>
+            )}
+          </For>
+        </ul>
+      </Show>
 
       <label class="block" for="confirm-password">
         <span class={FIELD_LABEL}>CONFIRM NEW PASSWORD</span>
@@ -157,6 +171,7 @@ export const PasswordForm: Component = () => {
           placeholder="••••••••••"
           aria-describedby="confirm-password-msg"
           aria-invalid={showConfirm() && !confirmOk() ? 'true' : 'false'}
+          onFocus={() => setConfirmTouched(true)}
           onInput={(e) => setConfirm(e.currentTarget.value)}
           class={cn(showConfirm() && !confirmOk() && 'border-accent-secondary')}
         />

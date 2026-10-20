@@ -24,6 +24,9 @@ function fill(container: HTMLElement, next: string, confirm: string) {
   });
 }
 
+// Laisse Solid appliquer les écritures de signaux avant d'observer le DOM.
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -96,5 +99,17 @@ describe('<PasswordForm />', () => {
     fireEvent.submit(getByRole('button', { name: /update password/i }));
 
     expect(await findByText('Access denied')).toBeInTheDocument();
+  });
+
+  test('shows the rules once the new password is touched', async () => {
+    const { container, queryByText, findByText } = render(() => (
+      <PasswordForm />
+    ));
+
+    await settle();
+    expect(queryByText(/UNE MAJUSCULE/)).not.toBeInTheDocument();
+    fireEvent.focus(field(container, 'new-password'));
+
+    expect(await findByText(/UNE MAJUSCULE/)).toBeInTheDocument();
   });
 });
