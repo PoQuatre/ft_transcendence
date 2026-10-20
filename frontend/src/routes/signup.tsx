@@ -22,9 +22,16 @@ export default function Signup() {
   const [password, setPassword] = createSignal('');
   const [confirm, setConfirm] = createSignal('');
   const [submitted, setSubmitted] = createSignal(false);
+  // Règles et correspondance n'apparaissent qu'une fois le champ touché
+  // (focus : clic, tap ou Tab), puis restent visibles. L'envoi les révèle aussi.
+  const [passwordTouched, setPasswordTouched] = createSignal(false);
+  const [confirmTouched, setConfirmTouched] = createSignal(false);
 
   const score = () => PASSWORD_RULES.filter((r) => r.test(password())).length;
-  const showConfirm = () => submitted() || confirm() !== '';
+  const showRules = () => submitted() || passwordTouched();
+  // Rien tant que la confirmation est vide : pas d'erreur avant la saisie.
+  const showConfirm = () =>
+    submitted() || (confirmTouched() && confirm() !== '');
   const confirmOk = () => confirm() !== '' && confirm() === password();
 
   let confirmRef: HTMLInputElement | undefined;
@@ -102,9 +109,11 @@ export default function Signup() {
           <label class="block" for="password">
             <span class={LABEL}>
               PASSWORD
-              <span class="font-label-data text-label-data text-text-muted">
-                {score()}/{PASSWORD_RULES.length}
-              </span>
+              <Show when={showRules()}>
+                <span class="font-label-data text-label-data text-text-muted">
+                  {score()}/{PASSWORD_RULES.length}
+                </span>
+              </Show>
             </span>
             <PasswordInput
               id="password"
@@ -114,31 +123,34 @@ export default function Signup() {
               maxlength={72}
               autocomplete="new-password"
               placeholder="••••••••••"
+              onFocus={() => setPasswordTouched(true)}
               onInput={(e) => setPassword(e.currentTarget.value)}
             />
           </label>
 
-          <Progress
-            value={score()}
-            max={PASSWORD_RULES.length}
-            color={score() === PASSWORD_RULES.length ? 'lime' : 'pink'}
-          />
+          <Show when={showRules()}>
+            <Progress
+              value={score()}
+              max={PASSWORD_RULES.length}
+              color={score() === PASSWORD_RULES.length ? 'lime' : 'pink'}
+            />
 
-          <ul class="grid grid-cols-2 gap-x-space-md gap-y-space-xs font-label-data text-label-data">
-            <For each={PASSWORD_RULES}>
-              {(rule) => (
-                <li
-                  class={
-                    rule.test(password())
-                      ? 'text-success-foreground'
-                      : 'text-text-muted'
-                  }
-                >
-                  {rule.test(password()) ? '◆' : '◇'} {rule.label}
-                </li>
-              )}
-            </For>
-          </ul>
+            <ul class="grid grid-cols-2 gap-x-space-md gap-y-space-xs font-label-data text-label-data">
+              <For each={PASSWORD_RULES}>
+                {(rule) => (
+                  <li
+                    class={
+                      rule.test(password())
+                        ? 'text-success-foreground'
+                        : 'text-text-muted'
+                    }
+                  >
+                    {rule.test(password()) ? '◆' : '◇'} {rule.label}
+                  </li>
+                )}
+              </For>
+            </ul>
+          </Show>
 
           <label class="block" for="confirm">
             <span class={LABEL}>CONFIRM PASSWORD</span>
@@ -151,6 +163,7 @@ export default function Signup() {
               placeholder="••••••••••"
               aria-describedby="confirm-msg"
               aria-invalid={showConfirm() && !confirmOk() ? 'true' : 'false'}
+              onFocus={() => setConfirmTouched(true)}
               onInput={(e) => setConfirm(e.currentTarget.value)}
               class={cn(
                 showConfirm() && !confirmOk() && 'border-accent-secondary',

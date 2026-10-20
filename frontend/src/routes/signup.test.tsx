@@ -25,6 +25,9 @@ function fill(container: HTMLElement, confirm: string) {
   fireEvent.input(field(container, 'confirm'), { target: { value: confirm } });
 }
 
+// Laisse Solid appliquer les écritures de signaux avant d'observer le DOM.
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 afterEach(() => {
   cleanup();
   navigate.mockReset();
@@ -99,5 +102,31 @@ describe('<Signup />', () => {
 
     expect(await findByText('Call-sign taken')).toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  test('shows the password rules once the field is touched', async () => {
+    const { container, queryByText, findByText } = render(() => <Signup />);
+
+    await settle();
+    expect(queryByText(/UNE MAJUSCULE/)).not.toBeInTheDocument();
+    fireEvent.focus(field(container, 'password'));
+
+    expect(await findByText(/UNE MAJUSCULE/)).toBeInTheDocument();
+  });
+
+  test('shows the match status once the confirmation is touched', async () => {
+    const { container, queryByText, findByText } = render(() => <Signup />);
+
+    // Rempli sans focus, comme le ferait le gestionnaire de mots de passe.
+    fireEvent.input(field(container, 'confirm'), {
+      target: { value: 'nope' },
+    });
+    await settle();
+    expect(queryByText(/CORRESPONDENT/)).not.toBeInTheDocument();
+    fireEvent.focus(field(container, 'confirm'));
+
+    expect(
+      await findByText('◇ LES MOTS DE PASSE NE CORRESPONDENT PAS'),
+    ).toBeInTheDocument();
   });
 });
