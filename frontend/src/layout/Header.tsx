@@ -26,25 +26,19 @@ export const Header: Component = () => {
     <header class="fixed top-0 left-0 right-0 z-50 bg-surface-1/90 backdrop-blur-md border-b border-border-subtle/85 px-4 lg:px-8 py-3">
       <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
         {/* =================================================================
-            1. IDENTIFIANT & LOGO TRANSCEDANCE ARENA
+            1. LOGO FT_TRANSCENDENCE
             ================================================================= */}
         <div class="flex items-center space-x-3">
           <a href={paths()} class="flex items-center gap-3 no-underline">
-            {/* Nouveau Logo Tank */}
+            {/* Logo décoratif : le nom du projet est écrit juste à côté. */}
             <img
               src={basicTankLogo}
-              alt="Cybercore Tank Logo"
+              alt=""
               class="w-9 h-9 object-contain drop-shadow-glow-cyan"
             />
-            <div>
-              <div class="flex items-center gap-2 font-sans font-extrabold text-sm tracking-wider text-white">
-                <span>TRANSCEDANCE</span>
-                <span class="text-accent-primary">ARENA</span>
-              </div>
-              <div class="font-mono text-[10px] text-text-muted tracking-widest uppercase">
-                TACTICAL NET // SEC-00
-              </div>
-            </div>
+            <span class="font-sans font-extrabold text-sm tracking-wider text-white">
+              FT_TRANSCENDENCE
+            </span>
           </a>
         </div>
 

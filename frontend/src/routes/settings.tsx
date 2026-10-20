@@ -33,7 +33,7 @@ export default function Settings() {
 
   return (
     <>
-      <Title>Settings - Cybercore</Title>
+      <Title>Settings - FT_TRANSCENDENCE</Title>
       <section class="relative z-10 flex flex-1 justify-center px-4 py-12">
         <div class="w-full max-w-3xl">
           <Show
