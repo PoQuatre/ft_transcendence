@@ -31,8 +31,8 @@ func SendMail(ctx context.Context, to, from, subj, body string) error {
 	if err != nil {
 		return fmt.Errorf("error 'NewClient': %w", err)
 	}
-	// if err := c.DialAndSendWithContext(ctx, m); err != nil {
-	if err := c.DialAndSendWithContext(context.Background(), m); err != nil {
+	// if err := c.DialAndSendWithContext(context.Background(), m); err != nil {
+	if err := c.DialAndSendWithContext(ctx, m); err != nil {
 		return fmt.Errorf("failed to send : %w", err)
 	}
 	return nil

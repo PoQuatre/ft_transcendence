@@ -8,6 +8,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
 )
@@ -30,6 +31,7 @@ func RegisterRoutes(group *echo.Group, service Service, sessionManager *scs.Sess
 	group.POST("/logout", h.logout)
 	group.POST("/verify-email/request", h.requestEmailVerification)
 	group.POST("/verify-email/confirm", h.confirmEmailVerification)
+	group.POST("/change-password", h.changePassword)
 	group.GET("/me", h.me)
 }
 
@@ -46,6 +48,34 @@ func apiError(err error) error {
 	default:
 		return err
 	}
+}
+
+func (h *handler) changePassword(c *echo.Context) error {
+	ctx := c.Request().Context()
+	var req ChangePasswordRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+	userIDStr := h.sessionManager.GetString(ctx, "user_id")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "invalid session user id")
+	}
+	if err = h.validator.Validate(&req); err != nil {
+		return err
+	}
+	user, err := h.service.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "found no corresponding user")
+	}
+	if err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.OldPassword)); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid password")
+	}
+	err = h.service.ChangeUserPassword(ctx, userID, req.NewPassword)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (h *handler) confirmEmailVerification(c *echo.Context) error {

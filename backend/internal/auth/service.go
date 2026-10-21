@@ -39,6 +39,21 @@ func toUserResponse(user *User) *UserResponse {
 	}
 }
 
+func (s *Service) ChangeUserPassword(ctx context.Context, userID uuid.UUID, password string) error {
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	if _, err = s.repo.SetNewPasswordToUser(ctx, user, string(hashedPassword)); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Service) CheckVerificationEmail(ctx context.Context, userID uuid.UUID, code string) error {
 	user, err := s.repo.GetUserVerificationByID(ctx, userID)
 	if err != nil {
@@ -56,7 +71,7 @@ func (s *Service) CheckVerificationEmail(ctx context.Context, userID uuid.UUID, 
 	return nil
 }
 
-// TODO: Turn to a cool html message
+// TODO: Turn to a cool html message.
 func createMail(code string) string {
 	rep := "Hello,\n\nThank you for signing up with ft_transcendence.\n\nHere is your verification code to enter on the authentication page:\n["
 	rep += code
