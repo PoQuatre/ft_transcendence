@@ -1,5 +1,10 @@
 package auth
 
+type ChangePasswordRequest struct {
+	OldPassword string `json:"oldpassword"`
+	NewPassword string `json:"newpassword" validate:"required,min=10,max=72,password_complexity"`
+}
+
 type MailVerificationRequest struct {
 	Code string `json:"code"`
 }

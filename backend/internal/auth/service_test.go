@@ -9,13 +9,39 @@ import (
 )
 
 type mockRepository struct {
-	users map[string]*User
+	users       map[string]*User
+	usersverifs map[uuid.UUID]*UserVerify
 }
 
 func newMockRepository() *mockRepository {
 	return &mockRepository{
-		users: make(map[string]*User),
+		users:       make(map[string]*User),
+		usersverifs: make(map[uuid.UUID]*UserVerify),
 	}
+}
+
+func (m *mockRepository) SetNewPasswordToUser(ctx context.Context, user *User, passwordhash string) (*User, error) {
+	if _, exists := m.users[user.Email]; !exists {
+		return nil, ErrNotFound
+	}
+	user.PasswordHash = passwordhash
+	m.users[user.Email] = user
+	return user, nil
+}
+
+func (m *mockRepository) CreateUserVerification(ctx context.Context, user *UserVerify) (*UserVerify, error) {
+	if _, exists := m.usersverifs[user.UserID]; exists {
+		return nil, ErrAlreadyExists
+	}
+	m.usersverifs[user.UserID] = user
+	return user, nil
+}
+
+func (m *mockRepository) GetUserVerificationByID(ctx context.Context, id uuid.UUID) (*UserVerify, error) {
+	if _, exists := m.usersverifs[id]; !exists {
+		return nil, ErrNotFound
+	}
+	return m.usersverifs[id], nil
 }
 
 func (m *mockRepository) GetUserByEmail(ctx context.Context, email string) (*User, error) {

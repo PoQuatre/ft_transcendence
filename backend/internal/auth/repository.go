@@ -24,6 +24,7 @@ type Repository interface {
 	CreateUser(ctx context.Context, user *User) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
+	SetNewPasswordToUser(ctx context.Context, user *User, passwordhash string) (*User, error)
 
 	GetUserVerificationByID(ctx context.Context, id uuid.UUID) (*UserVerify, error)
 	CreateUserVerification(ctx context.Context, user *UserVerify) (*UserVerify, error)
@@ -76,6 +77,19 @@ func (r *bunRepository) CreateUser(ctx context.Context, user *User) (*User, erro
 			}
 		}
 		return nil, err
+	}
+	return user, nil
+}
+
+func (r *bunRepository) SetNewPasswordToUser(ctx context.Context, user *User, passwordhash string) (*User, error) {
+	user.PasswordHash = passwordhash
+	_, err := r.db.NewUpdate().
+		Model(user).
+		Column("password_hash").
+		WherePK().
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user password in database: %w", err)
 	}
 	return user, nil
 }
