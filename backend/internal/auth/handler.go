@@ -32,6 +32,9 @@ func RegisterRoutes(group *echo.Group, service Service, sessionManager *scs.Sess
 	group.POST("/verify-email/request", h.requestEmailVerification)
 	group.POST("/verify-email/confirm", h.confirmEmailVerification)
 	group.POST("/change-password", h.changePassword)
+
+	group.POST("/forgot-password", h.forgotPassword) // Sends the mail with the link
+	group.POST("/reset-password", h.resetPassword)   // Sent by the link in the mail
 	group.GET("/me", h.me)
 }
 
@@ -48,6 +51,41 @@ func apiError(err error) error {
 	default:
 		return err
 	}
+}
+
+func (h *handler) resetPassword(c *echo.Context) error {
+	ctx := c.Request().Context()
+	var req ResetPasswordRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+	if err := h.validator.Validate(&req); err != nil {
+		return err
+	}
+	if err := h.service.ResetPasswordWithToken(ctx, req.Token, req.Password); err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "password successfully updated."})
+}
+
+func (h *handler) forgotPassword(c *echo.Context) error {
+	ctx := c.Request().Context()
+	var req ForgotPasswordRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+	user, err := h.service.repo.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		return apiError(err)
+	}
+	if !user.Verified {
+		return echo.NewHTTPError(http.StatusBadRequest, "email not verified")
+	}
+
+	if err := h.service.SendForgotPasswordMail(ctx, user); err != nil {
+		return apiError(err)
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "email successfully sent."})
 }
 
 func (h *handler) changePassword(c *echo.Context) error {
@@ -75,7 +113,7 @@ func (h *handler) changePassword(c *echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return nil
+	return c.JSON(http.StatusOK, map[string]string{"message": "password successfully changed."})
 }
 
 func (h *handler) confirmEmailVerification(c *echo.Context) error {
