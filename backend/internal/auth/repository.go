@@ -30,6 +30,10 @@ type Repository interface {
 	CreateUserVerification(ctx context.Context, user *UserVerify) (*UserVerify, error)
 
 	MarkEmailAsVerified(ctx context.Context, UserID uuid.UUID) error
+
+	CreatePasswordResetToken(ctx context.Context, reset *PasswordResetToken) (*PasswordResetToken, error)
+	GetPasswordResetToken(ctx context.Context, tokenHash string) (*PasswordResetToken, error)
+	DeletePasswordResetToken(ctx context.Context, tokenID uuid.UUID) error
 }
 
 type bunRepository struct {
@@ -38,6 +42,56 @@ type bunRepository struct {
 
 func NewRepository(db *bun.DB) Repository {
 	return &bunRepository{db: db}
+}
+
+func (r *bunRepository) GetPasswordResetToken(ctx context.Context, tokenHash string) (*PasswordResetToken, error) {
+	token := new(PasswordResetToken)
+
+	err := r.db.NewSelect().
+		Model(token).
+		Where("token_hash = ?", tokenHash).
+		Scan(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("password reset token not found: %w", err)
+		}
+		return nil, fmt.Errorf("failed to fetch password reset token: %w", err)
+	}
+
+	return token, nil
+}
+
+func (r *bunRepository) DeletePasswordResetToken(ctx context.Context, tokenID uuid.UUID) error {
+	token := &PasswordResetToken{ID: tokenID}
+
+	_, err := r.db.NewDelete().
+		Model(token).
+		WherePK().
+		Returning("*").
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete password reset token: %w", err)
+	}
+
+	return nil
+}
+
+func (r *bunRepository) CreatePasswordResetToken(ctx context.Context, reset *PasswordResetToken) (*PasswordResetToken, error) {
+	_, err := r.db.NewDelete().
+		Model((*PasswordResetToken)(nil)).
+		Where("user_id = ?", reset.UserID).
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to clean up old reset tokens: %w", err)
+	}
+
+	_, err = r.db.NewInsert().
+		Model(reset).
+		Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert password reset token: %w", err)
+	}
+	return reset, nil
 }
 
 func (r *bunRepository) MarkEmailAsVerified(ctx context.Context, userID uuid.UUID) error {

@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -39,6 +41,78 @@ func toUserResponse(user *User) *UserResponse {
 	}
 }
 
+func createForgotPasswordMail(resetURL string) string {
+	rep := "Hello,\n\n"
+	rep += "We received a request to reset the password for your ft_transcendence account.\n\n"
+	rep += "Click the link below to set a new password:\n"
+	rep += resetURL
+	rep += "\n\nThis link is valid for 15 minutes. If you did not request a password reset, you can safely ignore this email — your password will remain unchanged.\n\n"
+	rep += "Best regards,\nThe ft_transcendence Team"
+	return rep
+}
+
+func (s *Service) SendForgotPasswordMail(ctx context.Context, user *User) error {
+	if os.Getenv("ENABLE_EMAILS") != "true" {
+		return echo.NewHTTPError(http.StatusInternalServerError, "mails are disabled")
+	}
+
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return err
+	}
+	rawToken := hex.EncodeToString(b)
+
+	h := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(h[:])
+
+	reset := &PasswordResetToken{
+		UserID:    user.ID,
+		TokenHash: tokenHash,
+		ExpiresAt: time.Now().Add(15 * time.Minute),
+	}
+	if _, err := s.repo.CreatePasswordResetToken(ctx, reset); err != nil {
+		return err
+	}
+
+	resetURL := fmt.Sprintf("https://localhost:8443/reset-password?token=%s", rawToken)
+	mailContent := createForgotPasswordMail(resetURL)
+
+	// remplacer transcendence@transcendence par le vrai mail une fois quon a un mail bien setup
+	if err := SendMail(ctx, user.Email, "transcendence@transcendence.com", "Forgot Password - ft_transcendence", mailContent); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) ResetPasswordWithToken(ctx context.Context, rawToken string, newPassword string) error {
+	h := sha256.Sum256([]byte(rawToken))
+	tokenHash := hex.EncodeToString(h[:])
+
+	resetToken, err := s.repo.GetPasswordResetToken(ctx, tokenHash)
+	if err != nil {
+		return fmt.Errorf("invalid or expired token")
+	}
+	if time.Now().After(resetToken.ExpiresAt) {
+		_ = s.repo.DeletePasswordResetToken(ctx, resetToken.ID)
+		return fmt.Errorf("token expired")
+	}
+
+	user, err := s.repo.GetUserByID(ctx, resetToken.UserID)
+	if err != nil {
+		return err
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	if _, err := s.repo.SetNewPasswordToUser(ctx, user, string(hashedPassword)); err != nil {
+		return err
+	}
+	return s.repo.DeletePasswordResetToken(ctx, resetToken.ID)
+}
+
 func (s *Service) ChangeUserPassword(ctx context.Context, userID uuid.UUID, password string) error {
 	user, err := s.repo.GetUserByID(ctx, userID)
 	if err != nil {
@@ -72,14 +146,14 @@ func (s *Service) CheckVerificationEmail(ctx context.Context, userID uuid.UUID, 
 }
 
 // TODO: Turn to a cool html message.
-func createMail(code string) string {
+func createMailVerificationMail(code string) string {
 	rep := "Hello,\n\nThank you for signing up with ft_transcendence.\n\nHere is your verification code to enter on the authentication page:\n["
 	rep += code
 	rep += "]\nThis code is valid for 10 minutes. If you did not request this code, you can safely ignore this email.\n\nBest regards,\nThe ft_transcendence Team"
 	return rep
 }
 
-func generateCode() (string, error) {
+func generateCodeForMailVerif() (string, error) {
 	n, err := rand.Int(rand.Reader, big.NewInt(900000))
 	if err != nil {
 		return "", fmt.Errorf("failed to generate random code: %w", err)
@@ -97,7 +171,7 @@ func (s *Service) SendVerificationEmail(ctx context.Context, userID uuid.UUID, e
 		return s.repo.MarkEmailAsVerified(ctx, userID)
 	}
 
-	code, err := generateCode()
+	code, err := generateCodeForMailVerif()
 	if err != nil {
 		return err
 	}
@@ -106,7 +180,7 @@ func (s *Service) SendVerificationEmail(ctx context.Context, userID uuid.UUID, e
 		Code:   code,
 	}
 
-	mailContent := createMail(code)
+	mailContent := createMailVerificationMail(code)
 	if _, err = s.repo.CreateUserVerification(ctx, userVerif); err != nil {
 		return err
 	}

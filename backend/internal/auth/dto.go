@@ -1,5 +1,14 @@
 package auth
 
+type ResetPasswordRequest struct {
+	Password string `json:"password" validate:"required,min=10,max=72,password_complexity"`
+	Token    string `json:"token" validate:"required"`
+}
+
+type ForgotPasswordRequest struct {
+	Email string `json:"email"    validate:"required,min=3,max=998,email"`
+}
+
 type ChangePasswordRequest struct {
 	OldPassword string `json:"oldpassword"`
 	NewPassword string `json:"newpassword" validate:"required,min=10,max=72,password_complexity"`
