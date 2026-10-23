@@ -74,7 +74,7 @@ func (s *Service) SendForgotPasswordMail(ctx context.Context, user *User) error 
 		return err
 	}
 
-	resetURL := fmt.Sprintf("https://localhost:8443/reset-password?token=%s", rawToken)
+	resetURL := "https://localhost:8443/reset-password?token=" + rawToken
 	mailContent := createForgotPasswordMail(resetURL)
 
 	// remplacer transcendence@transcendence par le vrai mail une fois quon a un mail bien setup
@@ -84,17 +84,20 @@ func (s *Service) SendForgotPasswordMail(ctx context.Context, user *User) error 
 	return nil
 }
 
-func (s *Service) ResetPasswordWithToken(ctx context.Context, rawToken string, newPassword string) error {
+func (s *Service) ResetPasswordWithToken(ctx context.Context, rawToken, newPassword string) error {
 	h := sha256.Sum256([]byte(rawToken))
 	tokenHash := hex.EncodeToString(h[:])
 
 	resetToken, err := s.repo.GetPasswordResetToken(ctx, tokenHash)
 	if err != nil {
-		return fmt.Errorf("invalid or expired token")
+		return errors.New("invalid or expired token")
 	}
 	if time.Now().After(resetToken.ExpiresAt) {
-		_ = s.repo.DeletePasswordResetToken(ctx, resetToken.ID)
-		return fmt.Errorf("token expired")
+		err = s.repo.DeletePasswordResetToken(ctx, resetToken.ID)
+		if err != nil {
+			return errors.New("token expired, failed to delete it")
+		}
+		return errors.New("token expired")
 	}
 
 	user, err := s.repo.GetUserByID(ctx, resetToken.UserID)

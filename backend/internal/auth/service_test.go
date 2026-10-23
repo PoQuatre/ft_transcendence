@@ -2,22 +2,65 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
 )
 
 type mockRepository struct {
-	users       map[string]*User
-	usersverifs map[uuid.UUID]*UserVerify
+	users               map[string]*User
+	usersverifs         map[uuid.UUID]*UserVerify
+	passwordresettokens map[uuid.UUID]*PasswordResetToken
 }
 
 func newMockRepository() *mockRepository {
 	return &mockRepository{
-		users:       make(map[string]*User),
-		usersverifs: make(map[uuid.UUID]*UserVerify),
+		users:               make(map[string]*User),
+		usersverifs:         make(map[uuid.UUID]*UserVerify),
+		passwordresettokens: make(map[uuid.UUID]*PasswordResetToken),
 	}
+}
+
+func (m *mockRepository) GetPasswordResetToken(ctx context.Context, tokenHash string) (*PasswordResetToken, error) {
+	for _, token := range m.passwordresettokens {
+		if token.TokenHash == tokenHash {
+			return token, nil
+		}
+	}
+
+	return nil, fmt.Errorf("password reset token not found: %w", sql.ErrNoRows)
+}
+
+func (m *mockRepository) DeletePasswordResetToken(ctx context.Context, tokenID uuid.UUID) error {
+	if _, exists := m.passwordresettokens[tokenID]; !exists {
+		return errors.New("password reset token not found")
+	}
+
+	delete(m.passwordresettokens, tokenID)
+	return nil
+}
+
+func (m *mockRepository) CreatePasswordResetToken(ctx context.Context, reset *PasswordResetToken) (*PasswordResetToken, error) {
+	for id, token := range m.passwordresettokens {
+		if token.UserID == reset.UserID {
+			delete(m.passwordresettokens, id)
+		}
+	}
+
+	if reset.ID == uuid.Nil {
+		var err error
+		reset.ID, err = uuid.NewRandom()
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate uuid for mock token: %w", err)
+		}
+	}
+
+	m.passwordresettokens[reset.ID] = reset
+
+	return reset, nil
 }
 
 func (m *mockRepository) SetNewPasswordToUser(ctx context.Context, user *User, passwordhash string) (*User, error) {
