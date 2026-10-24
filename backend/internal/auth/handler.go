@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
+
+	_ "github.com/PoQuatre/ft_transcendence/backend/docs"
 )
 
 type handler struct {
@@ -53,6 +55,16 @@ func apiError(err error) error {
 	}
 }
 
+// resetPassword godoc
+// @Summary      Reset password
+// @Description  Resets user password using a valid reset token
+// @Tags         Password Reset
+// @Accept       json
+// @Produce      json
+// @Param        request body auth.ResetPasswordRequest true "Reset token and new password"
+// @Success      200 {object} map[string]string "password successfully updated."
+// @Failure      400 {object} map[string]string "invalid request body or validation error"
+// @Router       /api/auth/reset-password [post].
 func (h *handler) resetPassword(c *echo.Context) error {
 	ctx := c.Request().Context()
 	var req ResetPasswordRequest
@@ -68,6 +80,17 @@ func (h *handler) resetPassword(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "password successfully updated."})
 }
 
+// forgotPassword godoc
+// @Summary      Request password reset
+// @Description  Sends a password reset email with a magic link if the account exists and the email is verified
+// @Tags         Password Reset
+// @Accept       json
+// @Produce      json
+// @Param        request body auth.ForgotPasswordRequest true "User email"
+// @Success      200 {object} map[string]string "email successfully sent."
+// @Failure      400 {object} map[string]string "invalid request body or email not verified"
+// @Failure      500 {object} map[string]string "internal server error"
+// @Router       /api/auth/forgot-password [post].
 func (h *handler) forgotPassword(c *echo.Context) error {
 	ctx := c.Request().Context()
 	var req ForgotPasswordRequest
@@ -88,6 +111,19 @@ func (h *handler) forgotPassword(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "email successfully sent."})
 }
 
+// changePassword godoc
+// @Summary      Change user password
+// @Description  Changes the authentificated user's password after verifying the old password
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        request body auth.ChangePasswordRequest true "Old and new passwords"
+// @Success      200 {object} map[string]string "password successfully changed."
+// @Failure      400 {object} map[string]string "invalid request body, validation error, or incorrect old password"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      404 {object} map[string]string "found no corresponding user"
+// @Failure      500 {object} map[string]string "invalid session user id or internal server error"
+// @Router       /api/auth/change-password [post].
 func (h *handler) changePassword(c *echo.Context) error {
 	ctx := c.Request().Context()
 	var req ChangePasswordRequest
@@ -116,6 +152,18 @@ func (h *handler) changePassword(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "password successfully changed."})
 }
 
+// confirmEmailVerification godoc
+// @Summary      Confirm email verification
+// @Description  Validates the user's email address using the verification code sent by email
+// @Tags         Verification
+// @Accept       json
+// @Produce      json
+// @Param        request body auth.MailVerificationRequest true "Verification code"
+// @Success      200 {object} map[string]string "user email successfully validated"
+// @Failure      400 {object} map[string]string "invalid request body or verification code"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      500 {object} map[string]string "invalid session user id or internal server error"
+// @Router       /api/auth/verify-email/confirm [post].
 func (h *handler) confirmEmailVerification(c *echo.Context) error {
 	ctx := c.Request().Context()
 	var req MailVerificationRequest
@@ -133,6 +181,16 @@ func (h *handler) confirmEmailVerification(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "user email successfully validated"})
 }
 
+// requestEmailVerification godoc
+// @Summary      Request email verification
+// @Description  Sends a new verification email to the authenticated user if their email is not verified yet
+// @Tags         Verification
+// @Produce      json
+// @Success      200 {object} map[string]string "email verification sent"
+// @Failure      400 {object} map[string]string "email already verified"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      500 {object} map[string]string "invalid session user id or internal server error"
+// @Router       /api/auth/verify-email/request [post].
 func (h *handler) requestEmailVerification(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userIDStr := h.sessionManager.GetString(ctx, "user_id")
@@ -155,6 +213,18 @@ func (h *handler) requestEmailVerification(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "email verification sent"})
 }
 
+// signup godoc
+// @Summary      User registration
+// @Description  Registers a new user account, triggers verification email, and returns user profile
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        request body auth.SignupRequest true "Registration credentials"
+// @Success      201 {object} auth.UserResponse
+// @Failure      400 {object} map[string]string "invalid request body or validation error"
+// @Failure      409 {object} map[string]string "username or email already taken"
+// @Failure      500 {object} map[string]string "internal server error"
+// @Router       /api/auth/signup [post].
 func (h *handler) signup(c *echo.Context) error {
 	var req SignupRequest
 	if err := c.Bind(&req); err != nil {
@@ -173,6 +243,18 @@ func (h *handler) signup(c *echo.Context) error {
 	return c.JSON(http.StatusCreated, userResp)
 }
 
+// login godoc
+// @Summary      User login
+// @Description  Authenticates user credentials and initializes a new session
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        credentials body auth.LoginRequest true "Login credentials"
+// @Success      200 {object} map[string]string "logged in successfully"
+// @Failure      400 {object} map[string]string "already logged in, invalid request body, or validation error"
+// @Failure      401 {object} map[string]string "invalid email or password"
+// @Failure      500 {object} map[string]string "failed to renew session or internal server error"
+// @Router       /api/auth/login [post].
 func (h *handler) login(c *echo.Context) error {
 	ctx := c.Request().Context()
 	if h.sessionManager.Exists(ctx, "user_id") {
@@ -202,6 +284,15 @@ func (h *handler) login(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{"message": "logged in successfully"})
 }
 
+// logout godoc
+// @Summary      User logout
+// @Description  Destroys the current user session and renews session token
+// @Tags         Auth
+// @Produce      json
+// @Success      200 {object} map[string]string "logged out successfully"
+// @Failure      400 {object} map[string]string "not logged in"
+// @Failure      500 {object} map[string]string "failed to renew session"
+// @Router       /api/auth/logout [post].
 func (h *handler) logout(c *echo.Context) error {
 	ctx := c.Request().Context()
 	if !h.sessionManager.Exists(ctx, "user_id") {
@@ -216,6 +307,15 @@ func (h *handler) logout(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{"message": "logged out successfully"})
 }
 
+// me godoc
+// @Summary      Get current user profile
+// @Description  Retrieves authenticated user profile details from session
+// @Tags         User
+// @Produce      json
+// @Success      200 {object} auth.UserResponse
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      500 {object} map[string]string "internal server error"
+// @Router       /api/auth/me [get].
 func (h *handler) me(c *echo.Context) error {
 	userIDStr := h.sessionManager.GetString(c.Request().Context(), "user_id")
 	if userIDStr == "" {
