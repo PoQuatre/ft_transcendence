@@ -53,12 +53,13 @@ setup:
 	mise install || true
 	cd frontend && pnpm install
 	cd backend && go mod download
+	cd backend && flatc --go --go-namespace generated -o ./internal/game/protocol ../schemas/*.fbs
 	cd game && cmake --preset native-debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 	cd game && cmake --build --preset native-debug --target GENERATE_game_protocol_schemas
 
 .PHONY: fclean
 fclean:
-	$(RM) -r .cache backend/bin/ frontend/dist/ frontend/node_modules/ game/.cache/ game/build/ game/compile_commands.json
+	$(RM) -r .cache backend/bin/ backend/internal/game/protocol/generated/ frontend/dist/ frontend/node_modules/ game/.cache/ game/build/ game/compile_commands.json
 
 .PHONY: test
 test: test-frontend test-backend test-game

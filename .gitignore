@@ -6,6 +6,7 @@ tmp/
 
 # generated
 .generated/
+generated/
 compile_commands.json
 
 # environment

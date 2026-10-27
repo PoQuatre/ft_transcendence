@@ -5,6 +5,7 @@ go 1.27.0
 require (
 	github.com/alexedwards/scs/v2 v2.9.0
 	github.com/go-playground/validator/v10 v10.30.5
+	github.com/google/flatbuffers v25.12.19+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/hashicorp/vault/api/auth/approle v0.12.0

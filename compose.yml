@@ -209,6 +209,8 @@ services:
       context: ./backend
       dockerfile: ./Containerfile
       target: prod
+      additional_contexts:
+        schemas: ./schemas
     depends_on:
       vault-bootstrap:
         condition: service_healthy

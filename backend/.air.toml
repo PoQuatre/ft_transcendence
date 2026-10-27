@@ -1,7 +1,12 @@
 tmp_dir = "tmp"
 
 [build]
+include_dir = ["../schemas"]
+include_ext = ["go", "fbs"]
+pre_cmd = [
+	"flatc --go --go-namespace generated -o ./internal/game/protocol ../schemas/*.fbs",
+]
 cmd = "go build -o ./tmp/api ./cmd/api"
 entrypoint = ["./tmp/api", "serve"]
-exclude_dir = ["tmp"]
+exclude_dir = ["tmp", "internal/game/protocol/generated"]
 exclude_regex = ["_test\\.go$"]

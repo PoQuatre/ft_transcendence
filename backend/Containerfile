@@ -11,17 +11,19 @@ FROM docker.io/library/golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache gcc musl-dev
+RUN apk add --no-cache gcc musl-dev flatc
 
 COPY go.mod go.sum ./
 
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod \
 	go mod download
 
+COPY --from=schemas . /schemas
 COPY . .
 
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod \
 	--mount=type=cache,id=go-build,target=/root/.cache/go-build \
+	flatc --go --go-namespace generated -o ./internal/game/protocol/generated /schemas/*.fbs && \
 	CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o ./tmp/api ./cmd/api
 
 
@@ -37,7 +39,8 @@ WORKDIR /app
 
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod \
 	--mount=type=cache,id=go-build,target=/root/.cache/go-build \
-	go install "github.com/air-verse/air@${AIR_VERSION}"
+	go install "github.com/air-verse/air@${AIR_VERSION}" && \
+	apk add --no-cache flatc
 
 RUN mkdir -p /app/tmp /home/app
 
