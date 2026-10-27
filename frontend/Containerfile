@@ -19,7 +19,7 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY game ./
+COPY --from=game . .
 
 RUN --mount=type=cache,id=game-build,target=/app/build \
 	cmake --preset web-release && \
@@ -50,12 +50,12 @@ WORKDIR /app
 # ------------------------------------------------------------------------------
 FROM pnpm-base AS frontend-builder
 
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml ./
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 	pnpm install --frozen-lockfile
 
-COPY frontend/ ./
+COPY . .
 COPY --from=game-builder /out/ ./public/assets/game/
 
 RUN sha256sum public/assets/game/game.mjs public/assets/game/game.wasm | sha256sum | cut -d ' ' -f1 > public/assets/game/build-id && \
