@@ -5,6 +5,8 @@ services:
       context: ./backend
       dockerfile: ./Containerfile
       target: prod
+      additional_contexts:
+        schemas: ./schemas
     depends_on:
       postgres:
         condition: service_healthy

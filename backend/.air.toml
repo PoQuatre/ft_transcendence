@@ -1,8 +1,13 @@
 tmp_dir = "tmp"
 
 [build]
-pre_cmd = ["swag init -g internal/server/server.go --parseInternal"]
+include_dir = ["../schemas"]
+include_ext = ["go", "fbs"]
+pre_cmd = [
+	"swag init -g internal/server/server.go --parseInternal",
+	"flatc --go --go-namespace generated -o ./internal/game/protocol ../schemas/*.fbs",
+]
 cmd = "go build -o ./tmp/api ./cmd/api"
 entrypoint = ["./tmp/api", "serve"]
-exclude_dir = ["tmp", "docs"]
+exclude_dir = ["tmp", "docs", "internal/game/protocol/generated"]
 exclude_regex = ["_test\\.go$"]
