@@ -27,7 +27,7 @@ fi
 
 while :; do
 	inotifywait -qr -e close_write,create,delete,move \
-		src CMakeLists.txt CMakePresets.json &
+		src CMakeLists.txt CMakePresets.json /schemas &
 	watcher=$!
 	wait "$watcher" || break
 
