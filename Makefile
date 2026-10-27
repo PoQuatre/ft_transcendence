@@ -54,7 +54,8 @@ setup:
 	cd frontend && pnpm install
 	cd backend && go mod download
 	cd backend && swag init -g internal/server/server.go --parseInternal
-	cd game && cmake --preset native-debug
+	cd game && cmake --preset native-debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	cd game && cmake --build --preset native-debug --target GENERATE_game_protocol_schemas
 
 .PHONY: fclean
 fclean:

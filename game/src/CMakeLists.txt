@@ -1,10 +1,10 @@
 add_subdirectory(simulation)
 add_subdirectory(platform)
 add_subdirectory(renderer)
+add_subdirectory(protocol)
 add_subdirectory(core)
 
 add_executable(game main.cpp)
-
 
 target_link_libraries(game PUBLIC glm::glm PRIVATE game::base game::core)
 
