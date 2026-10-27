@@ -68,8 +68,10 @@ services:
       target: dev
     volumes:
       - ./backend:/app:ro,Z
+      - ./schemas:/schemas:ro,z
       - backend-tmp:/app/tmp:Z
       - backend-docs:/app/docs:Z
+      - backend-generated:/app/internal/game/protocol/generated:Z
       - backend-go-mod:/go/pkg/mod:Z
       - backend-go-build:/go-build:Z
     command: ["air"]
@@ -114,6 +116,7 @@ volumes:
   frontend-pnpm-store:
   backend-tmp:
   backend-docs:
+  backend-generated:
   backend-go-mod:
   backend-go-build:
   game-build:
