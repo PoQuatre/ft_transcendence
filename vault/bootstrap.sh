@@ -434,12 +434,12 @@ main() {
 		enable_features
 		register_policies
 		register_roles
-		register_db_roles
 		register_pki_roles
 		save_managed_state
 
 		touch "$HEALTHCHECK_FILE"
 		configure_database
+		register_db_roles
 		first_boot=false
 
 		sleep 10 &
