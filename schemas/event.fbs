@@ -1,0 +1,16 @@
+namespace game.protocol;
+
+table WorldReady {
+  snapshot_id: uint32;
+}
+
+enum ResyncReason : uint8 {
+  Unknown = 0,
+  MissingSnapshot = 1,
+  InvalidEntityState = 2,
+  DevModeReload = 3
+}
+
+table WorldResyncRequest {
+  reason: ResyncReason;
+}

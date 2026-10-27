@@ -1,0 +1,31 @@
+include "common.fbs";
+
+namespace game.protocol;
+
+enum InputButtons : uint8 (bit_flags) {
+  Fire = 0,
+  Dash = 1
+}
+
+struct InputFrame {
+  movement_x: int8;
+  movement_y: int8;
+  aim_angle: uint16;
+  buttons: InputButtons;
+}
+
+table PlayerInput {
+  last_received_snapshot_id: uint32;
+  first_input_id: uint32;
+  frames: [InputFrame] (required);
+}
+
+table WorldDelta {
+  snapshot_id: uint32;
+  server_tick: uint32;
+  last_processed_input_id: uint32;
+  upserts: [EntityState];
+  removed_entity_ids: [uint32];
+}
+
+root_type WorldDelta;
