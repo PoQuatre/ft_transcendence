@@ -1,0 +1,11 @@
+include "common.fbs";
+
+namespace game.protocol;
+
+table WorldSnapshotChunk {
+  snapshot_id: uint32;
+  server_tick: uint32;
+  chunk_index: uint16;
+  chunk_count: uint16;
+  entities: [EntityState] (required);
+}

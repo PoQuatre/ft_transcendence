@@ -1,0 +1,27 @@
+namespace game.protocol;
+
+enum ControlPacketId : uint8 {
+  Unknown = 0,
+  ClientHello = 1,
+  ServerHello = 2,
+  Ping = 3,
+  Pong = 4,
+  ServerDisconnect = 5
+}
+
+enum EventPacketId : uint8 {
+  Unknown = 0,
+  WorldReady = 1,
+  WorldResyncRequest = 2
+}
+
+enum StatePacketId : uint8 {
+  Unknown = 0,
+  PlayerInput = 1,
+  WorldDelta = 2
+}
+
+enum SyncPacketId : uint8 {
+  Unknown = 0,
+  WorldSnapshotChunk = 1
+}
