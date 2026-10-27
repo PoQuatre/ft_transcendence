@@ -89,6 +89,7 @@ services:
       retries: 3
     volumes:
       - ./game:/app:ro,Z
+      - ./schemas:/schemas:ro,z
       - game-build:/app/build:Z
       - game-out:/out:z
     networks:

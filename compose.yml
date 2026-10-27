@@ -193,6 +193,8 @@ services:
       context: ./frontend
       dockerfile: ./Containerfile
       target: prod
+      additional_contexts:
+        schemas: ./schemas
     environment:
       NODE_EXTRA_CA_CERTS: /etc/ssl/certs/rootCA.pem
       INTERNAL_ORIGIN: https://nginx:8443

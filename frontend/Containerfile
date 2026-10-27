@@ -19,6 +19,7 @@ RUN apt-get update && \
 
 WORKDIR /app
 
+COPY --from=schemas . /schemas
 COPY --from=game . .
 
 RUN --mount=type=cache,id=game-build,target=/app/build \
