@@ -2,7 +2,6 @@ ARG NODE_VERSION=26.8.1
 ARG PNPM_VERSION=11.25.0
 ARG ALPINE_VERSION=3.24
 ARG EMSCRIPTEN_VERSION=6.0.9
-ARG NINJA_VERSION=1.11.1-2
 
 
 
@@ -11,10 +10,8 @@ ARG NINJA_VERSION=1.11.1-2
 # ------------------------------------------------------------------------------
 FROM docker.io/emscripten/emsdk:${EMSCRIPTEN_VERSION} AS game-builder
 
-ARG NINJA_VERSION
-
 RUN apt-get update && \
-	apt-get install --no-install-recommends -y "ninja-build=${NINJA_VERSION}" && \
+	apt-get install --no-install-recommends -y ninja-build && \
 	rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
