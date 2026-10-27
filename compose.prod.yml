@@ -29,6 +29,11 @@ services:
       vault-migrate:
       postgres-migrate:
 
+  frontend:
+    build:
+      additional_contexts:
+        game: ./game
+
   backend:
     depends_on:
       migrate:

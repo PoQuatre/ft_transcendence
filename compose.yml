@@ -190,8 +190,8 @@ services:
   frontend:
     restart: unless-stopped
     build:
-      context: .
-      dockerfile: ./frontend/Containerfile
+      context: ./frontend
+      dockerfile: ./Containerfile
       target: prod
     environment:
       NODE_EXTRA_CA_CERTS: /etc/ssl/certs/rootCA.pem
