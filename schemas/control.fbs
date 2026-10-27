@@ -1,0 +1,29 @@
+namespace game.protocol;
+
+table ClientHello {
+  protocol_version: uint16;
+}
+
+table ServerHello {
+  connection_id: uint32;
+  resumed_session: bool;
+}
+
+table Ping {
+  sequence: uint32;
+}
+
+table Pong {
+  sequence: uint32;
+}
+
+enum DisconnectReason : uint8 {
+  Unknown = 0,
+  ProtocolError = 1,
+  UnsupportedVersion = 2,
+}
+
+table ServerDisconnect {
+  reason: DisconnectReason;
+  can_reconnect: bool;
+}

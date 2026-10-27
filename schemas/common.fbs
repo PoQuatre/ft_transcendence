@@ -1,0 +1,22 @@
+namespace game.protocol;
+
+enum EntityKind : uint8 {
+  Unknown = 0,
+  Tank = 1,
+  Projectile = 2,
+  Resource = 3
+}
+
+struct Vec2 {
+  x: int16;
+  y: int16;
+}
+
+table EntityState {
+  id: uint32;
+  kind: EntityKind;
+  position: Vec2;
+  velocity: Vec2;
+  aim_angle: uint16;
+  health: uint16;
+}

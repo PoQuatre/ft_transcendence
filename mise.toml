@@ -11,10 +11,11 @@ pnpm = "11.25.0"
 mkcert = "1.4.4"
 "pypi:sqlfluff" = "4.3.0"
 swag = "1.16.6"
+flatc = "25.12.19"
 
 [env]
 _.path = { path = [
-	"{{tools['node'].path}}/bin",
-	"{{tools['cmake'].path}}/bin",
-	"{{tools['vfox:jdx/vfox-emsdk'].path}}/bin",
+    "{{tools['node'].path}}/bin",
+    "{{tools['cmake'].path}}/bin",
+    "{{tools['vfox:jdx/vfox-emsdk'].path}}/bin",
 ], tools = true }
