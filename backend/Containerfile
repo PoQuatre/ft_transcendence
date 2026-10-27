@@ -1,6 +1,29 @@
 ARG GO_VERSION=1.27.0
 ARG ALPINE_VERSION=3.24
 ARG AIR_VERSION=v1.67.4
+ARG FLATBUFFERS_VERSION=25.12.19
+
+
+
+# ------------------------------------------------------------------------------
+# FlatBuffers compiler
+# ------------------------------------------------------------------------------
+FROM docker.io/library/alpine:${ALPINE_VERSION} AS flatc-builder
+
+ARG FLATBUFFERS_VERSION
+
+RUN apk add --no-cache build-base cmake git && \
+	git clone --depth 1 --branch "v${FLATBUFFERS_VERSION}" \
+	https://github.com/google/flatbuffers.git /flatbuffers
+
+RUN --mount=type=cache,id=flatbuffers-build,target=/flatbuffers/build \
+	cmake -S /flatbuffers -B /flatbuffers/build \
+	-DFLATBUFFERS_BUILD_TESTS=OFF -DFLATBUFFERS_BUILD_FLATLIB=OFF \
+	-DFLATBUFFERS_BUILD_FLATC=ON -DFLATBUFFERS_INSTALL=OFF \
+	-DCMAKE_BUILD_TYPE=Release && \
+	cmake --build /flatbuffers/build --parallel --target flatc && \
+	mkdir /out && \
+	cp /flatbuffers/build/flatc /out/flatc
 
 
 
@@ -11,7 +34,9 @@ FROM docker.io/library/golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache gcc musl-dev flatc
+RUN apk add --no-cache gcc musl-dev
+
+COPY --from=flatc-builder /out/flatc /usr/local/bin/flatc
 
 COPY go.mod go.sum ./
 
@@ -39,8 +64,9 @@ WORKDIR /app
 
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod \
 	--mount=type=cache,id=go-build,target=/root/.cache/go-build \
-	go install "github.com/air-verse/air@${AIR_VERSION}" && \
-	apk add --no-cache flatc
+	go install "github.com/air-verse/air@${AIR_VERSION}"
+
+COPY --from=flatc-builder /out/flatc /usr/local/bin/flatc
 
 RUN mkdir -p /app/tmp /home/app
 
