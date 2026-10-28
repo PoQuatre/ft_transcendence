@@ -3,8 +3,9 @@ package protocol
 import (
 	"testing"
 
-	wire "github.com/PoQuatre/ft_transcendence/backend/internal/game/protocol/generated"
 	flatbuffers "github.com/google/flatbuffers/go"
+
+	wire "github.com/PoQuatre/ft_transcendence/backend/internal/game/protocol/generated"
 )
 
 func TestParseMessage(t *testing.T) {
