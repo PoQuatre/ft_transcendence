@@ -24,7 +24,7 @@ export const Header: Component = () => {
 
   return (
     <header class="fixed top-0 left-0 right-0 z-50 bg-surface-1/90 backdrop-blur-md border-b border-border-subtle/85 px-4 lg:px-8 py-3">
-      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div class="mx-auto px-margin container flex flex-wrap items-center justify-between gap-4">
         {/* =================================================================
             1. IDENTIFIANT & LOGO TRANSCEDANCE ARENA
             ================================================================= */}
@@ -65,13 +65,13 @@ export const Header: Component = () => {
             GAME
           </a>
           <a
-            href="#leaderboard"
+            href="/#leaderboard"
             class="hover:text-accent-primary transition-colors no-underline"
           >
             LEADERBOARD
           </a>
           <a
-            href="#classes"
+            href="/#classes"
             class="hover:text-accent-primary transition-colors no-underline"
           >
             CLASSES
