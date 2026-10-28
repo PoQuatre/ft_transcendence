@@ -2,6 +2,29 @@ ARG NODE_VERSION=26.8.1
 ARG PNPM_VERSION=11.25.0
 ARG ALPINE_VERSION=3.24
 ARG EMSCRIPTEN_VERSION=6.0.9
+ARG FLATBUFFERS_VERSION=25.12.19
+
+
+
+# ------------------------------------------------------------------------------
+# FlatBuffers compiler
+# ------------------------------------------------------------------------------
+FROM docker.io/library/alpine:${ALPINE_VERSION} AS flatc-builder
+
+ARG FLATBUFFERS_VERSION
+
+RUN apk add --no-cache build-base cmake git && \
+	git clone --depth 1 --branch "v${FLATBUFFERS_VERSION}" \
+	https://github.com/google/flatbuffers.git /flatbuffers
+
+RUN --mount=type=cache,id=flatbuffers-build,target=/flatbuffers/build \
+	cmake -S /flatbuffers -B /flatbuffers/build \
+	-DFLATBUFFERS_BUILD_TESTS=OFF -DFLATBUFFERS_BUILD_FLATLIB=OFF \
+	-DFLATBUFFERS_BUILD_FLATC=ON -DFLATBUFFERS_INSTALL=OFF \
+	-DCMAKE_BUILD_TYPE=Release && \
+	cmake --build /flatbuffers/build --parallel --target flatc && \
+	mkdir /out && \
+	cp /flatbuffers/build/flatc /out/flatc
 
 
 
@@ -41,6 +64,8 @@ RUN npm install -g "pnpm@${PNPM_VERSION}" && \
 
 WORKDIR /app
 
+COPY --from=flatc-builder /out/flatc /usr/local/bin/flatc
+
 
 
 # ------------------------------------------------------------------------------
@@ -55,8 +80,10 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 
 COPY . .
 COPY --from=game-builder /out/ ./public/assets/game/
+COPY --from=schemas . /schemas
 
 RUN sha256sum public/assets/game/game.mjs public/assets/game/game.wasm | sha256sum | cut -d ' ' -f1 > public/assets/game/build-id && \
+	flatc --ts -o ./src/generated /schemas/control.fbs /schemas/packet_ids.fbs && \
 	pnpm build && \
 	pnpm prune --prod
 
@@ -67,12 +94,12 @@ RUN sha256sum public/assets/game/game.mjs public/assets/game/game.wasm | sha256s
 # ------------------------------------------------------------------------------
 FROM pnpm-base AS dev
 
-RUN mkdir -p /app/.generated /home/app /pnpm/store
+RUN mkdir -p /app/.generated /app/src/generated /home/app /pnpm/store
 
 ENV HOME=/home/app
 
 EXPOSE 3000
-CMD ["sh", "-c", "pnpm install --frozen-lockfile --store-dir /pnpm/store && exec pnpm dev --host"]
+CMD ["sh", "-c", "flatc --ts -o ./src/generated /schemas/control.fbs /schemas/packet_ids.fbs && pnpm install --frozen-lockfile --store-dir /pnpm/store && exec pnpm dev --host"]
 
 
 
