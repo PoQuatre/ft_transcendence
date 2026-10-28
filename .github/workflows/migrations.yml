@@ -76,6 +76,14 @@ jobs:
         working-directory: backend
         run: swag init -g internal/server/server.go --parseInternal
 
+      - name: Setup flatc
+        uses: Nugine/setup-flatc@87c2f5328c9d49c3fb34781d56a434d0d0bc2508 # v1.2.5
+        with:
+          version: "25.12.19"
+
+      - name: Generate protocol files
+        run: flatc --go --go-namespace generated -o ./internal/game/protocol ../schemas/*.fbs
+
       - name: Migrate up
         working-directory: backend
         env:
