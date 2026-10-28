@@ -201,14 +201,25 @@ export function Select(props: SelectProps) {
         onKeyDown={onKeyDown}
         onClick={() => (open() ? close() : show())}
         class={cn(
-          'flex h-9 items-center justify-between gap-space-md rounded-md border border-border-subtle bg-surface-2 px-space-md font-label-data text-label-data text-text-primary pointer-coarse:h-11',
+          'flex h-9 cursor-pointer items-center justify-between gap-space-md rounded-md border border-border-subtle bg-surface-2 px-space-md font-label-data text-label-data text-text-primary pointer-coarse:h-11',
           'transition-colors hover:border-accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-primary',
           'aria-invalid:border-error-border disabled:cursor-not-allowed disabled:opacity-50',
           props.class,
         )}
       >
         <span>{selected()?.label ?? 'Select…'}</span>
-        <span aria-hidden="true">⌄</span>
+        <svg
+          class="h-4 w-4 shrink-0"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
       </button>
       <Show when={open()}>
         <Portal>

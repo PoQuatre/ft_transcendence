@@ -155,6 +155,98 @@ const periods = [
   { key: 'month', label: 'THIS MONTH' },
   { key: 'week', label: 'THIS WEEK' },
 ] as const;
+type Period = (typeof periods)[number]['key'];
+
+// Demonstration data: each period has its own statistics. Modes still share
+// the same data until a backend provides rankings for each game mode.
+const rankings: Record<Period, readonly Pilot[]> = {
+  all: pilots,
+  season: [
+    {
+      name: 'V3X_PILOT',
+      kills: 910,
+      kd: 3.8,
+      change: 2,
+      rate: 74,
+      wins: 105,
+      delta: 55,
+      elo: 2210,
+    },
+    {
+      name: 'NEOVIM',
+      kills: 1150,
+      kd: 4.2,
+      change: -1,
+      rate: 70,
+      wins: 98,
+      delta: -12,
+      elo: 2760,
+    },
+    {
+      name: 'NULLBYTE',
+      kills: 720,
+      kd: 3.1,
+      change: 1,
+      rate: 66,
+      wins: 82,
+      delta: 20,
+      elo: 2580,
+    },
+    {
+      name: 'KAIROS',
+      kills: 650,
+      kd: 2.9,
+      change: 0,
+      rate: 63,
+      wins: 75,
+      delta: 8,
+      elo: 2450,
+    },
+    {
+      name: 'CHROMA',
+      kills: 580,
+      kd: 2.5,
+      change: -1,
+      rate: 60,
+      wins: 68,
+      delta: -8,
+      elo: 2300,
+    },
+    {
+      name: 'GHOSTWIRE',
+      kills: 510,
+      kd: 2.3,
+      change: 1,
+      rate: 58,
+      wins: 60,
+      delta: 10,
+      elo: 2150,
+    },
+  ],
+  month: [
+    {
+      name: 'NULLBYTE',
+      kills: 310,
+      kd: 3.6,
+      change: 1,
+      rate: 72,
+      wins: 38,
+      delta: 30,
+      elo: 2660,
+    },
+    {
+      name: 'V3X_PILOT',
+      kills: 270,
+      kd: 3.2,
+      change: -1,
+      rate: 68,
+      wins: 32,
+      delta: -5,
+      elo: 2590,
+    },
+  ],
+  week: [],
+};
 
 const columns: readonly { label: string; metric?: Metric }[] = [
   { label: 'RANK' },
@@ -169,6 +261,7 @@ const columns: readonly { label: string; metric?: Metric }[] = [
 ];
 
 const number = (value: number) => value.toLocaleString('en-US');
+const pilotProfilePath = (name: string) => `/users/${encodeURIComponent(name)}`;
 
 function comparePilotNames(a: Pilot, b: Pilot) {
   return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
@@ -178,7 +271,7 @@ function createLeaderboard() {
   const [search, setSearch] = createSignal('');
   const [metric, setMetric] = createSignal<Metric>('elo');
   const [mode, setMode] = createSignal('ffa');
-  const [period, setPeriod] = createSignal('all');
+  const [period, setPeriod] = createSignal<Period>('all');
   const [descending, setDescending] = createSignal(true);
   const [page, setPage] = createSignal(1);
   const [pageSize, setPageSize] = createSignal<PageSize>(20);
@@ -188,7 +281,7 @@ function createLeaderboard() {
   const selectedPeriod = createMemo(() =>
     periods.find((item) => item.key === period())!,
   );
-  const data = createMemo(() => pilots);
+  const data = createMemo(() => rankings[period()]);
   const leaders = createMemo(() =>
     data()
       .toSorted((a, b) => b.elo - a.elo || comparePilotNames(a, b))
@@ -246,6 +339,15 @@ function createLeaderboard() {
     });
   }
 
+  function changePeriod(value: string) {
+    const selected = periods.find((item) => item.key === value);
+    if (!selected || selected.key === period()) return;
+    animateRanking(() => {
+      setPeriod(selected.key);
+      setPage(1);
+    });
+  }
+
   const filtered = createMemo(() =>
     ranked().filter((pilot) =>
       pilot.name.toLowerCase().includes(search().trim().toLowerCase()),
@@ -271,7 +373,7 @@ function createLeaderboard() {
     mode,
     setMode,
     period,
-    setPeriod,
+    changePeriod,
     descending,
     selectedMode,
     selectedPeriod,
@@ -349,10 +451,7 @@ function RankingFilters(props: { state: LeaderboardState }) {
               label: item.label,
             }))}
             value={props.state.period()}
-            onChange={(value) => {
-              props.state.setPeriod(value);
-              props.state.setPage(1);
-            }}
+            onChange={props.state.changePeriod}
           />
         </div>
         <label
@@ -442,6 +541,11 @@ function PodiumCard(props: { pilot: Pilot; place: number }) {
         place() === 3 && 'text-podium-bronze',
       )}
     >
+      <a
+        href={pilotProfilePath(props.pilot.name)}
+        aria-label={`View ${props.pilot.name} profile`}
+        class="absolute inset-0 z-20 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus-primary"
+      />
       <Badge
         variant="outline"
         class="z-10 absolute -top-3 left-1/2 -translate-x-1/2 rounded-pill border border-current bg-background px-3 py-1 font-label-data text-label-data text-current font-bold tracking-widest whitespace-nowrap"
@@ -552,7 +656,7 @@ function LeaderboardOverview(props: { state: LeaderboardState }) {
             </h2>
           </div>
           <small class="max-w-20 text-right text-label-data md:max-w-none">
-            HIGHEST ELO RATINGS
+            HIGHEST ELO RATINGS · {props.state.selectedPeriod().label}
           </small>
         </div>
         <div
@@ -661,8 +765,8 @@ function PilotStandings(props: { state: LeaderboardState }) {
         <table class="arena-standings-table w-full min-w-[850px] table-fixed border-separate border-spacing-y-2 whitespace-nowrap text-left font-label-data text-label-data">
           <caption class="sr-only">
             {props.state.selectedMode().label} standings ·{' '}
-            {props.state.selectedPeriod().label}. Fixed mockup data, shared
-            across all modes and periods.
+            {props.state.selectedPeriod().label}. Mock data varies by period and
+            is shared across all modes.
           </caption>
           <colgroup>
             <col class="w-[8%]" />
@@ -750,7 +854,12 @@ function PilotStandings(props: { state: LeaderboardState }) {
                     class="truncate text-text-primary"
                     title={pilot.name}
                   >
-                    {pilot.name}
+                    <a
+                      href={pilotProfilePath(pilot.name)}
+                      class="text-inherit no-underline hover:text-accent-primary hover:underline focus-visible:outline-2 focus-visible:outline-focus-primary"
+                    >
+                      {pilot.name}
+                    </a>
                   </TableHead>
                   <TableCell>{number(pilot.kills)}</TableCell>
                   <TableCell>{pilot.kd.toFixed(2)}</TableCell>
@@ -787,12 +896,7 @@ function PilotStandings(props: { state: LeaderboardState }) {
         <div class="arena-empty text-center p-space-lg text-text-muted block leading-[1.6]">
           <Show
             when={props.state.data().length > 0}
-            fallback={
-              <p>
-                No ranking data available yet. Match statistics will appear when
-                the data source is connected.
-              </p>
-            }
+            fallback={<p>No ranking data available for this period.</p>}
           >
             <p>No pilots found for “{props.state.search()}”.</p>
             <Button

@@ -5,13 +5,101 @@ import {
   screen,
   waitFor,
 } from '@solidjs/testing-library';
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import Leaderboard from './leaderboard';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe('<Leaderboard />', () => {
+  test('links pilots in the podium and standings to their profile', () => {
+    const { getByRole } = render(() => <Leaderboard />);
+    expect(getByRole('link', { name: 'View NEOVIM profile' })).toHaveAttribute(
+      'href',
+      '/users/NEOVIM',
+    );
+    expect(getByRole('link', { name: 'NULLBYTE' })).toHaveAttribute(
+      'href',
+      '/users/NULLBYTE',
+    );
+  });
+
+  test('changes period data and podium, then sorts and resets pagination', async () => {
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn<() => number>(() => 1),
+    );
+    vi.stubGlobal('cancelAnimationFrame', vi.fn<(id: number) => void>());
+    const { getByRole, getByText, container } = render(() => <Leaderboard />);
+    const pageSize = getByRole('combobox', { name: 'Pilots per page' });
+    fireEvent.click(pageSize);
+    fireEvent.click(await screen.findByRole('option', { name: '5' }));
+    await waitFor(() =>
+      expect(getByRole('button', { name: 'NEXT' })).toBeEnabled(),
+    );
+    fireEvent.click(getByRole('button', { name: 'NEXT' }));
+    await waitFor(() =>
+      expect(getByText(/6–8 \/ 8 PILOTS/)).toBeInTheDocument(),
+    );
+
+    fireEvent.click(getByRole('combobox', { name: 'Ranking period' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'THIS SEASON' }));
+    await waitFor(() => {
+      expect(getByText(/1–5 \/ 6 PILOTS/)).toBeInTheDocument();
+      expect(requestAnimationFrame).toHaveBeenCalledOnce();
+      expect(
+        container.querySelector('tbody tr')?.getAttribute('data-pilot'),
+      ).toBe('NEOVIM');
+      expect(
+        container.querySelector('.arena-podium-champion h3'),
+      ).toHaveTextContent('NEOVIM');
+    });
+    fireEvent.click(getByRole('button', { name: 'WINS', pressed: false }));
+    await waitFor(() => {
+      expect(
+        container.querySelector('tbody tr')?.getAttribute('data-pilot'),
+      ).toBe('V3X_PILOT');
+      expect(
+        container.querySelector('.arena-podium-champion h3'),
+      ).toHaveTextContent('NEOVIM');
+    });
+    fireEvent.input(getByRole('searchbox', { name: 'Search pilot' }), {
+      target: { value: 'nullbyte' },
+    });
+    await waitFor(() => {
+      expect(container.querySelectorAll('tbody tr')).toHaveLength(1);
+      expect(
+        container.querySelector('tbody tr')?.getAttribute('data-pilot'),
+      ).toBe('NULLBYTE');
+      expect(getByText(/1–1 \/ 1 PILOTS/)).toBeInTheDocument();
+    });
+  });
+
+  test('handles a period with two pilots and an empty period', async () => {
+    const { getByRole, getByText, container } = render(() => <Leaderboard />);
+    fireEvent.click(getByRole('combobox', { name: 'Ranking period' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'THIS MONTH' }));
+    await waitFor(() => {
+      expect(container.querySelectorAll('.arena-podium-item')).toHaveLength(2);
+      expect(
+        container.querySelector('tbody tr')?.getAttribute('data-pilot'),
+      ).toBe('NULLBYTE');
+      expect(getByText(/1–2 \/ 2 PILOTS/)).toBeInTheDocument();
+    });
+    fireEvent.click(getByRole('combobox', { name: 'Ranking period' }));
+    fireEvent.click(await screen.findByRole('option', { name: 'THIS WEEK' }));
+    await waitFor(() => {
+      expect(
+        getByText('No ranking data available for this period.'),
+      ).toBeInTheDocument();
+      expect(getByText('No ranking data available yet.')).toBeInTheDocument();
+      expect(getByText(/0–0 \/ 0 PILOTS/)).toBeInTheDocument();
+    });
+  });
+
   test('uses rank-change colors for rising, falling and unchanged pilots', () => {
     const { getByRole } = render(() => <Leaderboard />);
     const changeCell = (name: string) => {

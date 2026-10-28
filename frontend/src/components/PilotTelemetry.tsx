@@ -28,6 +28,9 @@ export function PilotTelemetry(props: { telemetry: PilotTelemetryData }) {
       >
         YOUR PILOT TELEMETRY
       </h2>
+      <p class="mt-space-xs font-label-data text-label-data text-text-muted">
+        ALL TIME · DEMO DATA
+      </p>
       <Avatar
         fallback={props.telemetry.name[0]}
         class="mt-5 h-16 w-16 border-accent-primary bg-accent-primary-subtle text-accent-primary shadow-glow-cyan-md [&>div]:text-current [&>div]:text-stat-counter"
