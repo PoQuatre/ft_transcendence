@@ -1,6 +1,34 @@
 import { Title } from '@solidjs/meta';
 import { createMemo, createSignal, For, onCleanup, Show } from 'solid-js';
 
+import { PilotTelemetry } from '~/components/PilotTelemetry';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  Input,
+  Progress,
+  Select,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+} from '~/components/ui';
+import { paginate, PAGE_SIZES, type PageSize } from '~/lib/pagination';
+import { cn } from '~/lib/utils';
+
+import './leaderboard.css';
+
+const ACTIVE_FILTER_CLASS =
+  'active border-accent-primary bg-accent-primary-subtle text-accent-primary shadow-glow-cyan-sm';
+const ACTION_BUTTON_CLASS =
+  'min-h-11 rounded-md border-border-subtle bg-surface-2 font-label-data text-label-data text-text-secondary hover:border-accent-primary';
+const COLUMN_HEADING_CLASS =
+  'px-space-md text-left font-label-data text-label-data font-bold tracking-wider text-text-muted';
+const SORT_BUTTON_CLASS =
+  'cursor-pointer bg-transparent border-0 font-bold h-auto min-h-11 rounded-sm p-0 font-label-data text-label-data text-inherit md:min-h-8 pointer-coarse:min-h-11';
+
 type Pilot = {
   name: string;
   kills: number;
@@ -14,14 +42,14 @@ type Pilot = {
 
 const pilots: readonly Pilot[] = [
   {
-    name: 'NEONVOID',
+    name: 'NEOVIM',
     kills: 4268,
-    kd: 3.82,
+    kd: 5.82,
     change: 2,
     rate: 72.8,
-    wins: 582,
-    delta: 48,
-    elo: 2850,
+    wins: 882,
+    delta: 148,
+    elo: 3850,
   },
   {
     name: 'V3X_PILOT',
@@ -52,6 +80,46 @@ const pilots: readonly Pilot[] = [
     wins: 472,
     delta: -14,
     elo: 2490,
+  },
+  {
+    name: 'ION_RIDER',
+    kills: 3098,
+    kd: 2.84,
+    change: 1,
+    rate: 64.5,
+    wins: 431,
+    delta: 16,
+    elo: 2375,
+  },
+  {
+    name: 'CHROMA',
+    kills: 2856,
+    kd: 2.62,
+    change: -2,
+    rate: 62.3,
+    wins: 398,
+    delta: -20,
+    elo: 2260,
+  },
+  {
+    name: 'GHOSTWIRE',
+    kills: 2604,
+    kd: 3.41,
+    change: 0,
+    rate: 60.1,
+    wins: 362,
+    delta: 5,
+    elo: 2145,
+  },
+  {
+    name: 'VSCODE',
+    kills: 2317,
+    kd: 1.18,
+    change: 2,
+    rate: 57.8,
+    wins: 327,
+    delta: 24,
+    elo: 230,
   },
 ];
 
@@ -88,6 +156,18 @@ const periods = [
   { key: 'week', label: 'THIS WEEK' },
 ] as const;
 
+const columns: readonly { label: string; metric?: Metric }[] = [
+  { label: 'RANK' },
+  { label: 'CALLSIGN' },
+  { label: 'KILLS', metric: 'kills' },
+  { label: 'K/D', metric: 'kd' },
+  { label: 'Δ RANK' },
+  { label: 'WIN RATE', metric: 'rate' },
+  { label: 'WINS', metric: 'wins' },
+  { label: 'Δ ELO' },
+  { label: 'ELO', metric: 'elo' },
+];
+
 const number = (value: number) => value.toLocaleString('en-US');
 
 function comparePilotNames(a: Pilot, b: Pilot) {
@@ -100,6 +180,8 @@ function createLeaderboard() {
   const [mode, setMode] = createSignal('ffa');
   const [period, setPeriod] = createSignal('all');
   const [descending, setDescending] = createSignal(true);
+  const [page, setPage] = createSignal(1);
+  const [pageSize, setPageSize] = createSignal<PageSize>(20);
   const selectedMode = createMemo(() =>
     modes.find((item) => item.key === mode())!,
   );
@@ -160,20 +242,23 @@ function createLeaderboard() {
     animateRanking(() => {
       setMetric(key);
       setDescending(nextDescending);
+      setPage(1);
     });
   }
-  function resetFilters() {
-    setMode('ffa');
-    setPeriod('all');
-    setSearch('');
-    setMetric('elo');
-    setDescending(true);
-  }
+
   const filtered = createMemo(() =>
     ranked().filter((pilot) =>
       pilot.name.toLowerCase().includes(search().trim().toLowerCase()),
     ),
   );
+  const pagination = createMemo(() => paginate(filtered(), page(), pageSize()));
+
+  function changePageSize(value: number) {
+    if (PAGE_SIZES.some((size) => size === value)) {
+      setPageSize(value as PageSize);
+      setPage(1);
+    }
+  }
 
   const setStandingsBody = (element: HTMLTableSectionElement) => {
     standingsBody = element;
@@ -195,8 +280,11 @@ function createLeaderboard() {
     podium,
     ranked,
     sortBy,
-    resetFilters,
     filtered,
+    pagination,
+    pageSize,
+    changePageSize,
+    setPage,
     setStandingsBody,
   };
 }
@@ -206,114 +294,107 @@ type LeaderboardState = ReturnType<typeof createLeaderboard>;
 function RankingFilters(props: { state: LeaderboardState }) {
   return (
     <>
-      <section
-        class="
-          arena-panel bg-surface-1 border border-border-subtle rounded-[14px] min-w-0 arena-filters mt-7 flex items-end
-          gap-[23px] p-[11px_24px_10px_19px] min-h-[72px]
-          animate-[arena-enter_0.6s_0.08s_cubic-bezier(0.22,_1,_0.36,_1)_both] [&_fieldset]:border-0
-          [&_fieldset]:p-0 [&_fieldset]:m-0 [&_fieldset]:flex-1 [&_fieldset]:min-w-0
-          [&_legend]:[font:10px_'IBM_Plex_Mono',_monospace] [&_legend]:text-text-muted [&_legend]:mb-[7px]
-          [@media(max-width:1100px)]:flex-wrap [@media(max-width:1100px)]:[&_fieldset]:[flex-basis:100%]
-          [@media(max-width:650px)]:p-[15px] [@media(max-width:650px)]:gap-[12px]
-          [@media(min-width:1101px)_and_(max-width:1280px)]:gap-[12px]
-          [@media(min-width:1101px)_and_(max-width:1280px)]:pr-[18px]
-          [@media(max-width:650px)]:[&_fieldset]:min-w-0 [@media(max-width:650px)]:[&_fieldset]:w-full
-        "
+      <Card
+        variant="panel"
+        class={cn(
+          ` arena-filters mt-7 flex flex-wrap items-end
+          gap-3 p-space-md md:p-space-lg min-h-[72px] xl:flex-nowrap xl:gap-space-lg
+        `,
+        )}
         aria-label="Ranking filters"
       >
-        <fieldset>
-          <legend>RANKING MODE</legend>
+        <fieldset class="m-0 w-full min-w-0 flex-1 basis-full border-0 p-0 xl:w-auto xl:basis-auto">
+          <legend class="mb-space-xs font-label-data text-label-data text-text-muted">
+            RANKING MODE
+          </legend>
           <div
             class="
-          arena-mode-buttons flex gap-[9px] max-w-[655px] [&_button]:flex-1 [&_button]:whitespace-nowrap
-          [@media(max-width:650px)]:grid [@media(max-width:650px)]:grid-cols-[1fr_1fr]
-          [@media(max-width:650px)]:max-w-none
-          [@media(min-width:1101px)_and_(max-width:1280px)]:[&_button]:px-[8px]
-          [@media(min-width:1101px)_and_(max-width:1280px)]:[&_button]:text-[10px]
-          [@media(max-width:650px)]:[&_button]:min-w-0 [@media(max-width:650px)]:[&_button]:min-h-[44px]
+          arena-mode-buttons grid grid-cols-2 gap-space-sm md:flex md:max-w-[655px]
         "
           >
             <For each={modes}>
               {(item) => (
-                <button
+                <Button
+                  variant="filter"
+                  size="sm"
                   type="button"
-                  class={{ active: props.state.mode() === item.key }}
+                  class={cn(
+                    'arena-mode-button min-w-0 flex-1 whitespace-nowrap',
+                    props.state.mode() === item.key && ACTIVE_FILTER_CLASS,
+                  )}
                   aria-pressed={
                     props.state.mode() === item.key ? 'true' : 'false'
                   }
-                  onClick={() => props.state.setMode(item.key)}
+                  onClick={() => {
+                    props.state.setMode(item.key);
+                    props.state.setPage(1);
+                  }}
                 >
                   {item.label}
-                </button>
+                </Button>
               )}
             </For>
           </div>
         </fieldset>
-        <label
+        <div
           class="
-          arena-period [font:10px_'IBM_Plex_Mono',_monospace] text-text-muted flex flex-col gap-[6px] w-[180px]
-          [&_select]:h-[28px] [&_select]:border [&_select]:border-border-subtle [&_select]:rounded-[6px]
-          [&_select]:bg-surface-2 [&_select]:text-text-primary [&_select]:text-[11px] [&_select]:p-[0_16px]
-          [@media(max-width:650px)]:w-full [@media(min-width:1101px)_and_(max-width:1280px)]:w-[145px]
-          [@media(pointer:coarse)]:[&_select]:min-h-[44px] [@media(max-width:650px)]:[&_select]:h-[44px]
+          arena-period font-label-data text-label-data text-text-muted flex flex-col gap-space-xs w-full md:w-[180px]
         "
         >
           PERIOD
-          <select
+          <Select
             aria-label="Ranking period"
+            options={periods.map((item) => ({
+              value: item.key,
+              label: item.label,
+            }))}
             value={props.state.period()}
-            onChange={(event) =>
-              props.state.setPeriod(event.currentTarget.value)
-            }
-          >
-            <For each={periods}>
-              {(item) => <option value={item.key}>{item.label}</option>}
-            </For>
-          </select>
-        </label>
+            onChange={(value) => {
+              props.state.setPeriod(value);
+              props.state.setPage(1);
+            }}
+          />
+        </div>
         <label
           class="
-          arena-search w-[275px] flex items-center gap-[12px] border border-border-subtle rounded-[6px] bg-background
-          h-[28px] p-[0_15px] text-text-muted [&_input]:bg-none [&_input]:border-0 [&_input]:text-text-primary
-          [&_input]:min-w-0 [&_input]:w-full [&_input]:text-[11px] [&_input::placeholder]:text-text-muted
-          [@media(max-width:1100px)]:flex-1 [@media(max-width:650px)]:p-[0_8px] [@media(max-width:650px)]:gap-[5px]
-          [@media(max-width:650px)]:[flex-basis:100%] [@media(max-width:650px)]:w-full
-          [@media(max-width:650px)]:h-[44px] [&:focus-within]:[border-color:var(--color-accent-primary)]
-          [&:focus-within]:shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-accent-primary)_7.84%,transparent)] [&_input:focus-visible]:[outline:0]
-          [@media(min-width:1101px)_and_(max-width:1280px)]:w-[220px] [@media(pointer:coarse)]:min-h-[44px]
-          [@media(pointer:coarse)]:[&_input]:min-h-[42px] [@media(max-width:650px)]:[&_input]:h-[42px]
+          arena-search w-full basis-full flex items-center gap-space-xs border border-border-subtle rounded-md bg-background
+          h-11 px-2 text-text-muted md:h-7 md:basis-auto md:flex-1 md:gap-3 md:px-space-md xl:w-[275px] xl:flex-none
+          focus-within:border-accent-primary focus-within:shadow-glow-cyan-sm pointer-coarse:min-h-11
         "
         >
           <span aria-hidden="true">⌕</span>
-          <input
+          <Input
+            class="h-[42px] w-full min-w-0 border-0 bg-transparent px-0 py-0 text-label-data text-text-primary placeholder:text-text-muted focus:ring-0 focus-visible:outline-none md:h-auto pointer-coarse:min-h-[42px]"
             type="search"
             aria-label="Search pilot"
             placeholder="SEARCH PILOT..."
             value={props.state.search()}
-            onInput={(event) =>
-              props.state.setSearch(event.currentTarget.value)
-            }
+            onInput={(event) => {
+              props.state.setSearch(event.currentTarget.value);
+              props.state.setPage(1);
+            }}
           />
         </label>
-      </section>
-      <section
-        class="
-          arena-panel bg-surface-1 border border-border-subtle rounded-[14px] min-w-0 arena-sort mt-[25px]
-          p-[12px_22px_14px] animate-[arena-enter_0.6s_0.14s_cubic-bezier(0.22,_1,_0.36,_1)_both]
-          [@media(max-width:650px)]:p-[15px]
-        "
+      </Card>
+      <Card
+        variant="panel"
+        class={cn(
+          ` arena-sort mt-space-lg
+          p-space-md md:p-space-lg
+        `,
+        )}
         aria-label="Sort standings"
       >
         <div
           class="
-          arena-sort-heading flex items-center gap-[20px] [font:700_11px_'IBM_Plex_Mono',_monospace] text-accent-primary
-          mb-[11px] [&_small]:font-normal [@media(max-width:650px)]:items-start [@media(max-width:650px)]:flex-col
-          [@media(max-width:650px)]:gap-[5px] [@media(max-width:650px)]:[&_span]:text-[10px]
-          [@media(max-width:650px)]:[&_small]:text-[9px]
+          arena-sort-heading flex flex-col items-start gap-space-xs md:flex-row md:items-center md:gap-5
+          font-label-data text-label-data text-accent-primary mb-space-sm
         "
         >
-          <span>SORT BY&nbsp; / &nbsp;COMPETITIVE METRICS</span>
-          <small>
+          <span class="text-label-data">
+            SORT BY&nbsp; / &nbsp;COMPETITIVE METRICS
+          </span>
+          <small class="font-normal text-label-data">
             {props.state.descending()
               ? '↓  DESCENDING · HIGHEST FIRST'
               : '↑  ASCENDING · LOWEST FIRST'}
@@ -321,19 +402,18 @@ function RankingFilters(props: { state: LeaderboardState }) {
         </div>
         <div
           class="
-          arena-sort-buttons flex items-center gap-[10px] [&_button]:w-[15%] [&_button]:max-w-[184px]
-          [&_button]:min-h-[32px] [&_button]:pl-[17px] [&_small]:[align-self:flex-start] [&_small]:pt-[2px]
-          [@media(max-width:1100px)]:[&_button]:flex-1 [@media(max-width:1100px)]:[&_button]:w-auto
-          [@media(max-width:1100px)]:[&_>_small]:hidden [@media(max-width:650px)]:flex-wrap
-          [@media(max-width:650px)]:gap-[8px] [@media(max-width:650px)]:[&_button]:[flex:1_0_28%]
-          [@media(max-width:650px)]:[&_button]:text-[10px] [@media(max-width:650px)]:[&_button]:p-[7px]
-          [@media(max-width:650px)]:[&_button]:min-h-[44px] [@media(max-width:650px)]:[&_button]:max-w-none
+          arena-sort-buttons flex flex-wrap items-center gap-2 md:flex-nowrap md:gap-2.5
         "
         >
           <For each={metrics}>
             {(item) => (
-              <button
-                class={{ active: props.state.metric() === item.key }}
+              <Button
+                variant="filter"
+                size="sm"
+                class={cn(
+                  'flex-[1_0_28%] md:flex-1 xl:w-[15%] xl:max-w-[184px] xl:flex-none',
+                  props.state.metric() === item.key && ACTIVE_FILTER_CLASS,
+                )}
                 aria-pressed={
                   props.state.metric() === item.key ? 'true' : 'false'
                 }
@@ -341,12 +421,105 @@ function RankingFilters(props: { state: LeaderboardState }) {
               >
                 {props.state.metric() === item.key ? '●  ' : ''}
                 {item.label}
-              </button>
+              </Button>
             )}
           </For>
         </div>
-      </section>
+      </Card>
     </>
+  );
+}
+
+function PodiumCard(props: { pilot: Pilot; place: number }) {
+  const place = () => props.place;
+  return (
+    <article
+      class={cn(
+        `arena-podium-item relative min-w-0 h-auto md:h-[310px]`,
+        place() === 1 &&
+          'order-first md:order-none md:h-[360px] text-accent-primary arena-podium-champion',
+        place() === 2 && 'md:h-[320px] text-text-secondary',
+        place() === 3 && 'text-podium-bronze',
+      )}
+    >
+      <Badge
+        variant="outline"
+        class="z-10 absolute -top-3 left-1/2 -translate-x-1/2 rounded-pill border border-current bg-background px-3 py-1 font-label-data text-label-data text-current font-bold tracking-widest whitespace-nowrap"
+      >
+        {place() === 1 ? 'APEX CHAMPION' : `RANK 0${place()}`}
+      </Badge>
+      <Card
+        class={[
+          `arena-pilot arena-legendary relative min-w-0 flex h-full min-h-[290px] flex-col items-center rounded-lg border border-current bg-background p-space-md pt-space-lg text-center text-accent-primary`,
+          {
+            'arena-place-1': place() === 1,
+            'arena-place-2': place() === 2,
+            'arena-place-3': place() === 3,
+          },
+        ]}
+      >
+        <Show when={place() === 1}>
+          <svg
+            class="arena-crown mb-space-sm h-6 w-6 shrink-0 text-accent-primary"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m3 6 4 4 5-7 5 7 4-4-3 12H6L3 6Z" />
+            <path d="M7 21h10" />
+          </svg>
+        </Show>
+        <Avatar
+          fallback={props.pilot.name[0]}
+          class="arena-podium-avatar h-16 w-16 border-current bg-surface-2 [&>div]:text-current [&>div]:text-stat-counter"
+          aria-hidden="true"
+        />
+        <h3
+          class="mt-3 w-full truncate text-base font-bold tracking-wide text-text-primary"
+          title={props.pilot.name}
+        >
+          {props.pilot.name}
+        </h3>
+        <div class="mt-3 font-label-data">
+          <p class="text-label-data tracking-widest text-text-muted">
+            ELO RATING
+          </p>
+          <p class="font-stat-counter text-stat-counter font-bold tabular-nums">
+            {number(props.pilot.elo)}
+          </p>
+        </div>
+        <div class="mt-auto pt-5 w-full font-label-data">
+          <div class="grid grid-cols-2 gap-2 border-t border-border-subtle pt-3">
+            <div>
+              <p class="text-label-data tracking-widest text-text-muted">
+                WINS
+              </p>
+              <p class="mt-1 text-sm font-bold tabular-nums text-text-primary">
+                {number(props.pilot.wins)}
+              </p>
+            </div>
+            <div>
+              <p class="text-label-data tracking-widest text-text-muted">
+                WIN RATE
+              </p>
+              <p class="mt-1 text-sm font-bold tabular-nums text-text-primary">
+                {props.pilot.rate}%
+              </p>
+            </div>
+          </div>
+          <Progress
+            value={props.pilot.rate}
+            color={place() === 3 ? 'amber' : 'cyan'}
+            class="mt-space-sm rounded-pill bg-border-subtle [&>div]:h-full [&>div]:bg-current"
+            aria-hidden="true"
+          />
+        </div>
+      </Card>
+    </article>
   );
 }
 
@@ -354,39 +527,38 @@ function LeaderboardOverview(props: { state: LeaderboardState }) {
   return (
     <div
       class="
-          arena-overview grid grid-cols-[1.9fr_1fr] gap-[24px] mt-[21px] [@media(max-width:1100px)]:grid-cols-[1fr]
-          [&_>_*]:min-w-0
-          [@media(min-width:1101px)_and_(max-width:1280px)]:grid-cols-[minmax(0,_1.65fr)_minmax(0,_1fr)]
-          [@media(max-width:650px)]:gap-[20px]
+          arena-overview grid grid-cols-1 gap-5 mt-space-lg md:gap-6
+          xl:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]
         "
     >
-      <section
-        class="
-          arena-panel bg-surface-1 border border-border-subtle rounded-[14px] min-w-0 arena-apex p-[18px_23px_25px]
-          animate-[arena-enter_0.65s_0.2s_cubic-bezier(0.22,_1,_0.36,_1)_both]
-          [@media(max-width:650px)]:p-[18px_14px]
-        "
+      <Card
+        variant="panel"
+        class={cn(
+          ` arena-apex overflow-visible p-space-md md:p-space-lg
+        `,
+        )}
       >
         <div
           class="
-          arena-apex-heading flex justify-between items-center [&_>_small]:pr-[78px]
-          [@media(max-width:1100px)]:[&_>_small]:p-0 [@media(max-width:650px)]:gap-[15px]
-          [@media(max-width:650px)]:[&_>_small]:text-[8px] [@media(max-width:650px)]:[&_>_small]:max-w-[80px]
-          [@media(max-width:650px)]:[&_>_small]:text-right
+          arena-apex-heading flex justify-between items-center gap-space-md md:gap-0
         "
         >
           <div>
-            <p class="arena-eyebrow font-ibm-plex-mono text-[11px] font-bold text-accent-primary tracking-[0.1px]">
+            <p class="arena-eyebrow font-label-data text-label-data font-bold text-accent-primary tracking-wide">
               ◇ &nbsp;ELITE OPERATORS
             </p>
-            <h2>THE APEX THREE</h2>
+            <h2 class="mt-space-xs font-headline-md text-headline-md font-bold">
+              THE APEX THREE
+            </h2>
           </div>
-          <small>HIGHEST ELO RATINGS</small>
+          <small class="max-w-20 text-right text-label-data md:max-w-none">
+            HIGHEST ELO RATINGS
+          </small>
         </div>
         <div
           class="
-          arena-podium grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1fr)] gap-3 items-end mt-8
-          [@media(max-width:650px)]:grid-cols-1 [@media(max-width:650px)]:gap-5
+          arena-podium grid grid-cols-1 gap-5 items-end mt-8
+          md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,1fr)] md:gap-3
         "
         >
           <For
@@ -398,283 +570,46 @@ function LeaderboardOverview(props: { state: LeaderboardState }) {
             }
           >
             {(pilot) => (
-              <article
-                class={[
-                  `
-                    [--legendary-light:var(--color-accent-primary)]
-                    isolate
-                    [transition:transform_320ms_cubic-bezier(0.22,_1,_0.36,_1),_box-shadow_320ms_ease,_border-color_320ms_ease]
-                    [&.arena-place-2]:[--legendary-light:var(--color-neutral-200)]
-                    [&.arena-place-3]:[--legendary-light:#cd7f32]
-                    before:content-['']
-                    before:absolute
-                    before:inset-0
-                    before:rounded-[inherit]
-                    before:pointer-events-none
-                    before:opacity-0
-                    before:[transition:opacity_320ms_ease]
-                    after:content-['']
-                    after:absolute
-                    after:inset-0
-                    after:rounded-[inherit]
-                    after:pointer-events-none
-                    after:opacity-0
-                    after:[transition:opacity_320ms_ease]
-                    before:[border:1px_solid_color-mix(in_oklab,_var(--legendary-light)_65%,_transparent)]
-                    before:[background:radial-gradient(_ellipse_at_50%_0%,_color-mix(in_oklab,_var(--legendary-light)_12%,_transparent),_transparent_65%_)]
-                    before:[box-shadow:inset_0_1px_0_color-mix(in_oklab,_var(--color-text-primary)_55%,_transparent),_inset_0_0_18px_color-mix(in_oklab,_var(--legendary-light)_10%,_transparent)]
-                    after:[background-image:linear-gradient(_115deg,_transparent_35%,_color-mix(in_oklab,_var(--legendary-light)_8%,_transparent)_43%,_color-mix(in_oklab,_var(--color-text-primary)_24%,_transparent)_50%,_color-mix(in_oklab,_var(--legendary-light)_8%,_transparent)_57%,_transparent_65%_)]
-                    after:[background-size:300%_100%]
-                    after:[background-position:100%_0]
-                    [@media(hover:hover)_and_(pointer:fine)]:hover:[transform:translateY(-6px)]
-                    [@media(hover:hover)_and_(pointer:fine)]:hover:[border-color:var(--legendary-light)]
-                    [@media(hover:hover)_and_(pointer:fine)]:hover:[box-shadow:0_18px_32px_-12px_rgb(0_0_0_/_75%),_0_0_28px_-6px_color-mix(in_oklab,_var(--legendary-light)_38%,_transparent)]
-                    [@media(hover:hover)_and_(pointer:fine)]:hover:before:opacity-100
-                    [@media(hover:hover)_and_(pointer:fine)]:hover:after:opacity-100
-                    [@media(hover:hover)_and_(pointer:fine)]:hover:after:[animation:arena-legendary-sheen_850ms_ease-out_both]
-                    [@media(hover:hover)_and_(pointer:fine)]:[&.arena-place-1]:hover:z-[2]
-                    [@media(hover:hover)_and_(pointer:fine)]:[&.arena-place-1]:hover:[transform:translateY(-12px)_scale(1.035)]
-                    [@media(hover:hover)_and_(pointer:fine)]:[&.arena-place-1]:hover:[box-shadow:0_30px_48px_-12px_rgb(0_0_0_/_85%),_0_0_48px_-2px_color-mix(in_oklab,_var(--legendary-light)_65%,_transparent),_0_0_90px_-16px_color-mix(in_oklab,_var(--legendary-light)_35%,_transparent)]
-                    [@media(hover:hover)_and_(pointer:fine)]:[&.arena-place-1]:hover:before:[animation:arena-champion-aura_1800ms_ease-out_infinite]
-                    [@media(hover:hover)_and_(pointer:fine)]:[&.arena-place-1]:hover:after:[background-image:linear-gradient(_115deg,_transparent_32%,_color-mix(in_oklab,_var(--legendary-light)_22%,_transparent)_43%,_color-mix(in_oklab,_var(--color-text-primary)_60%,_transparent)_50%,_color-mix(in_oklab,_var(--legendary-light)_22%,_transparent)_57%,_transparent_68%_)]
-                    [@media(hover:hover)_and_(pointer:fine)]:[&.arena-place-1]:hover:after:[animation:arena-legendary-sheen_1100ms_cubic-bezier(0.22,_1,_0.36,_1)_both]
-                    [@media(hover:hover)_and_(pointer:fine)]:[&.arena-place-1]:hover:[&_.material-symbols-outlined]:[filter:drop-shadow(0_0_12px_var(--legendary-light))]
-                    [@media(hover:hover)_and_(pointer:fine)]:[&.arena-place-1]:hover:[&_.material-symbols-outlined]:[animation:arena-champion-crown_700ms_cubic-bezier(0.22,_1,_0.36,_1)_both]
-                    motion-reduce:hover:transform-none!
-                    motion-reduce:[&.arena-place-1]:hover:transform-none!
-                    motion-reduce:hover:after:animate-none
-                    motion-reduce:hover:after:[background-position:50%_0]
-                    arena-pilot arena-legendary relative min-w-0 flex flex-col items-center text-center rounded-lg border border-current
-                    bg-background p-4 pt-6 h-[310px] text-accent-primary
-                    animate-[arena-enter_0.65s_0.24s_cubic-bezier(0.22,_1,_0.36,_1)_both]
-                    [&:where(.arena-place-1)]:h-[360px] [&:where(.arena-place-1)]:shadow-glow-cyan
-                    [&:where(.arena-place-1)]:bg-accent-primary-subtle/30
-                    [&:where(.arena-place-2)]:text-neutral-200 [&:where(.arena-place-2)]:h-[320px]
-                    [&:where(.arena-place-3)]:text-[#cd7f32]
-                    [@media(max-width:650px)]:h-auto [@media(max-width:650px)]:min-h-[290px]
-                    [@media(max-width:650px)]:[&:where(.arena-place-1)]:order-first
-                    [@media(max-width:650px)]:[&:where(.arena-place-1)]:h-auto
-                    [@media(max-width:650px)]:[&:where(.arena-place-2)]:h-auto
-                    [@media(prefers-reduced-motion:reduce)]:[&:hover]:transform-none
-                  `,
-                  {
-                    'arena-place-1': props.state.leaders().indexOf(pilot) === 0,
-                    'arena-place-2': props.state.leaders().indexOf(pilot) === 1,
-                    'arena-place-3': props.state.leaders().indexOf(pilot) === 2,
-                  },
-                ]}
-              >
-                <span class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-pill border border-current bg-background px-3 py-1 font-mono text-[10px] font-bold tracking-widest whitespace-nowrap">
-                  {props.state.leaders().indexOf(pilot) === 0
-                    ? 'APEX CHAMPION'
-                    : `RANK 0${props.state.leaders().indexOf(pilot) + 1}`}
-                </span>
-                <Show when={props.state.leaders().indexOf(pilot) === 0}>
-                  <span
-                    class="material-symbols-outlined mb-2 text-accent-primary"
-                    aria-hidden="true"
-                  >
-                    crown
-                  </span>
-                </Show>
-                <div
-                  class="grid place-items-center w-16 h-16 shrink-0 rounded-pill border border-current bg-surface-2 font-mono text-2xl font-bold shadow-[0_0_24px_color-mix(in_oklab,currentColor_18%,transparent)]"
-                  aria-hidden="true"
-                >
-                  {pilot.name[0]}
-                </div>
-                <h3
-                  class="mt-3 w-full truncate text-base font-bold tracking-wide text-text-primary"
-                  title={pilot.name}
-                >
-                  {pilot.name}
-                </h3>
-                <div class="mt-3 font-mono">
-                  <p class="text-[10px] tracking-widest text-text-muted">
-                    ELO RATING
-                  </p>
-                  <p class="text-3xl font-bold tabular-nums tracking-tight">
-                    {number(pilot.elo)}
-                  </p>
-                </div>
-                <div class="mt-auto pt-5 w-full font-mono">
-                  <div class="grid grid-cols-2 gap-2 border-t border-border-subtle pt-3">
-                    <div>
-                      <p class="text-[9px] tracking-widest text-text-muted">
-                        WINS
-                      </p>
-                      <p class="mt-1 text-sm font-bold tabular-nums text-text-primary">
-                        {number(pilot.wins)}
-                      </p>
-                    </div>
-                    <div>
-                      <p class="text-[9px] tracking-widest text-text-muted">
-                        WIN RATE
-                      </p>
-                      <p class="mt-1 text-sm font-bold tabular-nums text-text-primary">
-                        {pilot.rate}%
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    class="mt-3 h-1 rounded-pill bg-border-subtle overflow-hidden"
-                    aria-hidden="true"
-                  >
-                    <div
-                      class="h-full rounded-pill bg-current"
-                      style={{ width: `${pilot.rate}%` }}
-                    />
-                  </div>
-                </div>
-              </article>
+              <PodiumCard
+                pilot={pilot}
+                place={props.state.leaders().indexOf(pilot) + 1}
+              />
             )}
           </For>
         </div>
-      </section>
-      <section
-        class="arena-panel arena-telemetry relative min-w-0 flex flex-col items-center rounded-lg border border-accent-primary/40 bg-surface-1 p-6 text-center transition-shadow duration-200 hover:shadow-glow-cyan-sm animate-[arena-enter_0.65s_0.28s_cubic-bezier(0.22,_1,_0.36,_1)_both]"
-        aria-labelledby="pilot-telemetry-title"
-      >
-        <h2
-          id="pilot-telemetry-title"
-          class="w-full font-mono text-xs! tracking-widest! text-accent-primary"
-        >
-          YOUR PILOT TELEMETRY
-        </h2>
-        <div
-          class="mt-5 grid h-16 w-16 shrink-0 place-items-center rounded-pill border border-accent-primary bg-accent-primary-subtle font-mono text-2xl font-bold text-accent-primary shadow-glow-cyan-md"
-          aria-hidden="true"
-        >
-          {pilotTelemetry.name[0]}
-        </div>
-        <h3
-          class="mt-3 max-w-full truncate text-lg font-bold tracking-wide text-text-primary"
-          title={pilotTelemetry.name}
-        >
-          {pilotTelemetry.name}
-        </h3>
-        <span class="mt-2 rounded-pill border border-accent-secondary/40 bg-accent-secondary-subtle px-3 py-1 font-mono text-[10px] font-bold tracking-widest text-accent-secondary">
-          ◇ ELITE DIVISION
-        </span>
-        <div class="mt-5 font-mono">
-          <p class="text-[10px] tracking-widest text-text-muted">CURRENT ELO</p>
-          <p class="text-5xl font-bold tabular-nums tracking-tight text-accent-primary neon-text-cyan">
-            {number(pilotTelemetry.elo)}
-          </p>
-          <p
-            class={[
-              'mt-2 text-[11px] font-bold',
-              {
-                'text-success-foreground': pilotTelemetry.delta >= 0,
-                'text-error-foreground': pilotTelemetry.delta < 0,
-              },
-            ]}
-          >
-            {pilotTelemetry.delta >= 0 ? '↑ +' : '↓ '}
-            {pilotTelemetry.delta} ELO
-            <span class="text-text-muted">
-              {' '}
-              · {pilotTelemetry.gain >= 0 ? '+' : ''}
-              {pilotTelemetry.gain} RANK
-            </span>
-          </p>
-        </div>
-        <dl class="my-5 grid w-full grid-cols-3 gap-2 border-y border-border-subtle py-4 font-mono">
-          <div>
-            <dt class="text-[9px] tracking-wider text-text-muted">RANK</dt>
-            <dd class="mt-1 text-sm font-bold tabular-nums text-text-primary">
-              #{pilotTelemetry.position}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-[9px] tracking-wider text-text-muted">MATCHES</dt>
-            <dd class="mt-1 text-sm font-bold tabular-nums text-text-primary">
-              {number(pilotTelemetry.matches)}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-[9px] tracking-wider text-text-muted">BEST ELO</dt>
-            <dd class="mt-1 text-sm font-bold tabular-nums text-text-primary">
-              {number(pilotTelemetry.best)}
-            </dd>
-          </div>
-        </dl>
-        <div class="arena-division mt-auto w-full rounded-md border border-accent-primary/30 bg-accent-primary-subtle/40 p-3 text-left font-mono">
-          <div class="mb-3 flex flex-wrap items-center justify-between gap-2 text-[10px]">
-            <span class="font-bold tracking-widest text-accent-primary">
-              DIVISION PROGRESS
-            </span>
-            <span class="text-text-secondary">
-              {pilotTelemetry.remaining} ELO TO APEX
-            </span>
-          </div>
-          <div
-            class="grid grid-cols-20 gap-1"
-            role="progressbar"
-            aria-label="Progress from Elite to Apex"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={pilotTelemetry.progress}
-            aria-valuetext={`${pilotTelemetry.progress}% — ${pilotTelemetry.remaining} ELO to Apex`}
-          >
-            <For each={Array.from({ length: 20 }, (_, index) => index)}>
-              {(index) => (
-                <div
-                  class="h-3 overflow-hidden rounded-[2px] bg-border-subtle"
-                  aria-hidden="true"
-                >
-                  <div
-                    class="h-full bg-accent-secondary shadow-glow-magenta-xs"
-                    style={{
-                      width: `${Math.min(100, Math.max(0, (pilotTelemetry.progress - index * 5) * 20))}%`,
-                    }}
-                  />
-                </div>
-              )}
-            </For>
-          </div>
-          <div class="mt-2 flex items-center justify-between text-[10px] font-bold tracking-widest">
-            <span class="text-accent-secondary">◇ ELITE</span>
-            <span class="text-accent-primary">APEX ◇</span>
-          </div>
-        </div>
-      </section>
+      </Card>
+      <PilotTelemetry telemetry={pilotTelemetry} />
     </div>
   );
 }
 
 function PilotStandings(props: { state: LeaderboardState }) {
+  let tableScroll: HTMLElement | undefined;
+
   return (
-    <section
-      class="
-          arena-panel bg-surface-1 border border-border-subtle rounded-[14px] min-w-0 arena-standings mt-[28px]
-          p-[19px_21px_46px] animate-[arena-enter_0.65s_0.34s_cubic-bezier(0.22,_1,_0.36,_1)_both]
-          [@media(max-width:650px)]:p-[18px_12px_28px] [@media(max-width:650px)]:min-h-0
-          [@media(max-width:650px)]:mt-[20px] [&_tbody_tr]:animate-[arena-enter_0.4s_ease-out_both]
-          [&_tbody_:where(tr)_>_*]:bg-surface-1
-          [&_tbody_tr:where(:nth-child(odd))_>_*]:bg-surface-2
-          [&_tbody_tr_>_*]:[transition:background-color_0.18s_ease]
-          [@media(hover:hover)]:[&_tbody_tr:hover_>_*]:bg-accent-primary-subtle
-          [&_tbody_tr:nth-child(2)]:[animation-delay:40ms] [&_tbody_tr:nth-child(3)]:[animation-delay:80ms]
-          [&_tbody_tr:nth-child(4)]:[animation-delay:120ms] [&_tbody_tr:nth-child(5)]:[animation-delay:160ms]
-          [&_tbody_tr:nth-child(6)]:[animation-delay:200ms]
-        "
+    <Card
+      variant="panel"
+      class={cn(
+        ` arena-standings mt-5 md:mt-7
+          p-space-md md:p-space-lg
+        `,
+      )}
     >
       <div
         class="
-          arena-table-heading flex justify-between items-center mb-[6px] [&_>_small]:m-[20px_145px_0_20px]
-          [&_>_small]:font-bold [@media(max-width:1100px)]:[&_>_small]:mr-[0] [@media(max-width:650px)]:items-start
-          [@media(max-width:650px)]:flex-col [@media(max-width:650px)]:gap-[6px]
-          [@media(max-width:650px)]:[&_>_small]:m-0
+          arena-table-heading flex flex-col items-start justify-between gap-space-xs mb-space-xs
+          md:flex-row md:items-center md:gap-0
         "
       >
         <div>
-          <p class="arena-eyebrow font-ibm-plex-mono text-[11px] font-bold text-accent-primary tracking-[0.1px]">
+          <p class="arena-eyebrow font-label-data text-label-data font-bold text-accent-primary tracking-wide">
             [ GLOBAL TOP {props.state.data().length} ]
           </p>
-          <h2>PILOT STANDINGS</h2>
+          <h2 class="mt-space-xs font-headline-md text-headline-md font-bold">
+            PILOT STANDINGS
+          </h2>
         </div>
-        <small>
+        <small class="m-0 font-bold md:mt-5 md:ml-5">
           SORTED BY{' '}
           {metrics.find((item) => item.key === props.state.metric())?.label}
           &nbsp; • &nbsp;{props.state.selectedMode().short}
@@ -682,196 +617,174 @@ function PilotStandings(props: { state: LeaderboardState }) {
       </div>
       <p
         class="
-          arena-scroll-hint hidden [font:10px_'IBM_Plex_Mono',_monospace] text-text-muted p-[8px_0]
-          [@media(max-width:1100px)]:block
+          arena-scroll-hint block xl:hidden font-label-data text-label-data text-text-muted py-space-sm
         "
       >
         ↔ Scroll the table to explore all pilot statistics.
       </p>
+      <div
+        class="flex gap-space-sm pb-space-sm xl:hidden"
+        aria-label="Table scroll controls"
+      >
+        <Button
+          variant="filter"
+          size="sm"
+          type="button"
+          aria-label="Scroll standings left"
+          aria-controls="pilot-standings-scroll"
+          onClick={() =>
+            tableScroll?.scrollBy({ left: -250, behavior: 'auto' })
+          }
+        >
+          ←
+        </Button>
+        <Button
+          variant="filter"
+          size="sm"
+          type="button"
+          aria-label="Scroll standings right"
+          aria-controls="pilot-standings-scroll"
+          onClick={() => tableScroll?.scrollBy({ left: 250, behavior: 'auto' })}
+        >
+          →
+        </Button>
+      </div>
       <section
+        ref={(element) => (tableScroll = element)}
+        id="pilot-standings-scroll"
         class="
-          arena-table-scroll overflow-x-auto [scrollbar-width:thin] [scrollbar-color:var(--color-border-default)_var(--color-surface-1)] rounded-[6px]
-          [&:focus-visible]:outline-offset-[2px]
+          arena-table-scroll overflow-x-auto [scrollbar-width:thin] [scrollbar-color:var(--color-border-default)_var(--color-surface-1)] rounded-md
+          focus-visible:outline-offset-2
         "
-        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Enables keyboard scrolling of the overflow region.
-        tabindex={0}
         aria-label="Pilot standings, scroll horizontally for all statistics"
       >
-        <table>
-          <caption
-            class="
-          arena-sr-only absolute w-[1px] h-[1px] p-0 m-[-1px] overflow-hidden [clip-path:inset(50%)]
-          whitespace-nowrap border-0
-        "
-          >
+        <table class="arena-standings-table w-full min-w-[850px] table-fixed border-separate border-spacing-y-2 whitespace-nowrap text-left font-label-data text-label-data">
+          <caption class="sr-only">
             {props.state.selectedMode().label} standings ·{' '}
             {props.state.selectedPeriod().label}. Fixed mockup data, shared
             across all modes and periods.
           </caption>
+          <colgroup>
+            <col class="w-[8%]" />
+            <col class="w-[20%]" />
+            <col class="w-[10%]" />
+            <col class="w-[9%]" />
+            <col class="w-[9%]" />
+            <col class="w-[12%]" />
+            <col class="w-[9%]" />
+            <col class="w-[10%]" />
+            <col class="w-[13%]" />
+          </colgroup>
           <thead>
             <tr>
-              <th scope="col">RANK</th>
-              <th scope="col">CALLSIGN</th>
-              <th
-                scope="col"
-                aria-sort={
-                  props.state.metric() === 'kills'
-                    ? props.state.descending()
-                      ? 'descending'
-                      : 'ascending'
-                    : 'none'
-                }
-              >
-                <button
-                  type="button"
-                  onClick={() => props.state.sortBy('kills')}
-                >
-                  KILLS{' '}
-                  {props.state.metric() === 'kills'
-                    ? props.state.descending()
-                      ? '↓'
-                      : '↑'
-                    : ''}
-                </button>
-              </th>
-              <th
-                scope="col"
-                aria-sort={
-                  props.state.metric() === 'kd'
-                    ? props.state.descending()
-                      ? 'descending'
-                      : 'ascending'
-                    : 'none'
-                }
-              >
-                <button type="button" onClick={() => props.state.sortBy('kd')}>
-                  K/D{' '}
-                  {props.state.metric() === 'kd'
-                    ? props.state.descending()
-                      ? '↓'
-                      : '↑'
-                    : ''}
-                </button>
-              </th>
-              <th scope="col">Δ RANK</th>
-              <th
-                scope="col"
-                aria-sort={
-                  props.state.metric() === 'rate'
-                    ? props.state.descending()
-                      ? 'descending'
-                      : 'ascending'
-                    : 'none'
-                }
-              >
-                <button
-                  type="button"
-                  onClick={() => props.state.sortBy('rate')}
-                >
-                  WIN RATE{' '}
-                  {props.state.metric() === 'rate'
-                    ? props.state.descending()
-                      ? '↓'
-                      : '↑'
-                    : ''}
-                </button>
-              </th>
-              <th
-                scope="col"
-                aria-sort={
-                  props.state.metric() === 'wins'
-                    ? props.state.descending()
-                      ? 'descending'
-                      : 'ascending'
-                    : 'none'
-                }
-              >
-                <button
-                  type="button"
-                  onClick={() => props.state.sortBy('wins')}
-                >
-                  WINS{' '}
-                  {props.state.metric() === 'wins'
-                    ? props.state.descending()
-                      ? '↓'
-                      : '↑'
-                    : ''}
-                </button>
-              </th>
-              <th scope="col">Δ ELO</th>
-              <th
-                scope="col"
-                aria-sort={
-                  props.state.metric() === 'elo'
-                    ? props.state.descending()
-                      ? 'descending'
-                      : 'ascending'
-                    : 'none'
-                }
-              >
-                <button type="button" onClick={() => props.state.sortBy('elo')}>
-                  ELO{' '}
-                  {props.state.metric() === 'elo'
-                    ? props.state.descending()
-                      ? '↓'
-                      : '↑'
-                    : ''}
-                </button>
-              </th>
+              <For each={columns}>
+                {(column) => (
+                  <th
+                    class={COLUMN_HEADING_CLASS}
+                    scope="col"
+                    aria-sort={
+                      column.metric
+                        ? props.state.metric() === column.metric
+                          ? props.state.descending()
+                            ? 'descending'
+                            : 'ascending'
+                          : 'none'
+                        : undefined
+                    }
+                  >
+                    <Show when={column.metric} fallback={column.label} keyed>
+                      {(metric) => (
+                        <button
+                          class={SORT_BUTTON_CLASS}
+                          type="button"
+                          onClick={() => props.state.sortBy(metric)}
+                        >
+                          {column.label}{' '}
+                          <Show when={props.state.metric() === metric}>
+                            <Show when={props.state.descending()} fallback="↑">
+                              ↓
+                            </Show>
+                          </Show>
+                        </button>
+                      )}
+                    </Show>
+                  </th>
+                )}
+              </For>
             </tr>
           </thead>
-          <tbody ref={props.state.setStandingsBody}>
-            <For each={props.state.filtered()}>
+          <TableBody ref={props.state.setStandingsBody}>
+            <For each={props.state.pagination().items}>
               {(pilot) => (
-                <tr
+                <TableRow
                   data-pilot={pilot.name}
                   class={{
                     'arena-rank-1': props.state.ranked().indexOf(pilot) === 0,
-                    'arena-rank-2': props.state.ranked().indexOf(pilot) === 1,
-                    'arena-rank-3': props.state.ranked().indexOf(pilot) === 2,
                   }}
                 >
-                  <td>
-                    {String(props.state.ranked().indexOf(pilot) + 1).padStart(
-                      2,
-                      '0',
-                    )}
-                  </td>
-                  <th scope="row">{pilot.name}</th>
-                  <td>{number(pilot.kills)}</td>
-                  <td>{pilot.kd.toFixed(2)}</td>
-                  <td class="arena-cyan">
+                  <TableCell>
+                    <Show
+                      when={props.state.ranked().indexOf(pilot) === 0}
+                      fallback={String(
+                        props.state.ranked().indexOf(pilot) + 1,
+                      ).padStart(2, '0')}
+                    >
+                      <span class="sr-only">Rank 1</span>
+                      <svg
+                        class="h-5 w-5 text-accent-primary"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.75"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="m3 6 4 4 5-7 5 7 4-4-3 12H6L3 6Z" />
+                        <path d="M7 21h10" />
+                      </svg>
+                    </Show>
+                  </TableCell>
+                  <TableHead
+                    scope="row"
+                    class="truncate text-text-primary"
+                    title={pilot.name}
+                  >
+                    {pilot.name}
+                  </TableHead>
+                  <TableCell>{number(pilot.kills)}</TableCell>
+                  <TableCell>{pilot.kd.toFixed(2)}</TableCell>
+                  <TableCell
+                    class={{
+                      'text-success-foreground!': pilot.change > 0,
+                      'text-error-foreground!': pilot.change < 0,
+                    }}
+                  >
                     {pilot.change === 0
                       ? '—'
                       : `${pilot.change > 0 ? '↑' : '↓'} ${Math.abs(pilot.change)}`}
-                  </td>
-                  <td>{pilot.rate.toFixed(1)}%</td>
-                  <td>{pilot.wins}</td>
-                  <td class={{ 'arena-cyan': pilot.delta > 0 }}>
+                  </TableCell>
+                  <TableCell>{pilot.rate.toFixed(1)}%</TableCell>
+                  <TableCell>{pilot.wins}</TableCell>
+                  <TableCell class={{ 'arena-cyan': pilot.delta > 0 }}>
                     {pilot.delta > 0 ? '+' : ''}
                     {pilot.delta}
-                  </td>
-                  <td>{number(pilot.elo)}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell>{number(pilot.elo)}</TableCell>
+                </TableRow>
               )}
             </For>
-          </tbody>
+          </TableBody>
         </table>
       </section>
-      <output
-        class="
-          arena-sr-only absolute w-[1px] h-[1px] p-0 m-[-1px] overflow-hidden [clip-path:inset(50%)]
-          whitespace-nowrap border-0
-        "
-        aria-live="polite"
-      >
+      <output class="sr-only" aria-live="polite">
         {props.state.filtered().length} pilots ·{' '}
         {props.state.selectedMode().label} ·{' '}
         {props.state.selectedPeriod().label} · sorted by {props.state.metric()}{' '}
         {props.state.descending() ? 'descending' : 'ascending'}
       </output>
       <Show when={props.state.filtered().length === 0}>
-        <div class="arena-empty text-center p-[28px_12px] text-text-muted block leading-[1.6] [&_button]:mt-[12px]">
+        <div class="arena-empty text-center p-space-lg text-text-muted block leading-[1.6]">
           <Show
             when={props.state.data().length > 0}
             fallback={
@@ -882,38 +795,66 @@ function PilotStandings(props: { state: LeaderboardState }) {
             }
           >
             <p>No pilots found for “{props.state.search()}”.</p>
-            <button type="button" onClick={() => props.state.setSearch('')}>
+            <Button
+              variant="outline"
+              size="sm"
+              class={cn(ACTION_BUTTON_CLASS, 'mt-3')}
+              type="button"
+              onClick={() => props.state.setSearch('')}
+            >
               CLEAR SEARCH
-            </button>
+            </Button>
           </Show>
         </div>
       </Show>
-      <Show
-        when={
-          props.state.mode() !== 'ffa' ||
-          props.state.period() !== 'all' ||
-          props.state.search() !== '' ||
-          props.state.metric() !== 'elo' ||
-          !props.state.descending()
-        }
-      >
-        <div
-          class="
-          arena-results flex justify-between items-center gap-[12px] pt-[16px]
-          [font:10px_'IBM_Plex_Mono',_monospace] text-text-muted [@media(max-width:650px)]:items-start
-          [@media(max-width:650px)]:flex-col
-        "
-        >
-          <span>
-            {props.state.filtered().length} / {props.state.data().length} PILOTS
-            · {props.state.selectedPeriod().label}
-          </span>
-          <button type="button" onClick={() => props.state.resetFilters()}>
-            RESET FILTERS ↺
-          </button>
+      <div class="mt-space-lg flex flex-wrap items-center justify-between gap-space-md font-label-data text-label-data text-text-muted">
+        <div class="flex items-center gap-space-sm">
+          PILOTS PER PAGE
+          <Select
+            aria-label="Pilots per page"
+            options={PAGE_SIZES.map((size) => ({
+              value: String(size),
+              label: String(size),
+            }))}
+            value={String(props.state.pageSize())}
+            onChange={(value) => props.state.changePageSize(Number(value))}
+          />
         </div>
-      </Show>
-    </section>
+        <span aria-live="polite">
+          {props.state.pagination().start}–{props.state.pagination().end} /{' '}
+          {props.state.filtered().length} PILOTS
+          {' · '}PAGE {props.state.pagination().page} /{' '}
+          {props.state.pagination().totalPages}
+        </span>
+        <nav aria-label="Standings pagination" class="flex gap-space-sm">
+          <Button
+            variant="filter"
+            size="sm"
+            type="button"
+            disabled={props.state.pagination().page <= 1}
+            onClick={() =>
+              props.state.setPage(props.state.pagination().page - 1)
+            }
+          >
+            PREVIOUS
+          </Button>
+          <Button
+            variant="filter"
+            size="sm"
+            type="button"
+            disabled={
+              props.state.pagination().page >=
+              props.state.pagination().totalPages
+            }
+            onClick={() =>
+              props.state.setPage(props.state.pagination().page + 1)
+            }
+          >
+            NEXT
+          </Button>
+        </nav>
+      </div>
+    </Card>
   );
 }
 
@@ -922,58 +863,10 @@ export default function Leaderboard() {
   return (
     <div
       class="
-          arena-page relative overflow-x-hidden
-          [--font-ibm-plex-mono:'IBM_Plex_Mono',monospace] text-text-primary bg-background min-h-screen
-          text-left font-space-grotesk text-[14px] scheme-dark isolate [overflow-wrap:break-word] [&_*]:box-border
-          [&_a]:no-underline [&_a]:text-[inherit] [&_button]:cursor-pointer [&_button]:font-ibm-plex-mono
-          [&_button]:border [&_button]:border-border-subtle [&_button]:rounded-[6px] [&_button]:bg-surface-2
-          [&_button]:text-text-muted [&_button]:text-[11px] [&_button]:font-bold [&_button]:p-[6px_12px]
-          [&_button]:min-h-[28px] [&_button]:text-left
-          [&_button]:[transition:transform_0.18s_ease,_background-color_0.18s_ease,_border-color_0.18s_ease,_color_0.18s_ease,_box-shadow_0.18s_ease]
-          [&_input]:font-ibm-plex-mono [&_select]:cursor-pointer [&_select]:font-ibm-plex-mono
-          [&_button:disabled]:cursor-not-allowed [&_:focus-visible]:[outline:2px_solid_var(--color-accent-primary)]
-          [&_:focus-visible]:outline-offset-[4px] [&_h1]:m-0 [&_h2]:m-0 [&_h2]:text-[23px] [&_h2]:font-bold
-          [&_h2]:tracking-[-0.7px] [&_h2]:mt-[6px] [&_h3]:m-0 [&_p]:m-0 [&_:where(small)]:font-ibm-plex-mono
-          [&_:where(small)]:text-[10px] [&_:where(small)]:text-text-muted [&_table]:font-ibm-plex-mono
-          [&_table]:w-full [&_table]:border-separate [&_table]:[border-spacing:0_8px] [&_table]:text-[11px]
-          [&_table]:whitespace-nowrap [&_button.active]:[border-color:var(--color-accent-primary)] [&_button.active]:bg-accent-primary-subtle
-          [&_button.active]:text-accent-primary [&_button.active]:shadow-[inset_0_0_16px_color-mix(in_oklab,var(--color-accent-primary)_3.92%,transparent)]
-          [&_button:hover:not(:disabled)]:[border-color:var(--color-accent-primary)] [&_th]:text-left [&_th]:p-[12px_20px]
-          [&_td]:text-left [&_td]:p-[12px_20px] [&_thead_th]:bg-surface-2 [&_thead_th]:text-text-muted
-          [&_thead_th]:text-[10px] [&_tr_>_:first-child]:rounded-[6px_0_0_6px]
-          [&_tr_>_:last-child]:rounded-[0_6px_6px_0]
-          [&_tbody_th]:text-[12px] [&_tbody_th]:w-[25%] [&_tbody_th]:font-bold [&_tbody_td]:text-text-secondary
-          [&_tbody_td:first-child]:text-text-muted [&_tbody_td:first-child]:font-bold
-          [&_tbody_td:nth-child(6)]:text-text-muted [&_tbody_td:nth-child(6)]:font-bold
-          [&_tbody_td:nth-child(8)]:text-text-muted [&_tbody_td:nth-child(8)]:font-bold
-          [&_tbody_td:last-child]:font-bold [&_tbody_td:last-child]:text-[13px]
-          [&_tbody_.arena-cyan]:text-information-foreground! [&_.arena-rank-1_td:first-child]:text-accent-primary
-          [&_.arena-rank-1_td:last-child]:text-accent-primary [&_.arena-rank-2_td:first-child]:text-neutral-200
-          [&_.arena-rank-2_td:last-child]:text-neutral-200 [&_.arena-rank-3_td:first-child]:text-[#cd7f32]
-          [&_.arena-rank-3_td:last-child]:text-[#cd7f32] [@media(max-width:650px)]:[&_h2]:text-[20px]
-          [@media(max-width:650px)]:[&_th]:p-[12px_14px] [@media(max-width:650px)]:[&_td]:p-[12px_14px]
-          [&_:where(button,_a,_input,_select)]:[-webkit-tap-highlight-color:transparent]
-          [&_:where(button,_a,_select,_input)]:[transition:background-color_0.18s_ease,_border-color_0.18s_ease,_color_0.18s_ease,_box-shadow_0.18s_ease]
-          [&_button:active]:[transform:translateY(1px)] [&_thead_button]:border-0
-          [&_thead_button]:border-[currentColor] [&_thead_button]:bg-transparent [&_thead_button]:rounded-[3px]
-          [&_thead_button]:p-0 [&_thead_button]:min-h-[14px] [&_thead_button]:text-[10px]
-          [&_thead_button]:text-[inherit] [&_thead_button]:whitespace-nowrap
-          [&_th[aria-sort='ascending']]:text-accent-primary [&_th[aria-sort='descending']]:text-accent-primary
-          [@media(pointer:coarse)]:[&_button]:min-h-[44px] [@media(pointer:coarse)]:[&_thead_button]:min-h-[44px]
-          [@media(pointer:coarse)]:[&_thead_th]:py-[0] [@media(max-width:650px)]:[&_table]:min-w-[850px]
-          [@media(max-width:650px)]:[&_thead_button]:min-h-[44px] [@media(max-width:650px)]:[&_thead_th]:py-[0]
-          [@media(prefers-reduced-motion:reduce)]:[&_*]:animate-[none]!
-          [@media(prefers-reduced-motion:reduce)]:[&_*]:[transition:none]!
-          [@media(prefers-reduced-motion:reduce)]:[&_*]:[scroll-behavior:auto]!
-          [@media(prefers-reduced-motion:reduce)]:[&_*::before]:animate-[none]!
-          [@media(prefers-reduced-motion:reduce)]:[&_*::before]:[transition:none]!
-          [@media(prefers-reduced-motion:reduce)]:[&_*::before]:[scroll-behavior:auto]!
-          [@media(prefers-reduced-motion:reduce)]:[&_*::after]:animate-[none]!
-          [@media(prefers-reduced-motion:reduce)]:[&_*::after]:[transition:none]!
-          [@media(prefers-reduced-motion:reduce)]:[&_*::after]:[scroll-behavior:auto]!
+          arena-page relative overflow-x-hidden min-h-screen isolate bg-background text-text-primary
+          font-body-sm text-body-sm scheme-dark
         "
     >
-      <style>{animationKeyframes}</style>
       <Title>Arena Leaderboard — Transcedance</Title>
       <div aria-hidden="true" class="fixed inset-0 z-0 pointer-events-none">
         <div class="absolute inset-0 tactical-grid opacity-80" />
@@ -981,24 +874,24 @@ export default function Leaderboard() {
         <div class="absolute top-1/3 -right-48 w-96 h-96 bg-accent-secondary/15 rounded-pill blur-3xl" />
         <div class="absolute -bottom-48 left-1/3 w-96 h-96 bg-accent-secondary/10 rounded-pill blur-3xl" />
       </div>
-      <main class="arena-main relative z-10 w-full max-w-7xl mx-auto px-4 lg:px-8 pt-8 pb-8 md:pb-12">
-        <section class="arena-intro mb-8 space-y-2 border-b border-border-subtle/85 pb-6 [&_h1]:mt-1 animate-[arena-enter_0.6s_cubic-bezier(0.22,_1,_0.36,_1)_both]">
+      <main class="arena-main container relative z-10 mx-auto max-w-7xl px-4 lg:px-8 pt-8 pb-8 md:pb-12">
+        <section class="arena-intro mb-8 space-y-2 border-b border-border-subtle/85 pb-6">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center space-x-2">
               <span
                 class="inline-block w-2.5 h-2.5 bg-accent-primary shadow-glow-cyan"
                 aria-hidden="true"
               />
-              <span class="font-mono text-xs font-bold tracking-widest text-accent-primary uppercase">
+              <span class="font-label-mono-caps text-label-mono-caps font-bold tracking-widest text-accent-primary uppercase">
                 // GLOBAL PILOT RANKINGS
               </span>
             </div>
           </div>
-          <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-text-primary uppercase">
+          <h1 class="mt-1 font-display-hero text-display-hero-mobile md:text-display-hero font-bold text-text-primary uppercase">
             ARENA{' '}
             <span class="text-accent-primary neon-text-cyan">LEADERBOARD</span>
           </h1>
-          <p class="arena-description font-mono text-text-muted text-xs md:text-sm max-w-3xl pt-1">
+          <p class="arena-description font-label-data text-text-muted text-body-sm max-w-3xl pt-1">
             Track the deadliest pilots. Dominate the arena. Climb the global
             rankings.
           </p>
@@ -1010,87 +903,3 @@ export default function Leaderboard() {
     </div>
   );
 }
-
-const animationKeyframes = `
-@keyframes arena-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes arena-fill {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-@keyframes arena-enter {
-  from {
-    opacity: 0;
-    translate: 0 16px;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
-}
-@keyframes arena-score {
-  from {
-    opacity: 0;
-    filter: blur(5px);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-  }
-}
-@keyframes arena-beacon {
-  0%,
-  100% {
-    opacity: 1;
-    box-shadow: 0 0 8px color-mix(in oklab,var(--color-accent-primary) 50.2%,transparent);
-  }
-  50% {
-    opacity: 0.45;
-    box-shadow: 0 0 14px color-mix(in oklab,var(--color-accent-primary) 25.1%,transparent);
-  }
-}
-@keyframes arena-halo {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 color-mix(in oklab,var(--color-accent-primary) 0.0%,transparent);
-  }
-  50% {
-    box-shadow: 0 0 18px 3px color-mix(in oklab,var(--color-accent-primary) 14.9%,transparent);
-  }
-}
-
-@keyframes arena-legendary-sheen {
-  from { background-position: 100% 0; }
-  to { background-position: 0% 0; }
-}
-
-@keyframes arena-champion-aura {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in oklab, var(--legendary-light) 45%, transparent),
-      inset 0 0 24px color-mix(in oklab, var(--legendary-light) 20%, transparent);
-  }
-  100% {
-    box-shadow: 0 0 18px 16px color-mix(in oklab, var(--legendary-light) 0%, transparent),
-      inset 0 0 12px color-mix(in oklab, var(--legendary-light) 8%, transparent);
-  }
-}
-
-@keyframes arena-champion-crown {
-  0% { transform: translateY(0) scale(1); }
-  45% { transform: translateY(-6px) scale(1.3) rotate(-8deg); }
-  75% { transform: translateY(-3px) scale(1.18) rotate(4deg); }
-  100% { transform: translateY(-4px) scale(1.2); }
-}
-`;
