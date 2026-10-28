@@ -1,7 +1,5 @@
 import { Title } from '@solidjs/meta';
-import { useNavigate } from '@solidjs/router';
-import type { JSX } from '@solidjs/web';
-import { For, onCleanup } from 'solid-js';
+import { For } from 'solid-js';
 
 import { Card, Separator } from '~/components/ui';
 
