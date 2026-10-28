@@ -6,12 +6,13 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 00:00:00 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/14 20:05:40 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/28 02:55:45 by mle-flem         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
+#include <emscripten/html5.h>
 #endif
 #include <raylib.h>
 #include <spdlog/spdlog.h>
@@ -20,10 +21,10 @@
 
 #ifdef __EMSCRIPTEN__
 // clang-format off
-EM_JS(int, observe_canvas_size, (), {
+EM_JS(bool, observe_canvas_size, (), {
     const canvas = Module.canvas;
     if (!canvas)
-        return 0;
+        return false;
     const observer = new ResizeObserver(([entry]) => {
         const width = Math.round(entry.contentRect.width);
         const height = Math.round(entry.contentRect.height);
@@ -32,13 +33,45 @@ EM_JS(int, observe_canvas_size, (), {
     });
     observer.observe(canvas);
     canvas.gameResizeObserver = observer;
-    return 1;
+    return true;
 });
-// clang-format on
 
-// clang-format off
 EM_JS(void, stop_observing_canvas_size, (), {
-    Module.canvas?.gameResizeObserver?.disconnect();
+    const canvas = Module.canvas;
+    canvas?.gameResizeObserver?.disconnect();
+    if (canvas)
+        delete canvas.gameResizeObserver;
+});
+
+EM_JS(void, remove_emscripten_event_handlers, (), {
+    JSEvents.removeAllHandlersOnTarget(window);
+    JSEvents.removeAllHandlersOnTarget(document);
+});
+
+EM_JS(void, capture_browser_pointerlock_handler, (), {
+    const addEventListener = document.addEventListener;
+    const handlers = [];
+    Module.gameBrowserPointerlockHandlers = handlers;
+    document.addEventListener = function(type, listener, options) {
+        if (type === 'pointerlockchange')
+            handlers.push([listener, options]);
+        return addEventListener.call(this, type, listener, options);
+    };
+    Module.restoreGameDocumentAddEventListener = () => {
+        document.addEventListener = addEventListener;
+        delete Module.restoreGameDocumentAddEventListener;
+    };
+});
+
+EM_JS(void, release_browser_pointerlock_handler, (), {
+    Module.restoreGameDocumentAddEventListener?.();
+    for (const [listener, options] of Module.gameBrowserPointerlockHandlers ?? [])
+        document.removeEventListener('pointerlockchange', listener, options);
+    delete Module.gameBrowserPointerlockHandlers;
+});
+
+EM_JS(void, restore_browser_pointerlock_capture, (), {
+    Module.restoreGameDocumentAddEventListener?.();
 });
 // clang-format on
 
@@ -61,19 +94,36 @@ constexpr int window_height = 600;
 Platform::~Platform()
 {
 #ifdef __EMSCRIPTEN__
-    if (initialized_)
+    if (initialized_) {
         stop_observing_canvas_size();
-#endif
-
+        release_browser_pointerlock_handler();
+        const auto context = emscripten_webgl_get_current_context();
+        CloseWindow();
+        remove_emscripten_event_handlers();
+        if (context)
+            emscripten_webgl_destroy_context(context);
+    }
+#else
     if (initialized_)
         CloseWindow();
+#endif
 }
 
 bool Platform::initialize()
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI);
+#ifdef __EMSCRIPTEN__
+    // tracks Browser.init's undocumented pointer-lock handler
+    capture_browser_pointerlock_handler();
+#endif
     InitWindow(window_width, window_height, "ft_transcendence");
+#ifdef __EMSCRIPTEN__
+    restore_browser_pointerlock_capture();
+#endif
     if (!IsWindowReady()) {
+#ifdef __EMSCRIPTEN__
+        release_browser_pointerlock_handler();
+#endif
         spdlog::error("Window creation failed");
         return false;
     }

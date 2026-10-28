@@ -13,7 +13,6 @@ if(EMSCRIPTEN)
     target_link_options(
         game
         PRIVATE
-            -sASYNCIFY
             -sENVIRONMENT=web
             -sEXPORTED_RUNTIME_METHODS=requestFullscreen
             -sUSE_GLFW=3

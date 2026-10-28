@@ -20,6 +20,7 @@ Checks: >
   -readability-braces-around-statements,
   -readability-identifier-length,
   -readability-identifier-naming,
+  -readability-implicit-bool-conversion,
   -readability-magic-numbers,
   -readability-suspicious-call-argument,
 
