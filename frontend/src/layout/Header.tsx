@@ -1,4 +1,4 @@
-import { useNavigate } from '@solidjs/router';
+import { useLocation, useNavigate } from '@solidjs/router';
 import type { Component } from 'solid-js';
 import { createSignal, onSettled, Show } from 'solid-js';
 
@@ -8,6 +8,17 @@ import { paths } from '~/router';
 
 export const Header: Component = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isActive = (path: string) =>
+    (location.pathname.replace(/\/+$/, '') || '/') === path;
+  const navClass = (path: string) => [
+    'px-3 py-1 rounded-sm transition-colors no-underline',
+    {
+      'bg-accent-primary text-accent-primary-on shadow-glow-cyan font-extrabold tracking-widest':
+        isActive(path),
+      'text-text-muted hover:text-accent-primary': !isActive(path),
+    },
+  ];
   const [settingsOpen, setSettingsOpen] = createSignal(false);
 
   // Initialisation et récupération de la session dès le montage client
@@ -23,8 +34,8 @@ export const Header: Component = () => {
   };
 
   return (
-    <header class="fixed top-0 left-0 right-0 z-50 bg-surface-1/90 backdrop-blur-md border-b border-border-subtle/85 px-4 lg:px-8 py-3">
-      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+    <header class="fixed top-0 left-0 right-0 z-50 bg-surface-1/90 backdrop-blur-md border-b border-border-subtle/85 py-3">
+      <div class="container mx-auto max-w-7xl px-4 lg:px-8 flex flex-wrap items-center justify-between gap-4">
         {/* =================================================================
             1. IDENTIFIANT & LOGO TRANSCEDANCE ARENA
             ================================================================= */}
@@ -54,24 +65,27 @@ export const Header: Component = () => {
         <nav class="hidden md:flex items-center space-x-6 font-mono text-xs font-bold tracking-wider uppercase text-text-muted">
           <a
             href={paths()}
-            class="px-3 py-1 rounded-sm bg-accent-primary text-accent-primary-on shadow-glow-cyan no-underline font-extrabold tracking-widest"
+            class={navClass('/')}
+            aria-current={isActive('/') ? 'page' : undefined}
           >
             PLAY
           </a>
           <a
             href="/game"
-            class="px-3 py-1 text-text-muted hover:text-white transition-colors no-underline"
+            class={navClass('/game')}
+            aria-current={isActive('/game') ? 'page' : undefined}
           >
             GAME
           </a>
           <a
-            href="#leaderboard"
-            class="hover:text-accent-primary transition-colors no-underline"
+            href="/leaderboard"
+            class={navClass('/leaderboard')}
+            aria-current={isActive('/leaderboard') ? 'page' : undefined}
           >
             LEADERBOARD
           </a>
           <a
-            href="#classes"
+            href="/#classes"
             class="hover:text-accent-primary transition-colors no-underline"
           >
             CLASSES

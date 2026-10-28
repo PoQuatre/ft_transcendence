@@ -16,6 +16,8 @@ export const buttonVariants = cva(
           'bg-accent-secondary text-white hover:bg-accent-secondary/80',
         outline:
           'border border-surface-high bg-transparent hover:bg-surface-high text-text-primary',
+        filter:
+          'h-auto min-h-11 rounded-md border border-border-subtle bg-surface-2 font-label-data text-label-data text-text-muted hover:border-accent-primary md:min-h-8 pointer-coarse:min-h-11',
         ghost: 'hover:bg-surface-high text-text-primary',
         link: 'text-accent-primary underline-offset-4 hover:underline',
         // Variantes Cyberpunk Rider
