@@ -34,8 +34,8 @@ export const Header: Component = () => {
   };
 
   return (
-    <header class="fixed top-0 left-0 right-0 z-50 bg-surface-1/90 backdrop-blur-md border-b border-border-subtle/85 px-4 lg:px-8 py-3">
-      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+    <header class="fixed top-0 left-0 right-0 z-50 bg-surface-1/90 backdrop-blur-md border-b border-border-subtle/85 py-3">
+      <div class="container mx-auto max-w-7xl px-4 lg:px-8 flex flex-wrap items-center justify-between gap-4">
         {/* =================================================================
             1. IDENTIFIANT & LOGO TRANSCEDANCE ARENA
             ================================================================= */}
