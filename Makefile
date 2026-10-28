@@ -52,6 +52,7 @@ help:
 setup:
 	mise install || true
 	cd frontend && pnpm install
+	cd frontend && flatc --ts -o ./src/generated ../schemas/control.fbs ../schemas/packet_ids.fbs
 	cd backend && go mod download
 	cd backend && flatc --go --go-namespace generated -o ./internal/game/protocol ../schemas/*.fbs
 	cd game && cmake --preset native-debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON

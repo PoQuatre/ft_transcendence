@@ -12,3 +12,4 @@
 
 **/*.test.ts
 **/*.test.tsx
+src/generated/

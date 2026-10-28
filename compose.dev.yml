@@ -54,7 +54,9 @@ services:
         condition: service_healthy
     volumes:
       - ./frontend:/app:ro,Z
+      - ./schemas:/schemas:ro,z
       - ./frontend/.generated:/app/.generated:Z
+      - frontend-generated:/app/src/generated:Z
       - frontend-node-modules:/app/node_modules:Z
       - frontend-pnpm-store:/pnpm/store:Z
       - game-out:/app/public/assets/game:ro,z
@@ -98,6 +100,7 @@ services:
       game-egress:
 
 volumes:
+  frontend-generated:
   frontend-node-modules:
   frontend-pnpm-store:
   backend-tmp:
