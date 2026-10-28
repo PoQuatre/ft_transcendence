@@ -18,7 +18,7 @@ describe('<Leaderboard />', () => {
       const row = getByRole('rowheader', { name }).closest('tr');
       return row?.querySelectorAll('td')[3];
     };
-    expect(changeCell('NEONVOID')).toHaveClass('text-success-foreground!');
+    expect(changeCell('NEOVIM')).toHaveClass('text-success-foreground!');
     expect(changeCell('NULLBYTE')).toHaveClass('text-error-foreground!');
     expect(changeCell('KAIROS')).not.toHaveClass(
       'text-success-foreground!',
@@ -42,7 +42,7 @@ describe('<Leaderboard />', () => {
     fireEvent.click(getByRole('button', { name: 'NEXT' }));
     await waitFor(() => {
       expect(getByText(/6–8 \/ 8 PILOTS/)).toBeInTheDocument();
-      expect(getByRole('rowheader', { name: 'SYNTHWAVE' })).toBeInTheDocument();
+      expect(getByRole('rowheader', { name: 'VSCODE' })).toBeInTheDocument();
     });
   });
 
@@ -54,14 +54,14 @@ describe('<Leaderboard />', () => {
     expect(
       getByRole('heading', { name: 'THE APEX THREE' }),
     ).toBeInTheDocument();
-    expect(getAllByText('NEONVOID')).toHaveLength(2);
+    expect(getAllByText('NEOVIM')).toHaveLength(2);
 
     fireEvent.input(getByRole('searchbox', { name: 'Search pilot' }), {
       target: { value: 'nullbyte' },
     });
     await waitFor(() => {
       expect(
-        queryByRole('rowheader', { name: 'NEONVOID' }),
+        queryByRole('rowheader', { name: 'NEOVIM' }),
       ).not.toBeInTheDocument();
       expect(getByRole('rowheader', { name: 'NULLBYTE' })).toBeInTheDocument();
     });
