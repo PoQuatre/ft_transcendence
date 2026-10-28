@@ -58,6 +58,14 @@ jobs:
           working-directory: frontend
           cache: true
 
+      - name: Setup flatc
+        uses: Nugine/setup-flatc@87c2f5328c9d49c3fb34781d56a434d0d0bc2508 # v1.2.5
+        with:
+          version: "25.12.19"
+
+      - name: Generate protocol files
+        run: flatc --ts -o ./src/generated ../schemas/control.fbs ../schemas/packet_ids.fbs
+
       - name: Run lint
         run: |
           # Vite generates this declaration, but lint runs without starting Vite.
@@ -82,6 +90,14 @@ jobs:
           working-directory: frontend
           cache: true
 
+      - name: Setup flatc
+        uses: Nugine/setup-flatc@87c2f5328c9d49c3fb34781d56a434d0d0bc2508 # v1.2.5
+        with:
+          version: "25.12.19"
+
+      - name: Generate protocol files
+        run: flatc --ts -o ./src/generated ../schemas/control.fbs ../schemas/packet_ids.fbs
+
       - name: Build frontend
         run: pnpm run build
 
@@ -102,6 +118,14 @@ jobs:
           runtime: node@26.8.1
           working-directory: frontend
           cache: true
+
+      - name: Setup flatc
+        uses: Nugine/setup-flatc@87c2f5328c9d49c3fb34781d56a434d0d0bc2508 # v1.2.5
+        with:
+          version: "25.12.19"
+
+      - name: Generate protocol files
+        run: flatc --ts -o ./src/generated ../schemas/control.fbs ../schemas/packet_ids.fbs
 
       - name: Run tests
         run: pnpm test run

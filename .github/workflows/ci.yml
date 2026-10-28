@@ -40,10 +40,13 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
+              - 'schemas/**'
             frontend:
               - 'frontend/**'
+              - 'schemas/**'
             game:
               - 'game/**'
+              - 'schemas/**'
             sql:
               - '**/*.sql'
             migrations:
