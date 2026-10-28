@@ -28,6 +28,14 @@ jobs:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
 
+      - name: Setup flatc
+        uses: Nugine/setup-flatc@87c2f5328c9d49c3fb34781d56a434d0d0bc2508 # v1.2.5
+        with:
+          version: "25.12.19"
+
+      - name: Generate protocol files
+        run: flatc --go --go-namespace generated -o ./internal/game/protocol ../schemas/*.fbs
+
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
@@ -50,6 +58,14 @@ jobs:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
 
+      - name: Setup flatc
+        uses: Nugine/setup-flatc@87c2f5328c9d49c3fb34781d56a434d0d0bc2508 # v1.2.5
+        with:
+          version: "25.12.19"
+
+      - name: Generate protocol files
+        run: flatc --go --go-namespace generated -o ./internal/game/protocol ../schemas/*.fbs
+
       - name: Build backend
         run: go build ./cmd/api
 
@@ -69,6 +85,14 @@ jobs:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
 
+      - name: Setup flatc
+        uses: Nugine/setup-flatc@87c2f5328c9d49c3fb34781d56a434d0d0bc2508 # v1.2.5
+        with:
+          version: "25.12.19"
+
+      - name: Generate protocol files
+        run: flatc --go --go-namespace generated -o ./internal/game/protocol ../schemas/*.fbs
+
       - name: Run tests
         run: bash ../.github/scripts/go-test.sh ./...
 
@@ -87,6 +111,14 @@ jobs:
         with:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
+
+      - name: Setup flatc
+        uses: Nugine/setup-flatc@87c2f5328c9d49c3fb34781d56a434d0d0bc2508 # v1.2.5
+        with:
+          version: "25.12.19"
+
+      - name: Generate protocol files
+        run: flatc --go --go-namespace generated -o ./internal/game/protocol ../schemas/*.fbs
 
       - name: Run race tests
         run: bash ../.github/scripts/go-test.sh -race ./...
