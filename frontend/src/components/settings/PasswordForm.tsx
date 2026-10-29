@@ -1,8 +1,11 @@
-import { type Component, createSignal, For, Show } from 'solid-js';
+import { type Component, createSignal } from 'solid-js';
 
-import { Button, PasswordInput, Progress } from '~/components/ui';
+import {
+  createNewPassword,
+  NewPasswordFields,
+} from '~/components/auth/NewPasswordFields';
+import { Button, PasswordInput } from '~/components/ui';
 import { changePassword, PASSWORD_RULES } from '~/lib/auth';
-import { cn } from '~/lib/utils';
 
 import { type Feedback, FIELD_LABEL, FormFeedback, text } from './form';
 
@@ -12,29 +15,13 @@ import { type Feedback, FIELD_LABEL, FormFeedback, text } from './form';
 export const PasswordForm: Component = () => {
   const [feedback, setFeedback] = createSignal<Feedback>();
   const [pending, setPending] = createSignal(false);
-  const [password, setPassword] = createSignal('');
-  const [confirm, setConfirm] = createSignal('');
-  const [submitted, setSubmitted] = createSignal(false);
-  // Règles et correspondance n'apparaissent qu'une fois le champ touché
-  // (focus : clic, tap ou Tab), puis restent visibles. L'envoi les révèle aussi.
-  const [passwordTouched, setPasswordTouched] = createSignal(false);
-  const [confirmTouched, setConfirmTouched] = createSignal(false);
-
-  const score = () => PASSWORD_RULES.filter((r) => r.test(password())).length;
-  const showRules = () => submitted() || passwordTouched();
-  // Rien tant que la confirmation est vide : pas d'erreur avant la saisie.
-  const showConfirm = () =>
-    submitted() || (confirmTouched() && confirm() !== '');
-  const confirmOk = () => confirm() !== '' && confirm() === password();
-
-  let confirmRef: HTMLInputElement | undefined;
+  const newPassword = createNewPassword();
 
   const submit = async (form: HTMLFormElement) => {
-    setSubmitted(true);
+    newPassword.reveal();
     const data = new FormData(form);
     const current = text(data.get('current-password'));
     const next = text(data.get('new-password'));
-    const confirmation = text(data.get('confirm-password'));
 
     if (!current) {
       setFeedback({
@@ -60,10 +47,9 @@ export const PasswordForm: Component = () => {
       });
       return;
     }
-    if (confirmation !== next) {
+    if (!newPassword.confirmMatches(next)) {
       // Le message sous le champ de confirmation explique déjà l'écart.
       setFeedback(undefined);
-      confirmRef?.focus();
       return;
     }
 
@@ -76,11 +62,7 @@ export const PasswordForm: Component = () => {
     setPending(false);
     if (result.ok) {
       form.reset();
-      setPassword('');
-      setConfirm('');
-      setSubmitted(false);
-      setPasswordTouched(false);
-      setConfirmTouched(false);
+      newPassword.reset();
       setFeedback({
         kind: 'success',
         title: 'Password updated',
@@ -116,82 +98,13 @@ export const PasswordForm: Component = () => {
         />
       </label>
 
-      <label class="block" for="new-password">
-        <span class={FIELD_LABEL}>
-          NEW PASSWORD
-          <Show when={showRules()}>
-            <span class="font-label-data text-label-data text-text-muted">
-              {score()}/{PASSWORD_RULES.length}
-            </span>
-          </Show>
-        </span>
-        <PasswordInput
-          id="new-password"
-          name="new-password"
-          minlength={10}
-          maxlength={72}
-          autocomplete="new-password"
-          placeholder="••••••••••"
-          onFocus={() => setPasswordTouched(true)}
-          onInput={(e) => setPassword(e.currentTarget.value)}
-        />
-      </label>
-
-      <Show when={showRules()}>
-        <Progress
-          value={score()}
-          max={PASSWORD_RULES.length}
-          color={score() === PASSWORD_RULES.length ? 'lime' : 'pink'}
-        />
-
-        <ul class="grid grid-cols-2 gap-x-space-md gap-y-space-xs font-label-data text-label-data">
-          <For each={PASSWORD_RULES}>
-            {(rule) => (
-              <li
-                class={
-                  rule.test(password())
-                    ? 'text-success-foreground'
-                    : 'text-text-muted'
-                }
-              >
-                {rule.test(password()) ? '◆' : '◇'} {rule.label}
-              </li>
-            )}
-          </For>
-        </ul>
-      </Show>
-
-      <label class="block" for="confirm-password">
-        <span class={FIELD_LABEL}>CONFIRM NEW PASSWORD</span>
-        <PasswordInput
-          ref={(el) => (confirmRef = el)}
-          id="confirm-password"
-          name="confirm-password"
-          autocomplete="new-password"
-          placeholder="••••••••••"
-          aria-describedby="confirm-password-msg"
-          aria-invalid={showConfirm() && !confirmOk() ? 'true' : 'false'}
-          onFocus={() => setConfirmTouched(true)}
-          onInput={(e) => setConfirm(e.currentTarget.value)}
-          class={cn(showConfirm() && !confirmOk() && 'border-accent-secondary')}
-        />
-      </label>
-      <p
-        id="confirm-password-msg"
-        aria-live="polite"
-        // Tableau de classes et non cn() : tailwind-merge prend
-        // text-label-data pour une couleur et l'écraserait par la couleur.
-        class={[
-          '-mt-space-sm min-h-[14px] font-label-data text-label-data',
-          confirmOk() ? 'text-success-foreground' : 'text-accent-secondary',
-        ]}
-      >
-        <Show when={showConfirm()}>
-          {confirmOk()
-            ? '◆ LES MOTS DE PASSE CORRESPONDENT'
-            : '◇ LES MOTS DE PASSE NE CORRESPONDENT PAS'}
-        </Show>
-      </p>
+      <NewPasswordFields
+        state={newPassword}
+        id="new-password"
+        confirmId="confirm-password"
+        label="NEW PASSWORD"
+        confirmLabel="CONFIRM NEW PASSWORD"
+      />
 
       <Button
         type="submit"
