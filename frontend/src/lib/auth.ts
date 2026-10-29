@@ -152,6 +152,30 @@ async function send(
 
 const post = (path: string, payload: object) => send('POST', path, payload);
 
+// Revérifie la session après l'échec d'une action réservée aux connectés.
+// Si le backend l'a perdue (redémarrage, expiration), /me répond 401 et
+// currentUser repasse à null : le header affiche LOG IN et les pages
+// protégées renvoient au login. Serveur injoignable : on garde l'état connu.
+async function refreshSession(): Promise<void> {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    if (res.status === 401) setCurrentUser(null);
+    else if (res.ok) setCurrentUser((await res.json()) as AuthUser);
+  } catch {
+    // Hors ligne : rien ne prouve que la session est perdue.
+  }
+}
+
+async function sendAuthenticated(
+  method: Method,
+  path: string,
+  payload: object,
+): Promise<AuthResult> {
+  const result = await send(method, path, payload);
+  if (!result.ok) await refreshSession();
+  return result;
+}
+
 // 2. Récupération du profil connecté via /api/auth/me
 export async function getMe(): Promise<AuthUser | null> {
   try {
@@ -205,7 +229,7 @@ export async function logout(): Promise<void> {
 export async function updateProfile(
   payload: ProfilePayload,
 ): Promise<AuthResult> {
-  const result = await send('PATCH', '/api/auth/me', payload);
+  const result = await sendAuthenticated('PATCH', '/api/auth/me', payload);
   if (result.ok) await getMe();
   return result;
 }
@@ -216,7 +240,7 @@ export async function updateProfile(
 export async function changePassword(
   payload: PasswordPayload,
 ): Promise<AuthResult> {
-  return post('/api/auth/change-password', {
+  return sendAuthenticated('POST', '/api/auth/change-password', {
     oldpassword: payload.currentPassword,
     newpassword: payload.newPassword,
   });
