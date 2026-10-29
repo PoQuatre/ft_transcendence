@@ -6,7 +6,7 @@ import { cn } from '~/lib/utils';
 
 import { type Feedback, FIELD_LABEL, FormFeedback, text } from './form';
 
-// Onglet OPERATOR : changement de mot de passe (PUT /api/auth/password).
+// Onglet OPERATOR : changement de mot de passe (POST /api/auth/change-password).
 // Mêmes règles et même jauge que l'inscription. La confirmation reste côté
 // front et n'est jamais envoyée.
 export const PasswordForm: Component = () => {
