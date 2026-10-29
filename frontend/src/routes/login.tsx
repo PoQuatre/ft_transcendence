@@ -1,5 +1,5 @@
 import { Title } from '@solidjs/meta';
-import { useNavigate } from '@solidjs/router';
+import { useNavigate, useSearchParams } from '@solidjs/router';
 import { createSignal } from 'solid-js';
 
 import { AuthCard } from '~/components/auth/AuthCard';
@@ -9,8 +9,15 @@ import { type AuthResult, login } from '~/lib/auth';
 const LABEL =
   'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-text-secondary';
 
+// Affiché au retour de /reset-password (?reset=done).
+const RESET_DONE = {
+  title: 'Password updated',
+  message: 'Connecte-toi avec ton nouveau mot de passe.',
+};
+
 export default function Login() {
   const navigate = useNavigate();
+  const [search] = useSearchParams<{ reset: string }>();
   const [error, setError] = createSignal<Extract<AuthResult, { ok: false }>>();
   const [pending, setPending] = createSignal(false);
   const [emailValue, setEmailValue] = createSignal('');
@@ -46,7 +53,11 @@ export default function Login() {
   return (
     <>
       <Title>Log in - FT_TRANSCENDENCE</Title>
-      <AuthCard mode="login" error={error()}>
+      <AuthCard
+        mode="login"
+        error={error()}
+        notice={search.reset === 'done' ? RESET_DONE : undefined}
+      >
         {/* novalidate empêche l'infobulle invisible du navigateur */}
         <form
           novalidate
@@ -95,6 +106,14 @@ export default function Login() {
               placeholder="••••••••••"
             />
           </label>
+          <p class="-mt-space-sm text-right">
+            <a
+              href="/forgot-password"
+              class="font-label-data text-label-data text-accent-primary underline-offset-4 hover:underline"
+            >
+              Mot de passe oublié ?
+            </a>
+          </p>
 
           <Button
             type="submit"

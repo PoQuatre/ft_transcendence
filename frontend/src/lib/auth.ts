@@ -8,6 +8,7 @@ export type LoginPayload = { email: string; password: string };
 export type SignupPayload = LoginPayload & { username: string };
 export type ProfilePayload = { username?: string; email?: string };
 export type PasswordPayload = { currentPassword: string; newPassword: string };
+export type ResetPayload = { password: string; token: string };
 
 // Règles de backend/internal/helpers/validator.go (password_complexity).
 export const PASSWORD_RULES = [
@@ -107,6 +108,13 @@ function toError(status: number, message: string): AuthResult {
         title: 'Access denied',
         message: 'Mot de passe actuel incorrect.',
       };
+    case 'invalid or expired token':
+    case 'token expired':
+      return {
+        ok: false,
+        title: 'Link expired',
+        message: 'Ce lien est invalide ou a expiré. Demande un nouveau lien.',
+      };
     default:
       if (status === 400) {
         return {
@@ -157,11 +165,14 @@ export const [currentUser, setCurrentUser] = createRoot(() =>
 
 type Method = 'POST' | 'PATCH' | 'PUT';
 
-async function send(
+// Réponse brute du backend, ou null si le serveur est injoignable.
+type Reply = { ok: boolean; status: number; message: string };
+
+async function call(
   method: Method,
   path: string,
   payload: object,
-): Promise<AuthResult> {
+): Promise<Reply | null> {
   try {
     const res = await fetch(path, {
       method,
@@ -169,15 +180,30 @@ async function send(
       credentials: 'include', // Envoie et reçoit les cookies de session
       body: JSON.stringify(payload),
     });
-    if (res.ok) return { ok: true };
-    return toError(res.status, await readMessage(res));
+    if (res.ok) return { ok: true, status: res.status, message: '' };
+    return { ok: false, status: res.status, message: await readMessage(res) };
   } catch {
+    return null;
+  }
+}
+
+function toResult(reply: Reply | null): AuthResult {
+  if (!reply) {
     return {
       ok: false,
       title: 'Uplink lost',
       message: 'Impossible de joindre le serveur.',
     };
   }
+  return reply.ok ? { ok: true } : toError(reply.status, reply.message);
+}
+
+async function send(
+  method: Method,
+  path: string,
+  payload: object,
+): Promise<AuthResult> {
+  return toResult(await call(method, path, payload));
 }
 
 const post = (path: string, payload: object) => send('POST', path, payload);
@@ -308,4 +334,34 @@ export async function confirmEmailVerification(
   );
   if (result.ok) await getMe();
   return result;
+}
+
+// 9. Mot de passe oublié (déconnecté) : POST /api/auth/forgot-password
+// { email } -> 200 lien envoyé (valable 15 minutes), 404 "user not found",
+// 400 "email not verified", 500 "mails are disabled". Compte inconnu ou non
+// vérifié : même réponse qu'un envoi, pour ne pas révéler quels emails ont un
+// compte. Un 404 sans ce message reste une route absente (Module offline).
+const UNDISCLOSED = new Set(['user not found', 'email not verified']);
+
+export async function requestPasswordReset(email: string): Promise<AuthResult> {
+  const reply = await call('POST', '/api/auth/forgot-password', { email });
+  if (reply && (reply.ok || UNDISCLOSED.has(reply.message))) {
+    return { ok: true };
+  }
+  return toResult(reply);
+}
+
+// 10. Nouveau mot de passe depuis le lien du mail : POST
+// /api/auth/reset-password { password, token } -> 200, 400 validation
+// (password_complexity). Le jeton sert une seule fois. Jeton invalide ou
+// expiré : le backend répond pour l'instant 500 sans message utile, qu'on
+// présente comme un lien expiré.
+export async function resetPassword(
+  payload: ResetPayload,
+): Promise<AuthResult> {
+  const reply = await call('POST', '/api/auth/reset-password', payload);
+  if (reply?.status === 500) {
+    return toError(reply.status, 'invalid or expired token');
+  }
+  return toResult(reply);
 }
