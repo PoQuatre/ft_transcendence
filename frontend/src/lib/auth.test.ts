@@ -51,10 +51,15 @@ describe('updateProfile', () => {
 });
 
 describe('changePassword', () => {
-  test('sends snake_case fields with PUT to /api/auth/password', async () => {
+  test('posts oldpassword and newpassword to /api/auth/change-password', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
-      .mockResolvedValue(new Response(null, { status: 204 }));
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ message: 'password successfully changed.' }),
+          { status: 200 },
+        ),
+      );
     vi.stubGlobal('fetch', fetchMock);
 
     expect(
@@ -64,12 +69,12 @@ describe('changePassword', () => {
       }),
     ).toEqual({ ok: true });
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/auth/password',
+      '/api/auth/change-password',
       expect.objectContaining({
-        method: 'PUT',
+        method: 'POST',
         body: JSON.stringify({
-          current_password: 'Old-password-1!',
-          new_password: 'New-password-1!',
+          oldpassword: 'Old-password-1!',
+          newpassword: 'New-password-1!',
         }),
       }),
     );

@@ -210,13 +210,14 @@ export async function updateProfile(
   return result;
 }
 
-// 7. Mot de passe : PUT /api/auth/password { current_password, new_password }
-// -> 204, 401 "invalid password", 400 validation (password_complexity).
+// 7. Mot de passe (connecté) : POST /api/auth/change-password
+// { oldpassword, newpassword } -> 200, 400 "invalid password" si l'ancien
+// est faux, 400 validation (password_complexity).
 export async function changePassword(
   payload: PasswordPayload,
 ): Promise<AuthResult> {
-  return send('PUT', '/api/auth/password', {
-    current_password: payload.currentPassword,
-    new_password: payload.newPassword,
+  return post('/api/auth/change-password', {
+    oldpassword: payload.currentPassword,
+    newpassword: payload.newPassword,
   });
 }

@@ -62,7 +62,12 @@ describe('<PasswordForm />', () => {
   test('sends current and new password, then clears the form', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
-      .mockResolvedValue(new Response(null, { status: 204 }));
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ message: 'password successfully changed.' }),
+          { status: 200 },
+        ),
+      );
     vi.stubGlobal('fetch', fetchMock);
     const { container, getByRole, findByText } = render(() => <PasswordForm />);
 
@@ -71,12 +76,12 @@ describe('<PasswordForm />', () => {
 
     expect(await findByText('Password updated')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/auth/password',
+      '/api/auth/change-password',
       expect.objectContaining({
-        method: 'PUT',
+        method: 'POST',
         body: JSON.stringify({
-          current_password: CURRENT,
-          new_password: STRONG,
+          oldpassword: CURRENT,
+          newpassword: STRONG,
         }),
       }),
     );
@@ -89,7 +94,7 @@ describe('<PasswordForm />', () => {
       'fetch',
       vi.fn<typeof fetch>().mockResolvedValue(
         new Response(JSON.stringify({ message: 'invalid password' }), {
-          status: 401,
+          status: 400,
         }),
       ),
     );
