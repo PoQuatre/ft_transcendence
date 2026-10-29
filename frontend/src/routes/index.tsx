@@ -83,14 +83,8 @@ export default function Home() {
       ref: '#FFBB24',
       name: 'Electric Amber',
     },
-    {
-      hex: '#ff80ed',
-      glow: 'rgba(255, 128, 237, 0.75)',
-      ref: '#FF80ED',
-      name: 'Soft Pink',
-    },
   ];
-  const [selectedColor, setSelectedColor] = createSignal(colorOptions[4]!);
+  const [selectedColor, setSelectedColor] = createSignal(colorOptions[1]!);
 
   const [deploying, setDeploying] = createSignal(false);
   const [deployText, setDeployText] = createSignal('DEPLOY [ENTER]');
