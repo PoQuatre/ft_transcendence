@@ -1,16 +1,14 @@
 import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
-import { createSignal, For, Show } from 'solid-js';
+import { createSignal } from 'solid-js';
 
 import { AuthCard } from '~/components/auth/AuthCard';
-import { Button, Input, PasswordInput, Progress } from '~/components/ui';
 import {
-  type AuthResult,
-  PASSWORD_RULES,
-  signup,
-  USERNAME_PATTERN,
-} from '~/lib/auth';
-import { cn } from '~/lib/utils';
+  createNewPassword,
+  NewPasswordFields,
+} from '~/components/auth/NewPasswordFields';
+import { Button, Input } from '~/components/ui';
+import { type AuthResult, signup, USERNAME_PATTERN } from '~/lib/auth';
 
 const LABEL =
   'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-text-secondary';
@@ -19,35 +17,14 @@ export default function Signup() {
   const navigate = useNavigate();
   const [error, setError] = createSignal<Extract<AuthResult, { ok: false }>>();
   const [pending, setPending] = createSignal(false);
-  const [password, setPassword] = createSignal('');
-  const [confirm, setConfirm] = createSignal('');
-  const [submitted, setSubmitted] = createSignal(false);
-  // Règles et correspondance n'apparaissent qu'une fois le champ touché
-  // (focus : clic, tap ou Tab), puis restent visibles. L'envoi les révèle aussi.
-  const [passwordTouched, setPasswordTouched] = createSignal(false);
-  const [confirmTouched, setConfirmTouched] = createSignal(false);
-
-  const score = () => PASSWORD_RULES.filter((r) => r.test(password())).length;
-  const showRules = () => submitted() || passwordTouched();
-  // Rien tant que la confirmation est vide : pas d'erreur avant la saisie.
-  const showConfirm = () =>
-    submitted() || (confirmTouched() && confirm() !== '');
-  const confirmOk = () => confirm() !== '' && confirm() === password();
-
-  let confirmRef: HTMLInputElement | undefined;
+  const newPassword = createNewPassword();
 
   const submit = async (form: HTMLFormElement) => {
-    setSubmitted(true);
-    // Valeurs lues dans le DOM : en Solid 2.0, un signal écrit dans le même
-    // tick n'est visible qu'après le flush.
+    newPassword.reveal();
     const data = new FormData(form);
     const passwordEntry = data.get('password');
     const pwd = typeof passwordEntry === 'string' ? passwordEntry : '';
-    // Vérification front uniquement : la confirmation n'est jamais envoyée.
-    if (!confirmRef || confirmRef.value === '' || confirmRef.value !== pwd) {
-      confirmRef?.focus();
-      return;
-    }
+    if (!newPassword.confirmMatches(pwd)) return;
     const usernameEntry = data.get('username');
     const emailEntry = data.get('email');
     setPending(true);
@@ -106,86 +83,14 @@ export default function Signup() {
             />
           </label>
 
-          <label class="block" for="password">
-            <span class={LABEL}>
-              PASSWORD
-              <Show when={showRules()}>
-                <span class="font-label-data text-label-data text-text-muted">
-                  {score()}/{PASSWORD_RULES.length}
-                </span>
-              </Show>
-            </span>
-            <PasswordInput
-              id="password"
-              name="password"
-              required
-              minlength={10}
-              maxlength={72}
-              autocomplete="new-password"
-              placeholder="••••••••••"
-              onFocus={() => setPasswordTouched(true)}
-              onInput={(e) => setPassword(e.currentTarget.value)}
-            />
-          </label>
-
-          <Show when={showRules()}>
-            <Progress
-              value={score()}
-              max={PASSWORD_RULES.length}
-              color={score() === PASSWORD_RULES.length ? 'lime' : 'pink'}
-            />
-
-            <ul class="grid grid-cols-2 gap-x-space-md gap-y-space-xs font-label-data text-label-data">
-              <For each={PASSWORD_RULES}>
-                {(rule) => (
-                  <li
-                    class={
-                      rule.test(password())
-                        ? 'text-success-foreground'
-                        : 'text-text-muted'
-                    }
-                  >
-                    {rule.test(password()) ? '◆' : '◇'} {rule.label}
-                  </li>
-                )}
-              </For>
-            </ul>
-          </Show>
-
-          <label class="block" for="confirm">
-            <span class={LABEL}>CONFIRM PASSWORD</span>
-            {/* Pas de name : le champ ne part jamais au backend. */}
-            <PasswordInput
-              ref={(el) => (confirmRef = el)}
-              id="confirm"
-              required
-              autocomplete="new-password"
-              placeholder="••••••••••"
-              aria-describedby="confirm-msg"
-              aria-invalid={showConfirm() && !confirmOk() ? 'true' : 'false'}
-              onFocus={() => setConfirmTouched(true)}
-              onInput={(e) => setConfirm(e.currentTarget.value)}
-              class={cn(
-                showConfirm() && !confirmOk() && 'border-accent-secondary',
-              )}
-            />
-          </label>
-          <p
-            id="confirm-msg"
-            aria-live="polite"
-            // Tableau de classes et non cn() : tailwind-merge prend
-            // text-label-data pour une couleur et l'écraserait par la couleur.
-            class={[
-              '-mt-space-sm min-h-[14px] font-label-data text-label-data',
-              confirmOk() ? 'text-success-foreground' : 'text-accent-secondary',
-            ]}
-          >
-            <Show when={showConfirm()}>
-              {confirmOk()
-                ? '◆ LES MOTS DE PASSE CORRESPONDENT'
-                : '◇ LES MOTS DE PASSE NE CORRESPONDENT PAS'}
-            </Show>
-          </p>
+          <NewPasswordFields
+            state={newPassword}
+            id="password"
+            confirmId="confirm"
+            label="PASSWORD"
+            confirmLabel="CONFIRM PASSWORD"
+            required
+          />
 
           <Button
             type="submit"

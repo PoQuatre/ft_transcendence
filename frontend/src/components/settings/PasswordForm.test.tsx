@@ -69,12 +69,17 @@ describe('<PasswordForm />', () => {
         ),
       );
     vi.stubGlobal('fetch', fetchMock);
-    const { container, getByRole, findByText } = render(() => <PasswordForm />);
+    const { container, getByRole, findByText, queryByText } = render(() => (
+      <PasswordForm />
+    ));
 
     fill(container, STRONG, STRONG);
     fireEvent.submit(getByRole('button', { name: /update password/i }));
 
     expect(await findByText('Password updated')).toBeInTheDocument();
+    // Formulaire vidé : règles et correspondance repartent cachées.
+    expect(queryByText(/UNE MAJUSCULE/)).not.toBeInTheDocument();
+    expect(queryByText(/CORRESPONDENT/)).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/auth/change-password',
       expect.objectContaining({
