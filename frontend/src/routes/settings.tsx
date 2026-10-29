@@ -2,6 +2,7 @@ import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
 import { createEffect, Show } from 'solid-js';
 
+import { EmailVerification } from '~/components/settings/EmailVerification';
 import { PasswordForm } from '~/components/settings/PasswordForm';
 import { ProfileForm } from '~/components/settings/ProfileForm';
 import {
@@ -79,6 +80,7 @@ export default function Settings() {
 
                     <TabsContent value="operator" class="mt-space-md">
                       <ProfileForm user={user()} />
+                      <EmailVerification user={user()} />
                       <Separator class="my-space-lg" />
                       <PasswordForm />
                     </TabsContent>

@@ -77,6 +77,30 @@ function toError(status: number, message: string): AuthResult {
         title: 'Already enlisted',
         message: 'Cet email ou ce nom est déjà utilisé.',
       };
+    case 'email already verified':
+      return {
+        ok: false,
+        title: 'Already verified',
+        message: 'Ton email est déjà vérifié.',
+      };
+    case 'invalid code':
+      return {
+        ok: false,
+        title: 'Invalid code',
+        message: 'Code incorrect, vérifie le mail reçu.',
+      };
+    case 'timeout':
+      return {
+        ok: false,
+        title: 'Code expired',
+        message: 'Code expiré, demande-en un nouveau.',
+      };
+    case 'mails are disabled':
+      return {
+        ok: false,
+        title: 'Mail offline',
+        message: "L'envoi d'emails est désactivé sur ce serveur.",
+      };
     case 'invalid password':
       return {
         ok: false,
@@ -116,7 +140,13 @@ function toError(status: number, message: string): AuthResult {
 
 import { createRoot, createSignal } from 'solid-js';
 
-export type AuthUser = { id: string; username: string; email: string };
+// verified : absent tant que le backend ne gère pas la vérification d'email.
+export type AuthUser = {
+  id: string;
+  username: string;
+  email: string;
+  verified?: boolean;
+};
 
 // 1. Signal d'état global accessible par toute l'application (Header, Lobby, etc.)
 // undefined : session pas encore vérifiée (SSR, ou getMe() en cours).
@@ -244,4 +274,38 @@ export async function changePassword(
     oldpassword: payload.currentPassword,
     newpassword: payload.newPassword,
   });
+}
+
+// 8. Vérification d'email, en deux temps et connecté. Le code fait 6 chiffres,
+// vaut 10 minutes, et une nouvelle demande remplace l'ancien code.
+// POST /api/auth/verify-email/request -> 200, 400 "email already verified".
+// Sans envoi de mails côté serveur, la demande vérifie l'email directement :
+// on relit le profil pour le savoir.
+export type VerificationRequest =
+  | { ok: true; verified: boolean }
+  | Extract<AuthResult, { ok: false }>;
+
+export async function requestEmailVerification(): Promise<VerificationRequest> {
+  const result = await sendAuthenticated(
+    'POST',
+    '/api/auth/verify-email/request',
+    {},
+  );
+  if (!result.ok) return result;
+  const user = await getMe();
+  return { ok: true, verified: user?.verified === true };
+}
+
+// POST /api/auth/verify-email/confirm { code } -> 200, 400 "invalid code" ou
+// "timeout". Resynchronise currentUser dès la réussite.
+export async function confirmEmailVerification(
+  code: string,
+): Promise<AuthResult> {
+  const result = await sendAuthenticated(
+    'POST',
+    '/api/auth/verify-email/confirm',
+    { code },
+  );
+  if (result.ok) await getMe();
+  return result;
 }
