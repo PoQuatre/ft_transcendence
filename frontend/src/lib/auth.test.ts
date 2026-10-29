@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
-import { changePassword, currentUser, updateProfile } from './auth';
+import {
+  changePassword,
+  currentUser,
+  setCurrentUser,
+  updateProfile,
+} from './auth';
 
 const me = { id: '1', username: 'nexus_viper', email: 'nexus@example.com' };
 
@@ -10,6 +15,7 @@ function json(body: unknown, status: number) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  setCurrentUser(undefined);
 });
 
 describe('updateProfile', () => {
@@ -91,5 +97,36 @@ describe('changePassword', () => {
     expect(
       await changePassword({ currentPassword: 'a', newPassword: 'b' }),
     ).toMatchObject({ ok: false, title: 'Module offline' });
+  });
+});
+
+describe('session check after a failed authenticated call', () => {
+  test('drops the session when /me answers 401', async () => {
+    setCurrentUser(me);
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(json({ message: 'invalid session user id' }, 500))
+      .mockResolvedValueOnce(json({ message: 'unauthorized' }, 401));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await changePassword({ currentPassword: 'a', newPassword: 'b' });
+
+    expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/auth/me');
+    await vi.waitFor(() => expect(currentUser()).toBeNull());
+  });
+
+  test('keeps the session when the check cannot reach the server', async () => {
+    setCurrentUser(me);
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(json({ message: 'invalid password' }, 400))
+        .mockRejectedValueOnce(new TypeError('Failed to fetch')),
+    );
+
+    await changePassword({ currentPassword: 'a', newPassword: 'b' });
+
+    await vi.waitFor(() => expect(currentUser()).toEqual(me));
   });
 });
