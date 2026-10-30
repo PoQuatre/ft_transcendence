@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   protocol.cpp                                       :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/10/30 23:56:33 by mle-flem          #+#    #+#             */
+/*   Updated: 2026/10/31 00:56:40 by mle-flem         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "game/protocol.hpp"
 
 #include <span>
@@ -10,7 +22,6 @@
 
 namespace {
 
-constexpr std::size_t max_payload_bytes = 1024;
 constexpr std::size_t max_input_frames = 12;
 
 template <typename T>
@@ -113,9 +124,6 @@ inline bool validate_sync_payload(
 inline bool validate_payload(game::protocol::Channel channel,
     std::uint8_t packet_id, std::span<const std::uint8_t> payload)
 {
-    if (payload.size() > max_payload_bytes)
-        return false;
-
     switch (channel) {
     case game::protocol::Channel::Control:
         return false;
@@ -137,16 +145,17 @@ namespace game::protocol {
 std::optional<Frame> parse_message(
     Channel channel, std::span<const std::uint8_t> message)
 {
-    const auto header_size = channel == Channel::Control ? 1U : 2U;
-    if (message.size() < header_size)
+    if (channel == Channel::Control)
+        return std::nullopt;
+
+    if (message.size() < 2 || message.size() > 1024)
         return std::nullopt;
 
     const auto frame = Frame {
         .channel = channel,
         .packet_id = message[0],
-        .session_generation
-        = channel == Channel::Control ? uint8_t { 0 } : message[1],
-        .payload = message.subspan(header_size),
+        .session_generation = message[1],
+        .payload = message.subspan(2),
     };
 
     if (!validate_payload(channel, frame.packet_id, frame.payload))
