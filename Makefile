@@ -50,7 +50,7 @@ help:
 setup:
 	mise install || true
 	cd frontend && pnpm install
-	cd backend && go mod download
+	cd backend && go mod download && rm -f docs/* && swag init -g main.go --dir cmd/api,internal/auth --parseInternal
 	cd game && cmake --preset native-debug
 
 .PHONY: fclean
