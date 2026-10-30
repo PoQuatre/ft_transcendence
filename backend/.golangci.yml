@@ -63,6 +63,10 @@ linters:
         linters:
           - govet
         text: fieldalignment
+      - path: docs/
+        linters:
+          - godot
+          - gochecknoinits
 
 formatters:
   enable:

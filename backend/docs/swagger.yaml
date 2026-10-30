@@ -92,7 +92,7 @@ definitions:
         example: true
         type: boolean
     type: object
-host: localhost:8080
+host: localhost:8443
 info:
   contact: {}
   description: Backend API pour ft_transcendence

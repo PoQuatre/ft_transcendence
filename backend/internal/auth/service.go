@@ -42,6 +42,7 @@ func toUserResponse(user *User) *UserResponse {
 }
 
 func createForgotPasswordMail(resetURL string) string {
+	// TODO: Turn this to a proper html mail
 	rep := "Hello,\n\n"
 	rep += "We received a request to reset the password for your ft_transcendence account.\n\n"
 	rep += "Click the link below to set a new password:\n"
@@ -150,6 +151,7 @@ func (s *Service) CheckVerificationEmail(ctx context.Context, userID uuid.UUID, 
 
 // TODO: Turn to a cool html message.
 func createMailVerificationMail(code string) string {
+	// TODO: Turn this to a proper html mail
 	rep := "Hello,\n\nThank you for signing up with ft_transcendence.\n\nHere is your verification code to enter on the authentication page:\n["
 	rep += code
 	rep += "]\nThis code is valid for 10 minutes. If you did not request this code, you can safely ignore this email.\n\nBest regards,\nThe ft_transcendence Team"

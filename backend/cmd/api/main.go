@@ -3,7 +3,7 @@
 // @title           Transcendence API
 // @version         1.0
 // @description     Backend API pour ft_transcendence
-// @host            localhost:8080
+// @host            localhost:8443
 // @BasePath        /
 package main
 
