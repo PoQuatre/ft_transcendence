@@ -53,7 +53,7 @@ func createForgotPasswordMail(resetURL string) string {
 }
 
 func (s *Service) SendForgotPasswordMail(ctx context.Context, user *User) error {
-	if os.Getenv("HOST_NAME") == "" {
+	if os.Getenv("HOSTNAME") == "" {
 		return echo.NewHTTPError(http.StatusInternalServerError, "mails are disabled")
 	}
 
@@ -171,7 +171,7 @@ func generateCodeForMailVerif() (string, error) {
 }
 
 func (s *Service) SendVerificationEmail(ctx context.Context, userID uuid.UUID, email string) error {
-	if os.Getenv("HOST_NAME") == "" {
+	if os.Getenv("HOSTNAME") == "" {
 		return s.repo.MarkEmailAsVerified(ctx, userID)
 	}
 
