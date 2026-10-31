@@ -169,6 +169,7 @@ services:
     volumes:
       - ./nginx/default.conf.template:/etc/nginx/templates/conf.d/default.conf.template:ro,Z
       - ./nginx/tls-reload-entrypoint.sh:/usr/local/bin/tls-reload-entrypoint.sh:ro,Z
+      - ./nginx/modsecurity/custom-rules.conf:/etc/modsecurity.d/owasp-crs/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf:ro,Z
       - nginx-tls:/run/nginx-tls:ro,z
     networks:
       nginx-frontend:

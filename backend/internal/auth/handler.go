@@ -126,14 +126,17 @@ func (h *handler) forgotPassword(c *echo.Context) error {
 // @Router       /api/auth/change-password [post].
 func (h *handler) changePassword(c *echo.Context) error {
 	ctx := c.Request().Context()
-	var req ChangePasswordRequest
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	if !h.sessionManager.Exists(ctx, "user_id") {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
 	userIDStr := h.sessionManager.GetString(ctx, "user_id")
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "invalid session user id")
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	var req ChangePasswordRequest
+	if err = c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
 	if err = h.validator.Validate(&req); err != nil {
 		return err
