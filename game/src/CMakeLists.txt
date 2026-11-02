@@ -16,6 +16,7 @@ if(EMSCRIPTEN)
         PRIVATE
             $<$<CONFIG:Debug>:-gsource-map=inline>
             $<$<CONFIG:Debug>:SHELL:--source-map-base=/assets/game/>
+            -sASYNCIFY
             -sENVIRONMENT=web
             -sEXPORTED_RUNTIME_METHODS=requestFullscreen
             -sUSE_GLFW=3
