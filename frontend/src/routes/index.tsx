@@ -182,7 +182,7 @@ export default function Home() {
 
   return (
     <div
-      class="flex flex-col w-full relative overflow-x-hidden min-h-screen bg-background text-text-primary"
+      class="flex flex-col w-full relative overflow-x-clip min-h-screen bg-background text-text-primary"
       style={{
         '--tank-glow-color': selectedColor().glow,
         '--tank-stroke-color': selectedColor().hex,
@@ -645,7 +645,7 @@ export default function Home() {
         {/* =================================================================
             3. SECTION COMBAT EVOLUTION (3 Châssis)
             ================================================================= */}
-        <section class="space-y-4" id="classes">
+        <section class="space-y-4 scroll-mt-36 sm:scroll-mt-24" id="classes">
           <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-border-subtle/85 pb-3">
             <div>
               <div class="flex items-center space-x-2">
@@ -894,7 +894,8 @@ export default function Home() {
           {/* CARTE DROITE : ARENA APEX LEADERBOARD (5 colonnes) */}
           <Card
             variant="default"
-            class="lg:col-span-5 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 shadow-card-inner flex flex-col justify-between"
+            id="leaderboard"
+            class="lg:col-span-5 scroll-mt-36 sm:scroll-mt-24 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 shadow-card-inner flex flex-col justify-between"
           >
             <div>
               {/* En-tête Apex */}

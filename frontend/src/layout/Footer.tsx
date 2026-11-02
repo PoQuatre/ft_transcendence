@@ -3,7 +3,7 @@ import type { Component } from 'solid-js';
 export const Footer: Component = () => {
   return (
     <footer class="w-full bg-background text-text-secondary py-space-lg border-t border-border-subtle/40 mt-auto relative z-10">
-      <div class="w-full px-margin flex flex-col md:flex-row items-center justify-between gap-space-md">
+      <div class="container mx-auto px-margin flex flex-col md:flex-row items-center justify-between gap-space-md">
         <div class="flex items-center gap-space-md">
           <div class="flex items-center gap-space-xs">
             <span class="w-2 h-2 bg-accent-primary-pressed" />
@@ -13,7 +13,7 @@ export const Footer: Component = () => {
           </div>
         </div>
 
-        <div class="flex items-center gap-space-lg">
+        <div class="flex flex-wrap items-center justify-center gap-space-lg">
           <div class="flex items-center gap-space-sm">
             <button
               type="button"
@@ -40,7 +40,7 @@ export const Footer: Component = () => {
             </button>
           </div>
 
-          <div class="flex items-center gap-space-md font-label-data text-label-data">
+          <div class="flex flex-wrap items-center justify-center gap-space-md font-label-data text-label-data">
             <a
               class="hover:text-text-primary transition-colors no-underline text-text-muted"
               href="/terms"
