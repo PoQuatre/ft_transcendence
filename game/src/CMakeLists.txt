@@ -14,10 +14,12 @@ if(EMSCRIPTEN)
     target_link_options(
         game
         PRIVATE
+            $<$<CONFIG:Debug>:-gsource-map=inline>
+            $<$<CONFIG:Debug>:SHELL:--source-map-base=/assets/game/>
             -sENVIRONMENT=web
             -sEXPORTED_RUNTIME_METHODS=requestFullscreen
             -sUSE_GLFW=3
             -sALLOW_MEMORY_GROWTH=1
-			--embed-file "${CMAKE_SOURCE_DIR}/src/renderer/assets/"
+            "--embed-file=${CMAKE_SOURCE_DIR}/src/renderer/assets/"
     )
 endif()

@@ -9,12 +9,10 @@ project(game LANGUAGES CXX)
 add_library(game_base INTERFACE)
 add_library(game::base ALIAS game_base)
 
-if(MSVC)
-    target_compile_options(game_base INTERFACE /W3 /WX)
-else()
-    target_compile_options(game_base INTERFACE -Wall -Wextra -Werror)
-endif()
-
+target_compile_options(
+    game_base
+    INTERFACE $<$<CONFIG:Debug>:-g> -Wall -Wextra -Werror
+)
 target_compile_features(game_base INTERFACE cxx_std_23)
 
 # ------------------------------------------------------------------------------
