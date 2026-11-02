@@ -7,6 +7,8 @@ import {
   type ParentProps,
 } from 'solid-js';
 
+import { PacketBridge } from '~/lib/PacketBridge';
+
 type ConnectionState = RTCPeerConnectionState | 'idle';
 type ChannelName = 'control' | 'event' | 'state' | 'sync';
 type DataChannels = Partial<Record<ChannelName, RTCDataChannel>>;
@@ -19,6 +21,7 @@ interface WebRTCContextValue {
   channels: Accessor<DataChannels>;
   getPeer: () => RTCPeerConnection;
   disconnect: () => void;
+  bridge: PacketBridge;
 }
 
 const WebRTCContext = createContext<WebRTCContextValue>();
@@ -81,6 +84,13 @@ export function WebRTCProvider(props: ParentProps) {
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
   let reconnectAttempt = 0;
   let stopped = false;
+  const bridge = new PacketBridge(() => {
+    bridge.clear();
+    setChannels({});
+    setState('failed');
+    peer?.close();
+    scheduleReconnect();
+  });
 
   function cancelReconnect() {
     if (reconnectTimer === undefined) return;
@@ -91,8 +101,15 @@ export function WebRTCProvider(props: ParentProps) {
 
   function startConnection() {
     const currentPeer = getPeer();
-    void connect(currentPeer, setChannels).catch(() => {
+    connect(currentPeer, (next) => {
+      if (peer !== currentPeer) return;
+      bridge.attach(next);
+      setChannels(next);
+    }).catch(() => {
       if (peer === currentPeer) {
+        bridge.clear();
+        setState('failed');
+        currentPeer.close();
         setChannels({});
         scheduleReconnect();
       }
@@ -138,9 +155,12 @@ export function WebRTCProvider(props: ParentProps) {
         cancelReconnect();
       } else if (
         currentPeer.connectionState === 'failed' ||
-        currentPeer.connectionState === 'disconnected'
+        currentPeer.connectionState === 'disconnected' ||
+        currentPeer.connectionState === 'closed'
       ) {
+        bridge.clear();
         setChannels({});
+        if (currentPeer.connectionState === 'disconnected') currentPeer.close();
         scheduleReconnect();
       }
     };
@@ -150,6 +170,7 @@ export function WebRTCProvider(props: ParentProps) {
   function disconnect() {
     stopped = true;
     cancelReconnect();
+    bridge.clear();
     peer?.close();
     peer = null;
     setChannels({});
@@ -163,7 +184,7 @@ export function WebRTCProvider(props: ParentProps) {
   });
 
   return (
-    <WebRTCContext value={{ state, channels, getPeer, disconnect }}>
+    <WebRTCContext value={{ state, channels, getPeer, disconnect, bridge }}>
       {props.children}
     </WebRTCContext>
   );

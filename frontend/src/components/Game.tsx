@@ -1,5 +1,8 @@
 import { createSignal, createUniqueId, onCleanup, Show } from 'solid-js';
 
+import { useWebRTC } from '~/context/WebRTCContext';
+import type { PacketBridge } from '~/lib/PacketBridge';
+
 type GameInstance = {
   ['_game_shutdown'](): void;
 };
@@ -7,6 +10,8 @@ type GameInstance = {
 type GameFactory = (options: {
   canvas: HTMLCanvasElement;
   locateFile(path: string): string;
+  packetBridge: PacketBridge;
+  networkState(): number;
 }) => Promise<GameInstance>;
 
 export default function Game() {
@@ -30,6 +35,7 @@ export default function Game() {
 }
 
 function GameView(props: { buildId: string }) {
+  const network = useWebRTC();
   const canvasId = `game-canvas-${createUniqueId()}`;
   let game: GameInstance | undefined;
   let disposed = false;
@@ -49,6 +55,13 @@ function GameView(props: { buildId: string }) {
 
       const instance = await createGame({
         canvas,
+        packetBridge: network.bridge,
+        networkState: () =>
+          network.state() === 'connected'
+            ? 1
+            : ['failed', 'disconnected', 'closed'].includes(network.state())
+              ? -1
+              : 0,
         locateFile: () => wasmUrl.href,
       });
       if (disposed) {
