@@ -14,7 +14,7 @@ import (
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
-	"github.com/PoQuatre/ft_transcendence/backend/internal/swagger"
+	// "github.com/PoQuatre/ft_transcendence/backend/internal/swagger".
 )
 
 type config struct {
@@ -61,7 +61,7 @@ func New(options ...Option) (http.Handler, error) {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	})
 
-	swagger.RegisterRoutes(e)
+	// swagger.RegisterRoutes(e)
 
 	if cfg.database != nil {
 		auth.RegisterRoutes(e.Group("/api/auth"), *auth.NewService(auth.NewRepository(cfg.database)), sessionManager, validat)

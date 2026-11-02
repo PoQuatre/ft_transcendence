@@ -15,8 +15,7 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-
-	_ "github.com/PoQuatre/ft_transcendence/backend/docs"
+	// _ "github.com/PoQuatre/ft_transcendence/backend/docs".
 )
 
 func main() {

@@ -11,8 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
-
-	_ "github.com/PoQuatre/ft_transcendence/backend/docs"
+	// _ "github.com/PoQuatre/ft_transcendence/backend/docs".
 )
 
 type handler struct {
