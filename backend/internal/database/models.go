@@ -7,5 +7,7 @@ import (
 func Models() []any {
 	return []any{
 		(*auth.User)(nil),
+		(*auth.UserVerify)(nil),
+		(*auth.PasswordResetToken)(nil),
 	}
 }

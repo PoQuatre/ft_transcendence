@@ -2,20 +2,89 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
 )
 
 type mockRepository struct {
-	users map[string]*User
+	users               map[string]*User
+	usersverifs         map[uuid.UUID]*UserVerify
+	passwordresettokens map[uuid.UUID]*PasswordResetToken
 }
 
 func newMockRepository() *mockRepository {
 	return &mockRepository{
-		users: make(map[string]*User),
+		users:               make(map[string]*User),
+		usersverifs:         make(map[uuid.UUID]*UserVerify),
+		passwordresettokens: make(map[uuid.UUID]*PasswordResetToken),
 	}
+}
+
+func (m *mockRepository) GetPasswordResetToken(ctx context.Context, tokenHash string) (*PasswordResetToken, error) {
+	for _, token := range m.passwordresettokens {
+		if token.TokenHash == tokenHash {
+			return token, nil
+		}
+	}
+
+	return nil, fmt.Errorf("password reset token not found: %w", sql.ErrNoRows)
+}
+
+func (m *mockRepository) DeletePasswordResetToken(ctx context.Context, tokenID uuid.UUID) error {
+	if _, exists := m.passwordresettokens[tokenID]; !exists {
+		return errors.New("password reset token not found")
+	}
+
+	delete(m.passwordresettokens, tokenID)
+	return nil
+}
+
+func (m *mockRepository) CreatePasswordResetToken(ctx context.Context, reset *PasswordResetToken) (*PasswordResetToken, error) {
+	for id, token := range m.passwordresettokens {
+		if token.UserID == reset.UserID {
+			delete(m.passwordresettokens, id)
+		}
+	}
+
+	if reset.ID == uuid.Nil {
+		var err error
+		reset.ID, err = uuid.NewRandom()
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate uuid for mock token: %w", err)
+		}
+	}
+
+	m.passwordresettokens[reset.ID] = reset
+
+	return reset, nil
+}
+
+func (m *mockRepository) SetNewPasswordToUser(ctx context.Context, user *User, passwordhash string) (*User, error) {
+	if _, exists := m.users[user.Email]; !exists {
+		return nil, ErrNotFound
+	}
+	user.PasswordHash = passwordhash
+	m.users[user.Email] = user
+	return user, nil
+}
+
+func (m *mockRepository) CreateUserVerification(ctx context.Context, user *UserVerify) (*UserVerify, error) {
+	if _, exists := m.usersverifs[user.UserID]; exists {
+		return nil, ErrAlreadyExists
+	}
+	m.usersverifs[user.UserID] = user
+	return user, nil
+}
+
+func (m *mockRepository) GetUserVerificationByID(ctx context.Context, id uuid.UUID) (*UserVerify, error) {
+	if _, exists := m.usersverifs[id]; !exists {
+		return nil, ErrNotFound
+	}
+	return m.usersverifs[id], nil
 }
 
 func (m *mockRepository) GetUserByEmail(ctx context.Context, email string) (*User, error) {
@@ -33,6 +102,16 @@ func (m *mockRepository) CreateUser(ctx context.Context, u *User) (*User, error)
 	m.users[u.Email] = u
 	m.users[u.Username] = u
 	return u, nil
+}
+
+func (m *mockRepository) MarkEmailAsVerified(ctx context.Context, id uuid.UUID) error {
+	for _, u := range m.users {
+		if u.ID == id {
+			u.Verified = true
+			return nil
+		}
+	}
+	return ErrNotFound
 }
 
 func (m *mockRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) {

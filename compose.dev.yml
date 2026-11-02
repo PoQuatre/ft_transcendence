@@ -77,6 +77,18 @@ services:
     networks:
       backend-egress:
 
+  mailpit:
+    image: docker.io/axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_DATA_DIR: ""
+      MP_DATABASE: ""
+    networks:
+      - backend-egress
+
   game:
     build:
       context: ./game

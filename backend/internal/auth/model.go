@@ -9,6 +9,44 @@ import (
 )
 
 //nolint:govet // Field order follows the database column order.
+type PasswordResetToken struct {
+	bun.BaseModel `bun:"table:password_reset_tokens,alias:prt"`
+
+	ID        uuid.UUID `bun:",type:uuid,pk,default:uuidv7()"`
+	UserID    uuid.UUID `bun:",type:uuid,notnull"`
+	TokenHash string    `bun:",notnull,unique"`
+	ExpiresAt time.Time `bun:",notnull"`
+	CreatedAt time.Time `bun:",notnull,default:current_timestamp"`
+}
+
+var _ bun.BeforeAppendModelHook = (*PasswordResetToken)(nil)
+
+func (u *PasswordResetToken) BeforeAppendModel(_ context.Context, query bun.Query) error {
+	if _, ok := query.(*bun.InsertQuery); ok && u.ExpiresAt.IsZero() {
+		u.ExpiresAt = time.Now().Add(10 * time.Minute)
+	}
+	return nil
+}
+
+//nolint:govet // Field order follows the database column order.
+type UserVerify struct {
+	bun.BaseModel `bun:"table:user_verifications,alias:uv"`
+
+	UserID uuid.UUID `bun:",type:uuid,pk"`
+	Code   string    `bun:",notnull"`
+	EndsAt time.Time `bun:",nullzero,notnull"`
+}
+
+var _ bun.BeforeAppendModelHook = (*UserVerify)(nil)
+
+func (u *UserVerify) BeforeAppendModel(_ context.Context, query bun.Query) error {
+	if _, ok := query.(*bun.InsertQuery); ok && u.EndsAt.IsZero() {
+		u.EndsAt = time.Now().Add(10 * time.Minute)
+	}
+	return nil
+}
+
+//nolint:govet // Field order follows the database column order.
 type User struct {
 	bun.BaseModel `bun:"table:users,alias:u"`
 
@@ -18,6 +56,7 @@ type User struct {
 	PasswordHash string    `bun:",nullzero,notnull"`
 	CreatedAt    time.Time `bun:",nullzero,notnull,default:current_timestamp"`
 	UpdatedAt    time.Time `bun:",nullzero,notnull,default:current_timestamp"`
+	Verified     bool      `bun:",notnull,default:false"`
 }
 
 var _ bun.BeforeUpdateHook = (*User)(nil)
