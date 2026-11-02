@@ -76,9 +76,10 @@ services:
     command: ["air"]
     networks:
       backend-egress:
+      backend-mailpit:
 
   mailpit:
-    image: docker.io/axllent/mailpit:latest
+    image: docker.io/axllent/mailpit:v1.33.0
     restart: unless-stopped
     ports:
       - "127.0.0.1:8025:8025"
@@ -87,7 +88,7 @@ services:
       MP_DATA_DIR: ""
       MP_DATABASE: ""
     networks:
-      - backend-egress
+      backend-mailpit:
 
   game:
     build:
@@ -122,6 +123,8 @@ networks:
   vault-pgweb:
     internal: true
   postgres-pgweb:
+    internal: true
+  backend-mailpit:
     internal: true
   frontend-egress:
   backend-egress:
