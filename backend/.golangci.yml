@@ -50,11 +50,9 @@ linters:
       rules:
         - name: exported
           disabled: true
-    # staticcheck:
-    #   checks:
-    #     - all
-    #     - -ST1000
   exclusions:
+    paths:
+      - docs/
     rules:
       - path: _test\.go
         linters:
@@ -63,10 +61,6 @@ linters:
         linters:
           - govet
         text: fieldalignment
-      - path: docs/
-        linters:
-          - godot
-          - gochecknoinits
 
 formatters:
   enable:

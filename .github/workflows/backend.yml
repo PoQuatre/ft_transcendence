@@ -28,6 +28,14 @@ jobs:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
 
+      - name: Install Swaggo CLI
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@v1.16.6
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Generate API documentation
+        run: swag init -g internal/server/server.go --parseInternal
+
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
@@ -50,6 +58,14 @@ jobs:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
 
+      - name: Install Swaggo CLI
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@v1.16.6
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Generate API documentation
+        run: swag init -g internal/server/server.go --parseInternal
+
       - name: Build backend
         run: go build ./cmd/api
 
@@ -69,6 +85,14 @@ jobs:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
 
+      - name: Install Swaggo CLI
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@v1.16.6
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Generate API documentation
+        run: swag init -g internal/server/server.go --parseInternal
+
       - name: Run tests
         run: bash ../.github/scripts/go-test.sh ./...
 
@@ -87,6 +111,14 @@ jobs:
         with:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
+
+      - name: Install Swaggo CLI
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@v1.16.6
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Generate API documentation
+        run: swag init -g internal/server/server.go --parseInternal
 
       - name: Run race tests
         run: bash ../.github/scripts/go-test.sh -race ./...

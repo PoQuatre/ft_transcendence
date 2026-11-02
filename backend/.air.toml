@@ -1,7 +1,8 @@
 tmp_dir = "tmp"
 
 [build]
+pre_cmd = ["swag init -g internal/server/server.go --parseInternal"]
 cmd = "go build -o ./tmp/api ./cmd/api"
 entrypoint = ["./tmp/api", "serve"]
-exclude_dir = ["tmp"]
+exclude_dir = ["tmp", "docs"]
 exclude_regex = ["_test\\.go$"]

@@ -9,3 +9,5 @@
 !go.sum
 
 **/*_test.go
+docs/
+docs/**
