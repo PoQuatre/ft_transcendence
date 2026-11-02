@@ -15,9 +15,11 @@ import (
 var indexHTML []byte
 
 func RegisterRoutes(e *echo.Group) {
-	e.GET("/", func(c *echo.Context) error {
+	redirect := func(c *echo.Context) error {
 		return c.Redirect(http.StatusMovedPermanently, "/api/docs/index.html")
-	})
+	}
+	e.GET("", redirect)
+	e.GET("/", redirect)
 
 	e.GET("/index.html", func(c *echo.Context) error {
 		return c.HTMLBlob(http.StatusOK, indexHTML)
