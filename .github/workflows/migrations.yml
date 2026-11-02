@@ -73,6 +73,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Generate API documentation
+        working-directory: backend
         run: swag init -g internal/server/server.go --parseInternal
 
       - name: Migrate up
