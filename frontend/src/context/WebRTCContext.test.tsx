@@ -119,6 +119,7 @@ describe('<WebRTCProvider />', () => {
 
     MockPeerConnection.instances[2]?.setConnectionState('connected');
     MockPeerConnection.instances[2]?.setConnectionState('disconnected');
+    expect(MockPeerConnection.instances[2]?.signalingState).toBe('closed');
     await vi.advanceTimersByTimeAsync(1_000);
     expect(MockPeerConnection.instances).toHaveLength(4);
 
