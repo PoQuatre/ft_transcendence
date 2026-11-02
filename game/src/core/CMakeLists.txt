@@ -4,6 +4,12 @@ add_library(game::core ALIAS game_core)
 target_include_directories(game_core PUBLIC include)
 target_link_libraries(
     game_core
-    PUBLIC game::platform game::simulation glm::glm spdlog::spdlog game::renderer
-    PRIVATE game::base  
+    PUBLIC
+        game::platform
+        game::simulation
+        glm::glm
+        spdlog::spdlog
+        game::renderer
+        game::network
+    PRIVATE game::base
 )

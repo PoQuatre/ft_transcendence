@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:59 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/11 15:33:47 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/31 02:33:20 by mle-flem         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include "game/network.hpp"
 #include "game/platform.hpp"
 #include "game/renderer.hpp"
 #include "game/simulation.hpp"
@@ -38,6 +39,7 @@ private:
     platform::Platform platform_;
     simulation::Simulation simulation_;
     renderer::Renderer renderer_;
+    network::Client network_;
 
     std::string tank_name_;
     void update_player();
