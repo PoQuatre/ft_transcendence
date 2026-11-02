@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:46 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/14 09:22:03 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/10/31 02:16:20 by mle-flem         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,11 +16,6 @@
 
 #include "game/renderer.hpp"
 #include "glm/geometric.hpp"
-
-namespace {
-void break_point() { SPDLOG_INFO("BREAK"); }
-
-}
 
 namespace game::core {
 
@@ -67,19 +62,14 @@ void App::update_player()
     float speed = 5000.F;
     auto &state = platform_.get_input();
 
-    if (state.keys[platform::Keys::KEY_W]) {
-        break_point();
+    if (state.keys[platform::Keys::KEY_W])
         dir.y -= 1;
-    }
-    if (state.keys[platform::Keys::KEY_S]) {
+    if (state.keys[platform::Keys::KEY_S])
         dir.y += 1;
-    }
-    if (state.keys[platform::Keys::KEY_A]) {
+    if (state.keys[platform::Keys::KEY_A])
         dir.x -= 1;
-    }
-    if (state.keys[platform::Keys::KEY_D]) {
+    if (state.keys[platform::Keys::KEY_D])
         dir.x += 1;
-    }
 
     SPDLOG_DEBUG(
         "input state, a {}, w {}, d {}, s {} mouse pos {}, left {}, right { } ",
@@ -120,15 +110,36 @@ void App::update_player()
 
 void App::iterate()
 {
-    if (GetScreenHeight() == 0 || GetScreenWidth() == 0) {
-        SPDLOG_INFO("caca mini");
-        return;
+#ifdef __EMSCRIPTEN__
+    network_.set_status(network::status());
+    if (!network_.receive(
+            [](std::span<std::uint8_t> bytes) {
+                return network::drain(
+                    bytes.data(), static_cast<int>(bytes.size()));
+            },
+            [](const protocol::Frame &) { })) {
+        network::failure();
+        network_.set_status(-1);
     }
+#endif
+
+    if (GetScreenHeight() == 0 || GetScreenWidth() == 0)
+        return;
+
     const double delta_seconds = platform::Platform::delta_seconds();
     platform_.update_inputs();
     update_player();
 
     simulation_.update(delta_seconds);
+
+#ifdef __EMSCRIPTEN__
+    if (!network_.submit([](std::span<const std::uint8_t> bytes) {
+            return network::submit(bytes.data(), static_cast<int>(bytes.size()))
+                != 0;
+        }))
+        network_.set_status(-1);
+#endif
+
     renderer_.draw(simulation_);
 }
 

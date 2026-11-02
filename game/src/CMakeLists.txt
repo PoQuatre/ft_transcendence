@@ -2,6 +2,7 @@ add_subdirectory(simulation)
 add_subdirectory(platform)
 add_subdirectory(renderer)
 add_subdirectory(protocol)
+add_subdirectory(network)
 add_subdirectory(core)
 
 add_executable(game main.cpp)
