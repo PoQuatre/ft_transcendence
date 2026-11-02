@@ -1,10 +1,4 @@
 // Package main runs the backend HTTP server.
-//
-// @title           Transcendence API
-// @version         1.0
-// @description     Backend API pour ft_transcendence
-// @host            localhost:8443
-// @BasePath        /
 package main
 
 import (
@@ -15,7 +9,6 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-	// _ "github.com/PoQuatre/ft_transcendence/backend/docs".
 )
 
 func main() {

@@ -67,6 +67,15 @@ jobs:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
 
+      - name: Install Swaggo CLI
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@v1.16.6
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Generate API documentation
+        working-directory: backend
+        run: swag init -g internal/server/server.go --parseInternal
+
       - name: Migrate up
         working-directory: backend
         env:

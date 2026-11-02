@@ -7,7 +7,7 @@ tmp/
 # generated
 .generated/
 compile_commands.json
-backend/docs
+backend/docs/
 
 # environment
 .env

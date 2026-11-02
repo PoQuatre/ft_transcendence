@@ -50,12 +50,13 @@ help:
 setup:
 	mise install || true
 	cd frontend && pnpm install
-	cd backend && go mod download # && rm -f docs/* && swag init -g main.go --dir cmd/api,internal/auth --parseInternal
+	cd backend && go mod download
+	cd backend && swag init -g internal/server/server.go --parseInternal
 	cd game && cmake --preset native-debug
 
 .PHONY: fclean
 fclean:
-	$(RM) -r .cache backend/bin/ frontend/dist/ frontend/node_modules/ game/.cache/ game/build/ game/compile_commands.json
+	$(RM) -r .cache backend/bin/ backend/docs/ frontend/dist/ frontend/node_modules/ game/.cache/ game/build/ game/compile_commands.json
 
 .PHONY: test
 test: test-frontend test-backend test-game

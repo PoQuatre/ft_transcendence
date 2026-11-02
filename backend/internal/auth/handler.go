@@ -11,7 +11,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
-	// _ "github.com/PoQuatre/ft_transcendence/backend/docs".
 )
 
 type handler struct {
@@ -112,7 +111,7 @@ func (h *handler) forgotPassword(c *echo.Context) error {
 
 // changePassword godoc
 // @Summary      Change user password
-// @Description  Changes the authentificated user's password after verifying the old password
+// @Description  Requires the session cookie from login. Changes the user's password after verifying the old password.
 // @Tags         Auth
 // @Accept       json
 // @Produce      json
@@ -156,7 +155,7 @@ func (h *handler) changePassword(c *echo.Context) error {
 
 // confirmEmailVerification godoc
 // @Summary      Confirm email verification
-// @Description  Validates the user's email address using the verification code sent by email
+// @Description  Requires the session cookie from login. Validates the user's email using the verification code sent by email.
 // @Tags         Verification
 // @Accept       json
 // @Produce      json
@@ -185,7 +184,7 @@ func (h *handler) confirmEmailVerification(c *echo.Context) error {
 
 // requestEmailVerification godoc
 // @Summary      Request email verification
-// @Description  Sends a new verification email to the authenticated user if their email is not verified yet
+// @Description  Requires the session cookie from login. Sends a new verification email if the user's email is not verified yet.
 // @Tags         Verification
 // @Produce      json
 // @Success      200 {object} map[string]string "email verification sent"
@@ -247,7 +246,7 @@ func (h *handler) signup(c *echo.Context) error {
 
 // login godoc
 // @Summary      User login
-// @Description  Authenticates user credentials and initializes a new session
+// @Description  Authenticates user credentials and sets a session cookie for authenticated requests.
 // @Tags         Auth
 // @Accept       json
 // @Produce      json
@@ -288,7 +287,7 @@ func (h *handler) login(c *echo.Context) error {
 
 // logout godoc
 // @Summary      User logout
-// @Description  Destroys the current user session and renews session token
+// @Description  Requires the session cookie from login. Destroys the current user session and renews the session token.
 // @Tags         Auth
 // @Produce      json
 // @Success      200 {object} map[string]string "logged out successfully"
@@ -311,7 +310,7 @@ func (h *handler) logout(c *echo.Context) error {
 
 // me godoc
 // @Summary      Get current user profile
-// @Description  Retrieves authenticated user profile details from session
+// @Description  Requires the session cookie from login. Retrieves the user's profile from the session.
 // @Tags         User
 // @Produce      json
 // @Success      200 {object} auth.UserResponse
