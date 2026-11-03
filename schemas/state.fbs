@@ -27,5 +27,3 @@ table WorldDelta {
   upserts: [EntityState];
   removed_entity_ids: [uint32];
 }
-
-root_type WorldDelta;
