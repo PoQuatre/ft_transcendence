@@ -60,6 +60,39 @@ afterEach(() => {
 });
 
 describe('<WebRTCProvider />', () => {
+  test('does not send an outdated offer after login', async () => {
+    vi.stubGlobal('RTCPeerConnection', MockPeerConnection);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ type: 'answer', sdp: 'answer' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    let finishOffer!: (offer: { type: string; sdp: string }) => void;
+    const createOffer = vi.spyOn(MockPeerConnection.prototype, 'createOffer');
+    createOffer.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishOffer = resolve;
+        }),
+    );
+    setCurrentUser(null);
+    const { unmount } = render(() => <WebRTCProvider />);
+    await settle();
+
+    setCurrentUser({ id: '1', username: 'user', email: 'user@example.com' });
+    await settle();
+    finishOffer({ type: 'offer', sdp: 'old offer' });
+    await settle();
+    await settle();
+
+    unmount();
+    createOffer.mockRestore();
+    expect(fetchMock).toHaveBeenCalled();
+    expect(
+      fetchMock.mock.calls.map((call) => JSON.parse(call[1].body).sdp),
+    ).not.toContain('old offer');
+  });
+
   test('reconnects when login and logout change the identity', async () => {
     vi.stubGlobal('RTCPeerConnection', MockPeerConnection);
     vi.stubGlobal(
