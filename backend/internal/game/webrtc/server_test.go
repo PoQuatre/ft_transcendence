@@ -41,9 +41,76 @@ func TestAnswerReturnsCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
-	if _, err := server.Answer(ctx, pion.SessionDescription{}); !errors.Is(err, context.Canceled) {
+	if _, err := server.answer(ctx, pion.SessionDescription{}, Identity{}); !errors.Is(err, context.Canceled) {
 		t.Errorf("Answer() error = %v, want %v", err, context.Canceled)
 	}
+}
+
+func TestAbandonedOfferReleasesAccount(t *testing.T) {
+	originalTimeout := connectionTimeout
+	connectionTimeout = 100 * time.Millisecond
+	t.Cleanup(func() { connectionTimeout = originalTimeout })
+
+	server, err := New(0, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = server.Close() })
+	client, err := pion.NewPeerConnection(pion.Configuration{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = client.Close() })
+	if _, err := client.CreateDataChannel("control", nil); err != nil {
+		t.Fatal(err)
+	}
+	offer, err := client.CreateOffer(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.SetLocalDescription(offer); err != nil {
+		t.Fatal(err)
+	}
+	identity := Identity{AccountID: "account", Username: "player"}
+	if _, err := server.answer(t.Context(), offer, identity); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.After(2 * time.Second)
+	for {
+		server.mu.Lock()
+		_, reserved := server.accounts[identity.AccountID]
+		server.mu.Unlock()
+		if !reserved {
+			break
+		}
+		select {
+		case <-deadline:
+			t.Fatal("abandoned offer did not release account")
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+	if _, err := server.answer(t.Context(), offer, identity); err != nil {
+		t.Fatalf("account could not reconnect: %v", err)
+	}
+}
+
+func TestConnectionTimeoutStopsOnConnect(t *testing.T) {
+	originalTimeout := connectionTimeout
+	connectionTimeout = 20 * time.Millisecond
+	t.Cleanup(func() { connectionTimeout = originalTimeout })
+	peer, err := pion.NewPeerConnection(pion.Configuration{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = peer.Close() })
+	validator := newDataChannelValidator(peer)
+	validator.startConnectionTimeout()
+	validator.connectionStateChanged(pion.PeerConnectionStateConnected)
+	time.Sleep(2 * connectionTimeout)
+	if peer.ConnectionState() == pion.PeerConnectionStateClosed {
+		t.Fatal("connected peer was closed by connection timeout")
+	}
+	validator.connectionStateChanged(pion.PeerConnectionStateClosed)
 }
 
 func TestServerCloseClosesManagedPeers(t *testing.T) {
@@ -55,7 +122,7 @@ func TestServerCloseClosesManagedPeers(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := server.managePeer(peer, nil); err != nil {
+	if err := server.managePlayer(peer, nil, &player{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -85,8 +152,8 @@ func TestServerDoesNotManagePeersAfterClose(t *testing.T) {
 		}
 	})
 
-	if err := server.managePeer(peer, nil); !errors.Is(err, errServerClosed) {
-		t.Errorf("managePeer() error = %v, want %v", err, errServerClosed)
+	if err := server.managePlayer(peer, nil, &player{}); !errors.Is(err, errServerClosed) {
+		t.Errorf("managePlayer() error = %v, want %v", err, errServerClosed)
 	}
 }
 

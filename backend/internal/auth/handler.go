@@ -17,18 +17,22 @@ type handler struct {
 	service        Service
 	validator      *helpers.CustomValidator
 	sessionManager *scs.SessionManager
+	onLogout       func(string)
 }
 
-func RegisterRoutes(group *echo.Group, service Service, sessionManager *scs.SessionManager, val *helpers.CustomValidator) {
+const LogoutPath = "/logout"
+
+func RegisterRoutes(group *echo.Group, service Service, sessionManager *scs.SessionManager, val *helpers.CustomValidator, onLogout func(string)) {
 	h := handler{
 		service:        service,
 		validator:      val,
 		sessionManager: sessionManager,
+		onLogout:       onLogout,
 	}
 
 	group.POST("/signup", h.signup)
 	group.POST("/login", h.login)
-	group.POST("/logout", h.logout)
+	group.POST(LogoutPath, h.logout)
 	group.POST("/verify-email/request", h.requestEmailVerification)
 	group.POST("/verify-email/confirm", h.confirmEmailVerification)
 	group.POST("/change-password", h.changePassword)
@@ -287,12 +291,12 @@ func (h *handler) login(c *echo.Context) error {
 
 // logout godoc
 // @Summary      User logout
-// @Description  Requires the session cookie from login. Destroys the current user session and renews the session token.
+// @Description  Requires the session cookie from login. Destroys the current user session.
 // @Tags         Auth
 // @Produce      json
 // @Success      200 {object} map[string]string "logged out successfully"
 // @Failure      400 {object} map[string]string "not logged in"
-// @Failure      500 {object} map[string]string "failed to renew session"
+// @Failure      500 {object} map[string]string "failed to destroy session"
 // @Router       /api/auth/logout [post].
 func (h *handler) logout(c *echo.Context) error {
 	ctx := c.Request().Context()
@@ -300,9 +304,12 @@ func (h *handler) logout(c *echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "not logged in")
 	}
 
-	h.sessionManager.Remove(c.Request().Context(), "user_id")
-	if err := h.sessionManager.RenewToken(ctx); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to renew session")
+	userID := h.sessionManager.GetString(ctx, "user_id")
+	if err := h.sessionManager.Destroy(ctx); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to destroy session")
+	}
+	if h.onLogout != nil {
+		h.onLogout(userID)
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{"message": "logged out successfully"})

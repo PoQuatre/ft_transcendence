@@ -75,3 +75,12 @@ directory for Vault PKI enrollment.
 **Currently claimable: 4 points** (one Major + two Minor modules).
 
 **Expected total: 10 points** if every in-progress module is completed, demonstrated, and accepted during evaluation.
+# Lobby control protocol
+
+After WebRTC connects, send JSON text on the reliable `control` channel:
+
+- `{"type":"QuickPlayRequest"}` joins an available lobby (up to eight players), creating one if necessary. Repeating the request returns the current state.
+- `{"type":"LeaveGameRequest"}` leaves the lobby without closing WebRTC; the server replies with `{"type":"GameLeft"}`.
+- On join or leave, each remaining member receives `{"type":"LobbyState","lobbyId":"...","players":[{"id":"...","username":"..."}]}`. Invalid or unsupported messages receive `{"type":"Error","error":"..."}`.
+
+An authenticated offer uses the login session cookie; bearer tokens and other `Authorization` headers are rejected with HTTP 401. Missing credentials create a guest; invalid or expired credentials return HTTP 401. A second connection for the same account returns HTTP 409. Lobby state is in memory and is lost on server restart.

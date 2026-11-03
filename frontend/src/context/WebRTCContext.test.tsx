@@ -1,6 +1,8 @@
 import { render } from '@solidjs/testing-library';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
+import { setCurrentUser } from '~/lib/auth';
+
 import { useWebRTC, WebRTCProvider } from './WebRTCContext';
 
 class MockPeerConnection {
@@ -51,12 +53,38 @@ async function settle() {
 }
 
 afterEach(() => {
+  setCurrentUser(undefined);
   vi.useRealTimers();
   vi.unstubAllGlobals();
   MockPeerConnection.instances = [];
 });
 
 describe('<WebRTCProvider />', () => {
+  test('reconnects when login and logout change the identity', async () => {
+    vi.stubGlobal('RTCPeerConnection', MockPeerConnection);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ type: 'answer', sdp: 'answer' }),
+      }),
+    );
+    setCurrentUser(null);
+    const { unmount } = render(() => <WebRTCProvider />);
+    await settle();
+    expect(MockPeerConnection.instances).toHaveLength(1);
+
+    setCurrentUser({ id: '1', username: 'user', email: 'user@example.com' });
+    await settle();
+    expect(MockPeerConnection.instances).toHaveLength(2);
+    expect(MockPeerConnection.instances[0]?.signalingState).toBe('closed');
+
+    setCurrentUser(null);
+    await settle();
+    expect(MockPeerConnection.instances).toHaveLength(3);
+    expect(MockPeerConnection.instances[1]?.signalingState).toBe('closed');
+    unmount();
+  });
   test('creates the configured data channels', async () => {
     vi.stubGlobal('RTCPeerConnection', MockPeerConnection);
     vi.stubGlobal(

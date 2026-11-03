@@ -1,5 +1,6 @@
 import {
   createContext,
+  createEffect,
   createSignal,
   onSettled,
   useContext,
@@ -7,6 +8,7 @@ import {
   type ParentProps,
 } from 'solid-js';
 
+import { currentUser } from '~/lib/auth';
 import { PacketBridge } from '~/lib/PacketBridge';
 
 type ConnectionState = RTCPeerConnectionState | 'idle';
@@ -99,6 +101,14 @@ export function WebRTCProvider(props: ParentProps) {
     reconnectTimer = undefined;
   }
 
+  function clearPeer() {
+    bridge.clear();
+    const previousPeer = peer;
+    peer = null;
+    previousPeer?.close();
+    setChannels({});
+  }
+
   function startConnection() {
     const currentPeer = getPeer();
     connect(currentPeer, (next) => {
@@ -129,9 +139,7 @@ export function WebRTCProvider(props: ParentProps) {
       reconnectTimer = undefined;
       if (stopped) return;
 
-      const previousPeer = peer;
-      peer = null;
-      previousPeer?.close();
+      clearPeer();
       startConnection();
     }, delay);
   }
@@ -170,12 +178,20 @@ export function WebRTCProvider(props: ParentProps) {
   function disconnect() {
     stopped = true;
     cancelReconnect();
-    bridge.clear();
-    peer?.close();
-    peer = null;
-    setChannels({});
+    clearPeer();
     setState('closed');
   }
+
+  createEffect(
+    () => currentUser()?.id,
+    () => {
+      cancelReconnect();
+      clearPeer();
+      reconnectAttempt = 0;
+      startConnection();
+    },
+    { defer: true },
+  );
 
   onSettled(() => {
     stopped = false;
