@@ -34,7 +34,7 @@ FROM docker.io/library/golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache gcc musl-dev go-swag
+RUN apk add --no-cache gcc musl-dev go-swag libstdc++-dev
 
 COPY --from=flatc-builder /out/flatc /usr/local/bin/flatc
 
@@ -65,7 +65,7 @@ WORKDIR /app
 RUN --mount=type=cache,id=go-mod,target=/go/pkg/mod \
 	--mount=type=cache,id=go-build,target=/root/.cache/go-build \
 	go install "github.com/air-verse/air@${AIR_VERSION}" && \
-	apk add --no-cache go-swag
+	apk add --no-cache gcc musl-dev go-swag libstdc++-dev
 
 COPY --from=flatc-builder /out/flatc /usr/local/bin/flatc
 
