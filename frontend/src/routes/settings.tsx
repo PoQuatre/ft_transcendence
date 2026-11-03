@@ -2,6 +2,7 @@ import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
 import { createEffect, Show } from 'solid-js';
 
+import { ControlsForm } from '~/components/settings/ControlsForm';
 import { EmailVerification } from '~/components/settings/EmailVerification';
 import { PasswordForm } from '~/components/settings/PasswordForm';
 import { ProfileForm } from '~/components/settings/ProfileForm';
@@ -18,7 +19,7 @@ import { currentUser } from '~/lib/auth';
 import { paths } from '~/router';
 
 // Page réservée aux pilotes connectés : paramètres du compte (OPERATOR) et
-// préférences de combat (COMBAT). Le contenu des onglets arrive ensuite.
+// touches du jeu (COMBAT).
 export default function Settings() {
   const navigate = useNavigate();
 
@@ -65,7 +66,7 @@ export default function Settings() {
                     </span>
                   </h1>
                   <p class="mt-space-xs font-body-sm text-body-sm text-text-secondary">
-                    Paramètres du compte et préférences de combat.
+                    Paramètres du compte et touches du jeu.
                   </p>
 
                   <Tabs defaultValue="operator" class="mt-space-lg">
@@ -85,9 +86,7 @@ export default function Settings() {
                       <PasswordForm />
                     </TabsContent>
                     <TabsContent value="combat" class="mt-space-md">
-                      <p class="font-label-data text-label-data text-text-muted">
-                        COMBAT MODULE // PENDING
-                      </p>
+                      <ControlsForm />
                     </TabsContent>
                   </Tabs>
                 </div>
