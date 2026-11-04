@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:41 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/14 20:08:21 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/05 00:32:52 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,50 +24,7 @@
 
 namespace game::simulation {
 
-Simulation::Simulation()
-{
-    std::random_device rd;
-    std::default_random_engine eng(rd());
-
-    std::uniform_real_distribution<float> random_pos(
-        map_bounds_.min_x, map_bounds_.max_x);
-    std::uniform_int_distribution<int> random_col(0, 3);
-    std::uniform_int_distribution<int> random_shape_type(0, 1);
-    std::uniform_int_distribution<int> random_shape_size(1, 100);
-
-    for (int i = 0; i < ressource_count_; ++i) {
-        Shape shape;
-        ShapeType shape_type = random_shape_type(eng) == 0
-            ? ShapeType::SHAPE_CIRCLE
-            : ShapeType::SHAPE_RECT;
-        if (shape_type == ShapeType::SHAPE_CIRCLE) {
-            shape.circle.size = random_shape_size(eng);
-        } else {
-            shape.rect.width = random_shape_size(eng);
-            shape.rect.height = shape.rect.width;
-        }
-
-        Transform transform = {
-            .pos { random_pos(eng), random_pos(eng) },
-            .vel = glm::vec2(0),
-            .acc = glm::vec2(0),
-            .rotation = 0,
-        };
-        auto color_tmp = renderer::Colors::colors[1 + random_col(eng)];
-        Color col = {
-            .r = color_tmp.r,
-            .g = color_tmp.b,
-            .b = color_tmp.g,
-            .a = color_tmp.a,
-        };
-        SPDLOG_INFO("Pos {} {}", transform.pos.x, transform.pos.y);
-        SPDLOG_INFO("Col {} {} {}", col.r, col.g, col.b);
-        SPDLOG_INFO("Shape {}", static_cast<int>(shape_type));
-
-        create_ressource(transform, { .health = 100, .max_health = 100 }, shape,
-            shape_type, col);
-    }
-}
+Simulation::Simulation() = default;
 
 void Simulation::update_physics(float delta_seconds)
 {

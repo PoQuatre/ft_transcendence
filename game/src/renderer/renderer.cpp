@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/14 20:12:11 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/04 23:31:28 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -309,17 +309,15 @@ void Renderer::render_scene(simulation::Simulation &sim)
             const glm::vec2 center = transform.pos + half;
             const float c = std::cos(transform.rotation);
             const float s = std::sin(transform.rotation);
-            const std::array<glm::vec2, 4> corners {
-                {
-                    { -half.x, -half.y },
-                    { half.x, -half.y },
-                    { half.x, half.y },
-                    { -half.x, half.y },
-                },
+            const auto corners = std::array {
+                glm::vec2 { -half.x, -half.y },
+                glm::vec2 { half.x, -half.y },
+                glm::vec2 { half.x, half.y },
+                glm::vec2 { -half.x, half.y },
             };
-            for (std::size_t i = 0; i < corners.size(); ++i) {
+            for (int i = 0; i < 4; ++i) {
                 const auto a = corners[i];
-                const auto b = corners[(i + 1) % corners.size()];
+                const auto b = corners[(i + 1) % 4];
                 DrawLineV(
                     {
                         .x = center.x + (a.x * c) - (a.y * s),
@@ -329,12 +327,7 @@ void Renderer::render_scene(simulation::Simulation &sim)
                         .x = center.x + (b.x * c) - (b.y * s),
                         .y = center.y + (b.x * s) + (b.y * c),
                     },
-                    Color {
-                        .r = color.r,
-                        .g = color.g,
-                        .b = color.b,
-                        .a = color.a,
-                    });
+                    color);
             }
             if (res != nullptr && res->health != res->max_health) {
                 Renderer::draw_progress_bar(
@@ -352,13 +345,7 @@ void Renderer::render_scene(simulation::Simulation &sim)
                     .x = transform.pos.x + (shape.circle.size / 2.0F),
                     .y = transform.pos.y + (shape.circle.size / 2.0F),
                 },
-                shape.circle.size / 2.0F,
-                Color {
-                    .r = color.r,
-                    .g = color.g,
-                    .b = color.b,
-                    .a = color.a,
-                });
+                shape.circle.size / 2.0F, color);
             if (res != nullptr && res->health != res->max_health) {
                 Renderer::draw_progress_bar(
                     { transform.pos.x,
