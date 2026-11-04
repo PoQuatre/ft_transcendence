@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/14 20:12:11 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/04 23:31:28 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,8 +16,9 @@
 #include <nanosvgrast.h>
 #include <raylib.h>
 #include <spdlog/spdlog.h>
-#include <cmath>
 
+#include <array>
+#include <cmath>
 #include <glm/geometric.hpp>
 
 #include "game/colors.hpp"
@@ -277,8 +278,9 @@ void Renderer::render_scene(simulation::Simulation &sim)
         if (const auto *health = registry->try_get<simulation::Health>(entity);
             health != nullptr && health->value < health->maximum) {
             draw_progress_bar({ transform.pos.x - 20, transform.pos.y + 20 },
-                { 40, 6 }, { 255, 255, 255, 255 }, { 0, 0, 0, 255 },
-                health->value, health->maximum);
+                { 40, 6 }, { .r = 255, .g = 255, .b = 255, .a = 255 },
+                { .r = 0, .g = 0, .b = 0, .a = 255 }, health->value,
+                health->maximum);
         }
 
         DrawTextEx(font_, tank.name.c_str(),
@@ -302,16 +304,30 @@ void Renderer::render_scene(simulation::Simulation &sim)
 
         switch (shape_type) {
         case simulation::ShapeType::SHAPE_RECT: {
-            const glm::vec2 half { shape.rect.width / 2.F, shape.rect.height / 2.F };
+            const glm::vec2 half { shape.rect.width / 2.F,
+                shape.rect.height / 2.F };
             const glm::vec2 center = transform.pos + half;
-            const float c = std::cos(transform.rotation), s = std::sin(transform.rotation);
-            const glm::vec2 corners[] = { { -half.x, -half.y }, { half.x, -half.y },
-                { half.x, half.y }, { -half.x, half.y } };
+            const float c = std::cos(transform.rotation);
+            const float s = std::sin(transform.rotation);
+            const auto corners = std::array {
+                glm::vec2 { -half.x, -half.y },
+                glm::vec2 { half.x, -half.y },
+                glm::vec2 { half.x, half.y },
+                glm::vec2 { -half.x, half.y },
+            };
             for (int i = 0; i < 4; ++i) {
-                const auto a = corners[i], b = corners[(i + 1) % 4];
-                DrawLineV({ center.x + a.x*c - a.y*s, center.y + a.x*s + a.y*c },
-                    { center.x + b.x*c - b.y*s, center.y + b.x*s + b.y*c },
-                    Color { color.r, color.g, color.b, color.a });
+                const auto a = corners[i];
+                const auto b = corners[(i + 1) % 4];
+                DrawLineV(
+                    {
+                        .x = center.x + (a.x * c) - (a.y * s),
+                        .y = center.y + (a.x * s) + (a.y * c),
+                    },
+                    {
+                        .x = center.x + (b.x * c) - (b.y * s),
+                        .y = center.y + (b.x * s) + (b.y * c),
+                    },
+                    color);
             }
             if (res != nullptr && res->health != res->max_health) {
                 Renderer::draw_progress_bar(
@@ -329,13 +345,7 @@ void Renderer::render_scene(simulation::Simulation &sim)
                     .x = transform.pos.x + (shape.circle.size / 2.0F),
                     .y = transform.pos.y + (shape.circle.size / 2.0F),
                 },
-                shape.circle.size / 2.0F,
-                Color {
-                    .r = color.r,
-                    .g = color.g,
-                    .b = color.b,
-                    .a = color.a,
-                });
+                shape.circle.size / 2.0F, color);
             if (res != nullptr && res->health != res->max_health) {
                 Renderer::draw_progress_bar(
                     { transform.pos.x,

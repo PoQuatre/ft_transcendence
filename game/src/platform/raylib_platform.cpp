@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 00:00:00 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/28 02:55:45 by mle-flem         ###   ########.fr       */
+/*   Updated: 2026/11/04 06:59:52 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,7 +111,8 @@ Platform::~Platform()
 
 bool Platform::initialize()
 {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI);
+    SetConfigFlags(
+        FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT);
 #ifdef __EMSCRIPTEN__
     // tracks Browser.init's undocumented pointer-lock handler
     capture_browser_pointerlock_handler();

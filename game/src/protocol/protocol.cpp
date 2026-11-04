@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/30 23:56:33 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/31 00:56:40 by mle-flem         ###   ########.fr       */
+/*   Updated: 2026/11/04 22:23:08 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,8 @@ inline bool validate_entity(const game::protocol::EntityState *entity)
             || entity->kind() == game::protocol::EntityKind::Resource)
         && entity->position() != nullptr && entity->velocity() != nullptr
         && (entity->kind() != game::protocol::EntityKind::Resource
-            || entity->resource_shape() <= game::protocol::ResourceShape::Square);
+            || entity->resource_shape()
+                <= game::protocol::ResourceShape::Square);
 }
 
 inline bool validate_event_payload(

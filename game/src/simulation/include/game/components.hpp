@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 14:29:13 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/11 23:06:59 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/04 23:30:52 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,8 @@
 #include <glm/ext/vector_float4.hpp>
 #include <string>
 
+#include "raylib.h"
+
 namespace game::simulation {
 
 namespace collision {
@@ -24,9 +26,6 @@ struct CollisionHit {
     glm::vec2 normal;
 };
 };
-// FIXME:
-// using Position = glm::vec2
-// casse entt tres tres bizarre
 
 struct Transform {
     glm::vec2 pos;
@@ -35,12 +34,7 @@ struct Transform {
     float rotation;
 };
 
-struct Color {
-    unsigned char r;
-    unsigned char g;
-    unsigned char b;
-    unsigned char a;
-};
+using Color = Color;
 
 enum ShapeType : uint8_t {
     SHAPE_CIRCLE,

@@ -43,14 +43,51 @@ endif()
 
 include(FetchContent)
 
-FetchContent_Declare(
-    raylib
-    GIT_REPOSITORY https://github.com/raysan5/raylib.git
-    GIT_TAG 6.0
-    GIT_SHALLOW TRUE
-)
+set(RAYLIB_SOURCE_DIR "${CMAKE_BINARY_DIR}/_deps/raylib-src")
+
+if(NOT EXISTS "${RAYLIB_SOURCE_DIR}/CMakeLists.txt")
+    message(STATUS "Cloning raylib 6.0 with sparse checkout...")
+
+    execute_process(
+        COMMAND git clone
+            --single-branch
+            --branch=6.0
+            --filter=blob:none
+            --sparse
+            --depth=1
+            https://github.com/raysan5/raylib.git
+            "${RAYLIB_SOURCE_DIR}"
+        RESULT_VARIABLE GIT_CLONE_RESULT
+    )
+
+    if(NOT GIT_CLONE_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to clone raylib")
+    endif()
+
+    execute_process(
+        COMMAND git sparse-checkout set
+            --no-cone
+            "/*"
+            "!/examples/*"
+            "!/projects/*"
+        WORKING_DIRECTORY "${RAYLIB_SOURCE_DIR}"
+        RESULT_VARIABLE GIT_SPARSE_RESULT
+    )
+
+    if(NOT GIT_SPARSE_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to configure raylib sparse checkout")
+    endif()
+endif()
+
+# Raylib configuration
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(USE_EXTERNAL_GLFW IF_POSSIBLE CACHE STRING "")
+set(USE_EXTERNAL_GLFW IF_POSSIBLE CACHE STRING "" FORCE)
+
+# Add raylib to the project
+add_subdirectory(
+    "${RAYLIB_SOURCE_DIR}"
+    "${CMAKE_BINARY_DIR}/_deps/raylib-build"
+)
 
 FetchContent_Declare(
     EnTT
@@ -111,7 +148,6 @@ set(FLATBUFFERS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(FLATBUFFERS_BUILD_GRPCTEST OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(
-    raylib
     EnTT
     spdlog
     glm
