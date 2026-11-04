@@ -4,7 +4,7 @@ package protocol
 import wire "github.com/PoQuatre/ft_transcendence/backend/internal/game/protocol/generated"
 
 const (
-	MaxPayloadBytes = 1024
+	MaxPayloadBytes = 8190
 	MaxInputFrames  = 12
 )
 
@@ -140,6 +140,9 @@ func validateSyncPayload(packetID byte, payload []byte) bool {
 }
 
 func validateEntity(entity *wire.EntityState) bool {
+	if entity.Kind() == wire.EntityKindResource && entity.ResourceShape() > wire.ResourceShapeSquare {
+		return false
+	}
 	switch entity.Kind() {
 	case wire.EntityKindTank, wire.EntityKindProjectile, wire.EntityKindResource:
 		return entity.Position(nil) != nil && entity.Velocity(nil) != nil

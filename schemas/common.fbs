@@ -7,6 +7,11 @@ enum EntityKind : uint8 {
   Resource = 3
 }
 
+enum ResourceShape : uint8 {
+  Circle = 0,
+  Square = 1
+}
+
 struct Vec2 {
   x: int16;
   y: int16;
@@ -19,4 +24,6 @@ table EntityState {
   velocity: Vec2;
   aim_angle: uint16;
   health: uint16;
+  rotation: uint16; // One turn maps to 0..65535.
+  resource_shape: ResourceShape;
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
+	"github.com/PoQuatre/ft_transcendence/backend/internal/game/simulation"
 	"github.com/google/uuid"
 	pion "github.com/pion/webrtc/v4"
 )
@@ -15,16 +16,20 @@ type Identity struct {
 }
 
 type player struct {
-	lobby     *lobby
-	channel   *pion.DataChannel
-	ID        string `json:"id"`
-	Username  string `json:"username"`
-	accountID string
+	lobby        *lobby
+	channel      *pion.DataChannel
+	stateChannel *pion.DataChannel
+	entityID     uint32
+	generation   byte
+	ID           string `json:"id"`
+	Username     string `json:"username"`
+	accountID    string
 }
 
 type lobby struct {
 	id      string
 	players []*player
+	world   *simulation.World
 }
 
 type controlMessage struct {
@@ -72,11 +77,17 @@ func (s *Server) control(peer *pion.PeerConnection, channel *pion.DataChannel, m
 					sendControl(channel, map[string]any{"type": "Error", "error": "could not create lobby"})
 					return
 				}
-				room = &lobby{id: id.String()}
+				room = &lobby{id: id.String(), world: simulation.New()}
+				if room.world == nil {
+					sendControl(channel, map[string]any{"type": "Error", "error": "game capacity reached"})
+					return
+				}
 				s.lobbies = append(s.lobbies, room)
 			}
 			room.players = append(room.players, p)
 			p.lobby = room
+			p.generation++
+			p.entityID = room.world.AddPlayer()
 			s.broadcast(room)
 		} else {
 			sendState(channel, p.lobby)
@@ -96,6 +107,9 @@ func (s *Server) leave(p *player) {
 		return
 	}
 	p.lobby = nil
+	if room.world != nil {
+		room.world.RemovePlayer(p.entityID)
+	}
 	for i, member := range room.players {
 		if member == p {
 			room.players = append(room.players[:i], room.players[i+1:]...)
@@ -108,6 +122,9 @@ func (s *Server) leave(p *player) {
 	}
 	for i, candidate := range s.lobbies {
 		if candidate == room {
+			if room.world != nil {
+				room.world.Close()
+			}
 			s.lobbies = append(s.lobbies[:i], s.lobbies[i+1:]...)
 			break
 		}

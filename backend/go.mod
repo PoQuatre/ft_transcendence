@@ -3,6 +3,7 @@ module github.com/PoQuatre/ft_transcendence/backend
 go 1.27.0
 
 require (
+	github.com/Advik-B/box2d-go v0.0.0-20251126174848-e304f2a8b450
 	github.com/alexedwards/scs/v2 v2.9.0
 	github.com/go-playground/validator/v10 v10.30.5
 	github.com/google/flatbuffers v25.12.19+incompatible
@@ -10,6 +11,7 @@ require (
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/hashicorp/vault/api/auth/approle v0.12.0
 	github.com/labstack/echo/v5 v5.3.1
+	github.com/mlange-42/ark v0.8.3
 	github.com/pion/ice/v4 v4.4.7
 	github.com/pion/webrtc/v4 v4.2.23
 	github.com/spf13/cobra v1.10.2

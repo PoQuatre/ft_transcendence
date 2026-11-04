@@ -84,3 +84,27 @@ After WebRTC connects, send JSON text on the reliable `control` channel:
 - On join or leave, each remaining member receives `{"type":"LobbyState","lobbyId":"...","players":[{"id":"...","username":"..."}]}`. Invalid or unsupported messages receive `{"type":"Error","error":"..."}`.
 
 An authenticated offer uses the login session cookie; bearer tokens and other `Authorization` headers are rejected with HTTP 401. Missing credentials create a guest; invalid or expired credentials return HTTP 401. A second connection for the same account returns HTTP 409. Lobby state is in memory and is lost on server restart.
+
+## Authoritative movement
+
+Each quick-play lobby owns a 60 Hz server-side Ark/Box2D world. The browser sends
+sequenced movement and aim inputs on the unreliable state channel; the server
+normalizes movement, stops it after 500 ms without new input, and sends complete
+player states at 20 Hz. States carry the session generation, server tick, local
+entity ID and last input ID. The client ignores old states and renders the latest
+one without simulating movement. Complete states repair packet loss and player
+departures without relying on a prior delta. Positions and velocities are signed
+16-bit hundredths of a Box2D metre; the renderer uses 20 pixels per metre.
+
+The `full_state` flag distinguishes these independent updates from future
+baseline-relative deltas. Interpolation can buffer server ticks; prediction and
+reconciliation can retain input IDs and replay inputs after the acknowledged
+ID. These are not implemented.
+
+Hold left click to fire and press Shift while moving to dash. The server
+enforces a three-shots-per-second fire rate and a two-second dash cooldown.
+Projectiles damage players and resources; depleted players immediately respawn,
+and destroyed resources respawn at random locations after ten seconds. Circle
+and square resources drift, rotate, and can be pushed by players or shots. The
+server caps active projectiles at 48 per lobby. Complete state packets may be up
+to 8 KiB; the current approach favors simplicity over bandwidth efficiency.

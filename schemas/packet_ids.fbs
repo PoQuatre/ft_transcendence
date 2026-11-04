@@ -1,5 +1,14 @@
 namespace game.protocol;
 
+enum ControlPacketId : uint8 {
+  Unknown = 0,
+  ClientHello = 1,
+  ServerHello = 2,
+  Ping = 3,
+  Pong = 4,
+  ServerDisconnect = 5
+}
+
 enum EventPacketId : uint8 {
   Unknown = 0,
   WorldReady = 1,

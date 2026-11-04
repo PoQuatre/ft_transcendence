@@ -23,7 +23,7 @@
 namespace game::network {
 
 constexpr std::size_t bridge_header_size = 3;
-constexpr std::size_t max_packet_size = 1024;
+constexpr std::size_t max_packet_size = 8192;
 constexpr std::size_t max_incoming_bytes
     = (bridge_header_size + max_packet_size) * 32;
 

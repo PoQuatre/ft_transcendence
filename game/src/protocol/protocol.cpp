@@ -37,7 +37,9 @@ inline bool validate_entity(const game::protocol::EntityState *entity)
         && (entity->kind() == game::protocol::EntityKind::Tank
             || entity->kind() == game::protocol::EntityKind::Projectile
             || entity->kind() == game::protocol::EntityKind::Resource)
-        && entity->position() != nullptr && entity->velocity() != nullptr;
+        && entity->position() != nullptr && entity->velocity() != nullptr
+        && (entity->kind() != game::protocol::EntityKind::Resource
+            || entity->resource_shape() <= game::protocol::ResourceShape::Square);
 }
 
 inline bool validate_event_payload(
@@ -148,7 +150,7 @@ std::optional<Frame> parse_message(
     if (channel == Channel::Control)
         return std::nullopt;
 
-    if (message.size() < 2 || message.size() > 1024)
+    if (message.size() < 2 || message.size() > 8192)
         return std::nullopt;
 
     const auto frame = Frame {

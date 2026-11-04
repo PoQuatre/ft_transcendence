@@ -13,6 +13,7 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
+#include <unordered_map>
 
 #include "game/network.hpp"
 #include "game/platform.hpp"
@@ -43,6 +44,16 @@ private:
 
     std::string tank_name_;
     void update_player();
+#ifdef __EMSCRIPTEN__
+    void receive_frame(const protocol::Frame &frame);
+    void send_input();
+    std::unordered_map<std::uint32_t, entt::entity> entities_;
+    std::uint32_t snapshot_id_ = 0;
+    std::uint32_t input_id_ = 0;
+    std::uint8_t generation_ = 0;
+    bool synced_ = false;
+    double input_elapsed_ = 0;
+#endif
 };
 
 } // namespace game::core

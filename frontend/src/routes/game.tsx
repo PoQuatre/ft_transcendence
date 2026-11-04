@@ -130,8 +130,8 @@ export default function GamePage() {
                 </For>
               </ul>
               <p class="text-text-muted">
-                Local game prototype — multiplayer gameplay is not yet
-                available.
+                Move with WASD, aim with the mouse, shoot with left click, and
+                dash with Shift.
               </p>
             </>
           )}

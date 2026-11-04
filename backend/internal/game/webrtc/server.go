@@ -49,6 +49,7 @@ type Server struct {
 	closeOnce sync.Once
 	mu        sync.Mutex
 	closed    bool
+	done      chan struct{}
 }
 
 func New(port int, external []string) (*Server, error) {
@@ -85,18 +86,22 @@ func New(port int, external []string) (*Server, error) {
 		return nil, fmt.Errorf("configure ICE address rewrite: %w", rewriteErr)
 	}
 
-	return &Server{
+	s := &Server{
 		api:      pion.NewAPI(pion.WithSettingEngine(se)),
 		mux:      mux,
 		players:  make(map[*pion.PeerConnection]*player),
 		accounts: make(map[string]*pion.PeerConnection),
-	}, nil
+		done:     make(chan struct{}),
+	}
+	go s.simulate()
+	return s, nil
 }
 
 func (s *Server) Close() error {
 	s.closeOnce.Do(func() {
 		s.mu.Lock()
 		s.closed = true
+		close(s.done)
 		peers := make([]*pion.PeerConnection, 0, len(s.players))
 		for peer := range s.players {
 			peers = append(peers, peer)
@@ -105,6 +110,7 @@ func (s *Server) Close() error {
 
 		errs := make([]error, 0, len(peers)+1)
 		for _, peer := range peers {
+			s.removePeer(peer)
 			if err := peer.Close(); err != nil {
 				errs = append(errs, fmt.Errorf("close WebRTC peer: %w", err))
 			}
@@ -163,19 +169,20 @@ func (s *Server) answer(ctx context.Context, offer pion.SessionDescription, iden
 				}
 			})
 		}
+		if channel.Label() == "state" {
+			s.mu.Lock()
+			if p := s.players[peer]; p != nil {
+				p.stateChannel = channel
+			}
+			s.mu.Unlock()
+		}
 		channel.OnMessage(func(message pion.DataChannelMessage) {
 			if channel.Label() == "control" {
 				s.control(peer, channel, message)
 				return
 			}
-			var sendErr error
-			if message.IsString {
-				sendErr = channel.SendText(string(message.Data))
-			} else {
-				sendErr = channel.Send(message.Data)
-			}
-			if sendErr != nil {
-				slog.Debug("echo WebRTC data-channel message", "error", sendErr)
+			if channel.Label() == "state" {
+				s.input(peer, message)
 			}
 		})
 	})

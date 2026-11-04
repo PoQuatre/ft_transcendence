@@ -1,12 +1,36 @@
 package protocol
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
 
 	flatbuffers "github.com/google/flatbuffers/go"
 
 	wire "github.com/PoQuatre/ft_transcendence/backend/internal/game/protocol/generated"
 )
+
+func TestSchemasGenerateControlTypes(t *testing.T) {
+	flatc, err := exec.LookPath("flatc")
+	if err != nil {
+		t.Skip("flatc not installed")
+	}
+	schemas, err := filepath.Glob("../../../../schemas/*.fbs")
+	if err != nil || len(schemas) == 0 {
+		t.Fatal("schema files not found")
+	}
+	out := t.TempDir()
+	args := append([]string{"--go", "--go-namespace", "generated", "-o", out}, schemas...)
+	if output, err := exec.Command(flatc, args...).CombinedOutput(); err != nil {
+		t.Fatalf("generate schemas: %v: %s", err, output)
+	}
+	for _, name := range []string{"ControlPacketId.go", "ClientHello.go", "ServerHello.go", "Ping.go", "Pong.go", "ServerDisconnect.go", "DisconnectReason.go"} {
+		if _, err := os.Stat(filepath.Join(out, "generated", name)); err != nil {
+			t.Errorf("missing generated type %s: %v", name, err)
+		}
+	}
+}
 
 func TestParseMessage(t *testing.T) {
 	tests := []struct {

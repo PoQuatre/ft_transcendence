@@ -26,4 +26,7 @@ table WorldDelta {
   last_processed_input_id: uint32;
   upserts: [EntityState];
   removed_entity_ids: [uint32];
+  local_entity_id: uint32;
+  // When set, upserts is the complete visible world, not a baseline-relative delta.
+  full_state: bool;
 }

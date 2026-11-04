@@ -16,6 +16,7 @@
 #include <nanosvgrast.h>
 #include <raylib.h>
 #include <spdlog/spdlog.h>
+#include <cmath>
 
 #include <glm/geometric.hpp>
 
@@ -273,6 +274,13 @@ void Renderer::render_scene(simulation::Simulation &sim)
 
         DrawTexturePro(texture, source, dest, origin, rot, WHITE);
 
+        if (const auto *health = registry->try_get<simulation::Health>(entity);
+            health != nullptr && health->value < health->maximum) {
+            draw_progress_bar({ transform.pos.x - 20, transform.pos.y + 20 },
+                { 40, 6 }, { 255, 255, 255, 255 }, { 0, 0, 0, 255 },
+                health->value, health->maximum);
+        }
+
         DrawTextEx(font_, tank.name.c_str(),
             {
                 .x = transform.pos.x - ((tank.name.size() / 2.F) + 12),
@@ -293,15 +301,18 @@ void Renderer::render_scene(simulation::Simulation &sim)
         const auto *res = registry->try_get<simulation::Ressource>(entity);
 
         switch (shape_type) {
-        case simulation::ShapeType::SHAPE_RECT:
-            DrawRectangleLines(transform.pos.x, transform.pos.y,
-                shape.rect.width, shape.rect.height,
-                Color {
-                    .r = color.r,
-                    .g = color.g,
-                    .b = color.b,
-                    .a = color.a,
-                });
+        case simulation::ShapeType::SHAPE_RECT: {
+            const glm::vec2 half { shape.rect.width / 2.F, shape.rect.height / 2.F };
+            const glm::vec2 center = transform.pos + half;
+            const float c = std::cos(transform.rotation), s = std::sin(transform.rotation);
+            const glm::vec2 corners[] = { { -half.x, -half.y }, { half.x, -half.y },
+                { half.x, half.y }, { -half.x, half.y } };
+            for (int i = 0; i < 4; ++i) {
+                const auto a = corners[i], b = corners[(i + 1) % 4];
+                DrawLineV({ center.x + a.x*c - a.y*s, center.y + a.x*s + a.y*c },
+                    { center.x + b.x*c - b.y*s, center.y + b.x*s + b.y*c },
+                    Color { color.r, color.g, color.b, color.a });
+            }
             if (res != nullptr && res->health != res->max_health) {
                 Renderer::draw_progress_bar(
                     { transform.pos.x,
@@ -311,6 +322,7 @@ void Renderer::render_scene(simulation::Simulation &sim)
                     res->max_health);
             }
             break;
+        }
         case simulation::ShapeType::SHAPE_CIRCLE:
             DrawCircleLinesV(
                 Vector2 {
@@ -492,13 +504,11 @@ void Renderer::draw_grid()
 
 void Renderer::update_camera(simulation::Simulation &sim)
 {
-    auto *registry = sim.get_registry();
     const float camera_zoom = 1.5F;
     const auto camera_look_ahead = 0.5F;
     const float max_camera_dist = 100.F;
 
-    const auto tank = registry->view<simulation::Tank>().begin();
-    const auto &player_transform = registry->get<simulation::Transform>(*tank);
+    const auto &player_transform = *sim.get_player_transform();
     // const auto &player_tank = registry->get<simulation::Tank>(*tank);
 
     camera_.offset

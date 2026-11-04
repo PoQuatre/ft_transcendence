@@ -50,7 +50,7 @@ bool Client::append(protocol::Channel chan, std::span<const std::uint8_t> msg)
 {
     const auto id = std::to_underlying(chan);
     const auto size = msg.size();
-    if (id < 1 || id > 3 || size > 1024)
+    if (id < 1 || id > 3 || size > max_packet_size)
         return false;
 
     outgoing_.reserve(outgoing_.size() + 3 + size);
@@ -81,7 +81,7 @@ bool Client::receive(const Drain &drain, const Handler &handler)
             | (static_cast<std::size_t>(bytes[offset + 2]) << 8U);
         offset += 3;
 
-        if (id < 1 || id > 3 || size > 1024 || size > bytes.size() - offset)
+        if (id < 1 || id > 3 || size > max_packet_size || size > bytes.size() - offset)
             return false;
 
         const auto frame = protocol::parse_message(

@@ -107,6 +107,11 @@ struct Ressource {
     float max_health;
 };
 
+struct Health {
+    float value;
+    float maximum;
+};
+
 namespace TankType {
 
 #define TANK_TYPES                                                             \
