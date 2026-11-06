@@ -260,3 +260,7 @@ func (s *Service) GetUserByID(ctx context.Context, id uuid.UUID) (*UserResponse,
 	}
 	return toUserResponse(user), nil
 }
+
+func (s *Service) GetUserByUsername(ctx context.Context, username string) (*User, error) {
+	return s.repo.GetUserByUsername(ctx, username)
+}
