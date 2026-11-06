@@ -4,6 +4,7 @@ import { createEffect, Show } from 'solid-js';
 
 import { ControlsForm } from '~/components/settings/ControlsForm';
 import { DataExport } from '~/components/settings/DataExport';
+import { DeleteAccount } from '~/components/settings/DeleteAccount';
 import { EmailVerification } from '~/components/settings/EmailVerification';
 import { PasswordForm } from '~/components/settings/PasswordForm';
 import { ProfileForm } from '~/components/settings/ProfileForm';
@@ -87,6 +88,8 @@ export default function Settings() {
                       <PasswordForm />
                       <Separator class="my-space-lg" />
                       <DataExport user={user()} />
+                      <Separator class="my-space-lg" />
+                      <DeleteAccount />
                     </TabsContent>
                     <TabsContent value="combat" class="mt-space-md">
                       <ControlsForm />
