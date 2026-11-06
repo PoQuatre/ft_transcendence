@@ -17,6 +17,14 @@ export const DEFAULT_CONTROLS: Controls = {
   dash: 340,
 };
 
+export const ARROW_CONTROLS: Controls = {
+  up: 265,
+  down: 264,
+  left: 263,
+  right: 262,
+  dash: 340,
+};
+
 // keyCode -> [code raylib, libellé], comme DOMToGLFWKeyCode d'emscripten.
 const KEYS = new Map<number, [number, string]>([
   [0x20, [32, 'SPACE']],

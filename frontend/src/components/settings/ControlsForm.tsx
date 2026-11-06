@@ -3,6 +3,7 @@ import { type Component, createSignal, For, onSettled, Show } from 'solid-js';
 import { Button, Kbd } from '~/components/ui';
 import {
   actionUsing,
+  ARROW_CONTROLS,
   CONTROL_ACTIONS,
   type ControlAction,
   type Controls,
@@ -135,23 +136,42 @@ export const ControlsForm: Component = () => {
         </li>
       </ul>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={() =>
-          apply(
-            { ...DEFAULT_CONTROLS },
-            {
-              kind: 'success',
-              title: 'Keys reset',
-              message: 'Touches par défaut : W, S, A, D et Shift.',
-            },
-          )
-        }
-      >
-        Touches par défaut
-      </Button>
+      <div class="flex flex-wrap gap-space-sm">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() =>
+            apply(
+              { ...DEFAULT_CONTROLS },
+              {
+                kind: 'success',
+                title: 'Keys reset',
+                message: 'Touches par défaut : W, S, A, D et Shift.',
+              },
+            )
+          }
+        >
+          Touches par défaut
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() =>
+            apply(
+              { ...ARROW_CONTROLS },
+              {
+                kind: 'success',
+                title: 'Arrow keys',
+                message: 'Déplacement aux flèches, dash sur Shift.',
+              },
+            )
+          }
+        >
+          Flèches
+        </Button>
+      </div>
     </section>
   );
 };

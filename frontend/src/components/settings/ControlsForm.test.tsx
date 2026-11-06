@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render } from '@solidjs/testing-library';
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { DEFAULT_CONTROLS } from '~/lib/controls';
+import { ARROW_CONTROLS, DEFAULT_CONTROLS } from '~/lib/controls';
 
 import { ControlsForm } from './ControlsForm';
 
@@ -83,6 +83,19 @@ describe('<ControlsForm />', () => {
     ).toBeInTheDocument();
     expect(view.queryByRole('alert')).not.toBeInTheDocument();
     expect(saved()).toBeNull();
+  });
+
+  test('switches to the arrow keys', async () => {
+    const view = render(() => <ControlsForm />);
+    await view.findByRole('button', { name: 'Avancer : W' });
+
+    fireEvent.click(view.getByRole('button', { name: 'Flèches' }));
+
+    expect(
+      await view.findByRole('button', { name: 'Avancer : ↑' }),
+    ).toBeInTheDocument();
+    expect(view.getByRole('button', { name: 'Droite : →' })).toBeVisible();
+    expect(saved()).toEqual(ARROW_CONTROLS);
   });
 
   test('loads the saved keys and resets them', async () => {
