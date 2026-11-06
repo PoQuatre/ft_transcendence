@@ -46,7 +46,10 @@ async function readMessage(res: Response): Promise<string> {
   return '';
 }
 
-function toError(status: number, message: string): AuthResult {
+function toError(
+  status: number,
+  message: string,
+): Extract<AuthResult, { ok: false }> {
   switch (message) {
     case 'invalid email or password':
       return {
@@ -163,7 +166,7 @@ export const [currentUser, setCurrentUser] = createRoot(() =>
   createSignal<AuthUser | null | undefined>(undefined),
 );
 
-type Method = 'POST' | 'PATCH' | 'PUT';
+type Method = 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
 // Réponse brute du backend, ou null si le serveur est injoignable.
 type Reply = { ok: boolean; status: number; message: string };
@@ -187,14 +190,14 @@ async function call(
   }
 }
 
+const UPLINK_LOST: Extract<AuthResult, { ok: false }> = {
+  ok: false,
+  title: 'Uplink lost',
+  message: 'Impossible de joindre le serveur.',
+};
+
 function toResult(reply: Reply | null): AuthResult {
-  if (!reply) {
-    return {
-      ok: false,
-      title: 'Uplink lost',
-      message: 'Impossible de joindre le serveur.',
-    };
-  }
+  if (!reply) return UPLINK_LOST;
   return reply.ok ? { ok: true } : toError(reply.status, reply.message);
 }
 
@@ -364,4 +367,30 @@ export async function resetPassword(
     return toError(reply.status, 'invalid or expired token');
   }
   return toResult(reply);
+}
+
+// 11. RGPD : export des données du compte.
+export type AccountExport =
+  | { ok: true; data: unknown }
+  | Extract<AuthResult, { ok: false }>;
+
+export async function exportAccount(): Promise<AccountExport> {
+  try {
+    const res = await fetch('/api/auth/me/export', { credentials: 'include' });
+    if (res.ok) return { ok: true, data: await res.json() };
+    const error = toError(res.status, await readMessage(res));
+    await refreshSession();
+    return error;
+  } catch {
+    return UPLINK_LOST;
+  }
+}
+
+// 12. RGPD : suppression du compte.
+export async function deleteAccount(password: string): Promise<AuthResult> {
+  const result = await sendAuthenticated('DELETE', '/api/auth/me', {
+    password,
+  });
+  if (result.ok) setCurrentUser(null);
+  return result;
 }
