@@ -3,6 +3,7 @@ import { useNavigate } from '@solidjs/router';
 import { createEffect, Show } from 'solid-js';
 
 import { ControlsForm } from '~/components/settings/ControlsForm';
+import { DataExport } from '~/components/settings/DataExport';
 import { EmailVerification } from '~/components/settings/EmailVerification';
 import { PasswordForm } from '~/components/settings/PasswordForm';
 import { ProfileForm } from '~/components/settings/ProfileForm';
@@ -84,6 +85,8 @@ export default function Settings() {
                       <EmailVerification user={user()} />
                       <Separator class="my-space-lg" />
                       <PasswordForm />
+                      <Separator class="my-space-lg" />
+                      <DataExport user={user()} />
                     </TabsContent>
                     <TabsContent value="combat" class="mt-space-md">
                       <ControlsForm />
