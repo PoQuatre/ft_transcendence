@@ -39,11 +39,11 @@ export const ControlsForm: Component = () => {
       saveControls(next)
         ? success
         : {
-            kind: 'error',
-            title: 'Not saved',
-            message:
-              "Le navigateur refuse d'enregistrer : ces touches seront perdues au rechargement.",
-          },
+          kind: 'error',
+          title: 'Not saved',
+          message:
+            "Le navigateur refuse d'enregistrer : ces touches seront perdues au rechargement.",
+        },
     );
   };
 
@@ -106,11 +106,10 @@ export const ControlsForm: Component = () => {
                   variant="outline"
                   size="sm"
                   class="min-w-32"
-                  aria-label={`${action.label} : ${
-                    isListening()
+                  aria-label={`${action.label} : ${isListening()
                       ? 'appuie sur une touche'
                       : keyLabel(controls()[action.id])
-                  }`}
+                    }`}
                   onClick={() =>
                     setListening(isListening() ? undefined : action.id)
                   }
@@ -121,7 +120,11 @@ export const ControlsForm: Component = () => {
                 >
                   <Show
                     when={isListening()}
-                    fallback={<Kbd>{keyLabel(controls()[action.id])}</Kbd>}
+                    fallback={
+                      <span class="inline-flex min-w-[2.5rem] justify-center">
+                        <Kbd>{keyLabel(controls()[action.id])}</Kbd>
+                      </span>
+                    }
                   >
                     PRESS A KEY…
                   </Show>

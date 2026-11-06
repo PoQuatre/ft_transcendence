@@ -1,16 +1,29 @@
 import type { ComponentProps, JSX } from '@solidjs/web';
 import { Portal } from '@solidjs/web';
-import { type Component, Show, omit } from 'solid-js';
+import { type Component, createEffect, Show, omit } from 'solid-js';
 
 import { cn } from '~/lib/utils';
 
 export type DialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  labelledBy?: string;
   children?: JSX.Element;
 };
 
 export const Dialog: Component<DialogProps> = (props) => {
+  createEffect(
+    () => props.open,
+    (open) => {
+      if (!open) return undefined;
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') props.onOpenChange(false);
+      };
+      document.addEventListener('keydown', onKeyDown);
+      return () => document.removeEventListener('keydown', onKeyDown);
+    },
+  );
+
   return (
     <Show when={props.open}>
       <Portal>
@@ -24,9 +37,14 @@ export const Dialog: Component<DialogProps> = (props) => {
             onClick={() => props.onOpenChange(false)}
           />
           {/* Contenu modale Cyber */}
-          <div class="relative z-50 w-full max-w-lg bg-surface-1/95 border border-accent-primary/40 p-space-lg rounded-lg shadow-glow-cyan-ambient text-text-primary">
+          <dialog
+            open
+            aria-modal="true"
+            aria-labelledby={props.labelledBy}
+            class="relative z-50 w-full max-w-lg bg-surface-1/95 border border-accent-primary/40 p-space-lg rounded-lg shadow-glow-cyan-ambient text-text-primary"
+          >
             {props.children}
-          </div>
+          </dialog>
         </div>
       </Portal>
     </Show>
