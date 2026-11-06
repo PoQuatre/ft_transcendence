@@ -22,3 +22,16 @@ func (s *Service) SendFriendRequest(ctx context.Context, userID uuid.UUID, recei
 	// Potentially send a notification in some way ?
 	return nil
 }
+
+func (s *Service) AddFriend(ctx context.Context, userID uuid.UUID, senderID uuid.UUID) error {
+	_, err := s.repo.GetFriendRequest(ctx, senderID, userID)
+	if err != nil {
+		return ErrRequestNotFound
+	}
+	err = s.repo.CreateFriendRelation(ctx, userID, senderID)
+	if err != nil {
+		return err
+	}
+	err = s.repo.DeleteFriendRequest(ctx, senderID, userID)
+	return err
+}
