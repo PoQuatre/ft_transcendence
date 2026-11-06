@@ -24,12 +24,15 @@ func RegisterRoutes(group *echo.Group, service Service, sessionManager *scs.Sess
 	}
 
 	group.POST("/requests/send", h.sendRequest)
+	group.POST("/requests/accept", h.acceptRequest)
+	group.POST("/requests/decline", h.declineRequest)
 	// group.GET("/list", h.getFriendsList)
 }
 
 func apiError(err error) error {
 	switch {
-	case errors.Is(err, auth.ErrNotFound):
+	case errors.Is(err, auth.ErrNotFound),
+		errors.Is(err, ErrRequestNotFound)
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	case errors.Is(err, auth.ErrInvalidCredentials):
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -81,4 +84,46 @@ func (h *handler) sendRequest(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "request successfully sent."})
+}
+
+func (h *handler) acceptRequest(c *echo.Context) error {
+	ctx := c.Request().Context()
+	userIDStr := h.sessionManager.GetString(ctx, "user_id")
+	if userIDStr == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	var req HandleFriendRequestRequest
+	if err = c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+	err = h.service.AddFriend(ctx, userID, req.SenderID)
+	if err != nil {
+		return apiError(err)
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "request successfully accepted."})
+}
+
+func (h *handler) declineRequest(c *echo.Context) error {
+	ctx := c.Request().Context()
+	userIDStr := h.sessionManager.GetString(ctx, "user_id")
+	if userIDStr == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	var req HandleFriendRequestRequest
+	if err = c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+	err = h.service.repo.DeleteFriendRequest(ctx, req.SenderID, userID)
+	if err != nil {
+		return apiError(err)
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "request successfully declined."})
 }

@@ -24,6 +24,13 @@ func newMockRepository() *mockRepository {
 	}
 }
 
+func (m *mockRepository) GetUserByUsername(ctx context.Context, username string) (*User, error) {
+	if u, ok := m.users[username]; ok {
+		return u, nil
+	}
+	return nil, ErrNotFound
+}
+
 func (m *mockRepository) GetPasswordResetToken(ctx context.Context, tokenHash string) (*PasswordResetToken, error) {
 	for _, token := range m.passwordresettokens {
 		if token.TokenHash == tokenHash {
