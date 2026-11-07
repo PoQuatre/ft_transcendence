@@ -20,6 +20,7 @@ type Repository interface {
 	CreateFriendRequest(ctx context.Context, senderID uuid.UUID, receiverID uuid.UUID) error
 	DeleteFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) error
 
+	GetFriendsList(ctx context.Context, userID uuid.UUID) (FriendRelationListResponse, error)
 	GetFriendRequest(ctx context.Context, senderID uuid.UUID, receiverID uuid.UUID) (FriendRequestResponse, error)
 	GetPendingFriendRequests(ctx context.Context, receiverID uuid.UUID) (FriendRequestsListResponse, error)
 }
@@ -105,6 +106,29 @@ func (r *bunRepository) GetFriendRequest(ctx context.Context, senderID, receiver
 	}
 
 	return req, nil
+}
+
+func (r *bunRepository) GetFriendsList(ctx context.Context, userID uuid.UUID) (FriendRelationListResponse, error) {
+	var friends []FriendRelationResponse
+
+	err := r.db.NewSelect().
+		TableExpr("friend_relations AS fr").
+		ColumnExpr("CASE WHEN fr.user_id = ?0 THEN fr.friend_id ELSE fr.user_id END AS friend_id", userID).
+		ColumnExpr("u.username AS username").
+		Join("JOIN users AS u ON u.id = CASE WHEN fr.user_id = ?0 THEN fr.friend_id ELSE fr.user_id END", userID).
+		Where("fr.user_id = ?0 OR fr.friend_id = ?0", userID).
+		Scan(ctx, &friends)
+	if err != nil {
+		return FriendRelationListResponse{}, err
+	}
+
+	if friends == nil {
+		friends = []FriendRelationResponse{}
+	}
+
+	return FriendRelationListResponse{
+		Requests: friends,
+	}, nil
 }
 
 func (r *bunRepository) GetPendingFriendRequests(ctx context.Context, receiverID uuid.UUID) (FriendRequestsListResponse, error) {
