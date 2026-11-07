@@ -1,1 +1,2 @@
-SET statement_timeout = 0;DROP TABLE "public"."friend_requests";
+SET statement_timeout = 0;
+DROP TABLE public.friend_requests;

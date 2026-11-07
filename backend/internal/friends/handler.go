@@ -4,10 +4,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
 	"github.com/alexedwards/scs/v2"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
+
+	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
 )
 
 type handler struct {
