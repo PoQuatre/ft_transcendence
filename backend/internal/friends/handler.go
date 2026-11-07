@@ -27,7 +27,7 @@ func RegisterRoutes(group *echo.Group, service Service, sessionManager *scs.Sess
 	group.POST("/requests/accept", h.acceptRequest)
 	group.POST("/requests/decline", h.declineRequest)
 	group.GET("/requests/list", h.getFriendRequestsList)
-	// group.GET("/list", h.getFriendsList)
+	group.GET("/list", h.getFriendsList)
 }
 
 func apiError(err error) error {
@@ -144,4 +144,21 @@ func (h *handler) getFriendRequestsList(c *echo.Context) error {
 		return apiError(err)
 	}
 	return c.JSON(http.StatusOK, friendRequestList)
+}
+
+func (h *handler) getFriendsList(c *echo.Context) error {
+	ctx := c.Request().Context()
+	userIDStr := h.sessionManager.GetString(ctx, "user_id")
+	if userIDStr == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	friendsList, err := h.service.repo.GetFriendsList(ctx, userID)
+	if err != nil {
+		return apiError(err)
+	}
+	return c.JSON(http.StatusOK, friendsList)
 }
