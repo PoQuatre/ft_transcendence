@@ -2,8 +2,10 @@ package friends
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/labstack/echo/v5"
 )
 
 type Service struct {
@@ -34,4 +36,19 @@ func (s *Service) AddFriend(ctx context.Context, userID uuid.UUID, senderID uuid
 	}
 	err = s.repo.DeleteFriendRequest(ctx, senderID, userID)
 	return err
+}
+
+func (s *Service) Unfriend(ctx context.Context, userID uuid.UUID, friendID uuid.UUID) error {
+	exists, err := s.repo.AreFriend(ctx, userID, friendID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return echo.NewHTTPError(http.StatusUnauthorized, "user not in your friends list")
+	}
+	err = s.repo.DeleteFriendRelation(ctx, userID, friendID)
+	if err != nil {
+		return err
+	}
+	return nil
 }

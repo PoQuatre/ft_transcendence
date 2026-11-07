@@ -26,6 +26,7 @@ func RegisterRoutes(group *echo.Group, service Service, sessionManager *scs.Sess
 	group.POST("/requests/send", h.sendRequest)
 	group.POST("/requests/accept", h.acceptRequest)
 	group.POST("/requests/decline", h.declineRequest)
+	group.POST("/unfriend", h.unfriendFriend)
 	group.GET("/requests/list", h.getFriendRequestsList)
 	group.GET("/list", h.getFriendsList)
 }
@@ -33,11 +34,13 @@ func RegisterRoutes(group *echo.Group, service Service, sessionManager *scs.Sess
 func apiError(err error) error {
 	switch {
 	case errors.Is(err, auth.ErrNotFound),
+		errors.Is(err, ErrFriendRelationNotFound),
 		errors.Is(err, ErrRequestNotFound):
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	case errors.Is(err, auth.ErrInvalidCredentials):
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	case errors.Is(err, auth.ErrAlreadyExists),
+		errors.Is(err, ErrFriendRelationAlreadyExists),
 		errors.Is(err, ErrFriendRequestAlreadyExists):
 		return echo.NewHTTPError(http.StatusConflict, err.Error())
 	default:
@@ -161,4 +164,25 @@ func (h *handler) getFriendsList(c *echo.Context) error {
 		return apiError(err)
 	}
 	return c.JSON(http.StatusOK, friendsList)
+}
+
+func (h *handler) unfriendFriend(c *echo.Context) error {
+	ctx := c.Request().Context()
+	userIDStr := h.sessionManager.GetString(ctx, "user_id")
+	if userIDStr == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	var req UnfriendRequest
+	if err = c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+	err = h.service.Unfriend(ctx, userID, req.FriendID)
+	if err != nil {
+		return apiError(err)
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "successfully unfriended."})
 }

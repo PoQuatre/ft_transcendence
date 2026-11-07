@@ -25,9 +25,11 @@ type FriendRequestsListResponse struct {
 	Requests []FriendRequestResponse `json:"requests"`
 }
 
-// POST /api/friends/requests/accept (or decline)
+// POST /api/friends/requests/accept
+// or
+// POST /api/friends/requests/decline
 type HandleFriendRequestRequest struct {
-	SenderID uuid.UUID `json:"sender_id"`
+	SenderID uuid.UUID `json:"sender_id" example:"018f4e2a-7b3c-7890-a1b2-c3d4e5f6a7b8"`
 }
 
 // GET /api/friends/list (elements in the list)
@@ -39,4 +41,9 @@ type FriendRelationResponse struct {
 // GET /api/friends/list (list wrapper)
 type FriendRelationListResponse struct {
 	Requests []FriendRelationResponse `json:"relations"`
+}
+
+// POST /api/friends/unfriend
+type UnfriendRequest struct {
+	FriendID uuid.UUID `json:"friend_id" example:"018f4e2a-7b3c-7890-a1b2-c3d4e5f6a7b8"`
 }
