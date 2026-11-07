@@ -9,16 +9,20 @@ import (
 )
 
 var (
-	ErrNotFound                   = errors.New("user not found")
-	ErrRequestNotFound            = errors.New("friend request not found")
-	ErrSessionNotFound            = errors.New("session not found")
-	ErrFriendRequestAlreadyExists = errors.New("request already sent")
+	ErrNotFound                    = errors.New("user not found")
+	ErrRequestNotFound             = errors.New("friend request not found")
+	ErrFriendRelationNotFound      = errors.New("friend not found")
+	ErrSessionNotFound             = errors.New("session not found")
+	ErrFriendRequestAlreadyExists  = errors.New("request already sent")
+	ErrFriendRelationAlreadyExists = errors.New("already friends")
 )
 
 type Repository interface {
 	CreateFriendRelation(ctx context.Context, userID uuid.UUID, friendID uuid.UUID) error
 	CreateFriendRequest(ctx context.Context, senderID uuid.UUID, receiverID uuid.UUID) error
 	DeleteFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) error
+	DeleteFriendRelation(ctx context.Context, senderID, receiverID uuid.UUID) error
+	AreFriend(ctx context.Context, userID uuid.UUID, friendID uuid.UUID) (bool, error)
 
 	GetFriendsList(ctx context.Context, userID uuid.UUID) (FriendRelationListResponse, error)
 	GetFriendRequest(ctx context.Context, senderID uuid.UUID, receiverID uuid.UUID) (FriendRequestResponse, error)
@@ -87,6 +91,24 @@ func (r *bunRepository) DeleteFriendRequest(ctx context.Context, senderID, recei
 		return ErrRequestNotFound
 	}
 
+	return nil
+}
+
+func (r *bunRepository) DeleteFriendRelation(ctx context.Context, userID, friendID uuid.UUID) error {
+	res, err := r.db.NewDelete().
+		Model((*FriendRelations)(nil)).
+		Where("(user_id = ? AND friend_id = ?) OR (friend_id = ? AND user_id = ?)", userID, friendID, userID, friendID).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrFriendRelationNotFound
+	}
 	return nil
 }
 
@@ -170,4 +192,16 @@ func (r *bunRepository) CreateFriendRelation(ctx context.Context, userID uuid.UU
 		Exec(ctx)
 
 	return err
+}
+
+func (r *bunRepository) AreFriend(ctx context.Context, userID, friendID uuid.UUID) (bool, error) {
+	exists, err := r.db.NewSelect().
+		TableExpr("friend_relations AS fr").
+		Where("(fr.user_id = ?0 AND fr.friend_id = ?1) OR (fr.user_id = ?1 AND fr.friend_id = ?0)", userID, friendID).
+		Exists(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
