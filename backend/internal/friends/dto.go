@@ -7,43 +7,40 @@ import (
 	"github.com/google/uuid"
 )
 
-// FriendRequest : The username has to be the username of the player you wanna add as a friend.
-// POST /api/friends/requests/send
+// FriendRequestRequest : POST /api/friends/requests/send.
 type FriendRequestRequest struct {
 	Username string `json:"username" example:"johndoe"`
 }
 
-// GET /api/friends/requests/list (elements in the list)
+// FriendRequestResponse : GET /api/friends/requests/list (elements in the list).
 type FriendRequestResponse struct {
-	SenderID  uuid.UUID `json:"sender_id" example:"018f4e2a-7b3c-7890-a1b2-c3d4e5f6a7b8"`
-	Username  string    `json:"username"  example:"johndoe"`
 	CreatedAt time.Time `json:"created_at"`
+	Username  string    `json:"username"  example:"johndoe"`
+	SenderID  uuid.UUID `json:"sender_id" example:"018f4e2a-7b3c-7890-a1b2-c3d4e5f6a7b8"`
 }
 
-// GET /api/friends/requests/list (list wrapper)
+// FriendRequestsListResponse : GET /api/friends/requests/list (list wrapper).
 type FriendRequestsListResponse struct {
 	Requests []FriendRequestResponse `json:"requests"`
 }
 
-// POST /api/friends/requests/accept
-// or
-// POST /api/friends/requests/decline
+// HandleFriendRequestRequest : POST /api/friends/requests/accept or POST /api/friends/requests/decline.
 type HandleFriendRequestRequest struct {
 	SenderID uuid.UUID `json:"sender_id" example:"018f4e2a-7b3c-7890-a1b2-c3d4e5f6a7b8"`
 }
 
-// GET /api/friends/list (elements in the list)
+// FriendRelationResponse : GET /api/friends/list (elements in the list).
 type FriendRelationResponse struct {
-	FriendID uuid.UUID `json:"friend_id" example:"018f4e2a-7b3c-7890-a1b2-c3d4e5f6a7b8"`
 	Username string    `json:"username"  example:"johndoe"`
+	FriendID uuid.UUID `json:"friend_id" example:"018f4e2a-7b3c-7890-a1b2-c3d4e5f6a7b8"`
 }
 
-// GET /api/friends/list (list wrapper)
+// FriendRelationListResponse : GET /api/friends/list (list wrapper).
 type FriendRelationListResponse struct {
 	Requests []FriendRelationResponse `json:"relations"`
 }
 
-// POST /api/friends/unfriend
+// UnfriendRequest : POST /api/friends/unfriend.
 type UnfriendRequest struct {
 	FriendID uuid.UUID `json:"friend_id" example:"018f4e2a-7b3c-7890-a1b2-c3d4e5f6a7b8"`
 }

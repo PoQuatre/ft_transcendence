@@ -16,7 +16,7 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) SendFriendRequest(ctx context.Context, userID uuid.UUID, receiverID uuid.UUID) error {
+func (s *Service) SendFriendRequest(ctx context.Context, userID, receiverID uuid.UUID) error {
 	err := s.repo.CreateFriendRequest(ctx, userID, receiverID)
 	if err != nil {
 		return err
@@ -25,7 +25,7 @@ func (s *Service) SendFriendRequest(ctx context.Context, userID uuid.UUID, recei
 	return nil
 }
 
-func (s *Service) AddFriend(ctx context.Context, userID uuid.UUID, senderID uuid.UUID) error {
+func (s *Service) AddFriend(ctx context.Context, userID, senderID uuid.UUID) error {
 	_, err := s.repo.GetFriendRequest(ctx, senderID, userID)
 	if err != nil {
 		return ErrRequestNotFound
@@ -38,7 +38,7 @@ func (s *Service) AddFriend(ctx context.Context, userID uuid.UUID, senderID uuid
 	return err
 }
 
-func (s *Service) Unfriend(ctx context.Context, userID uuid.UUID, friendID uuid.UUID) error {
+func (s *Service) Unfriend(ctx context.Context, userID, friendID uuid.UUID) error {
 	exists, err := s.repo.AreFriend(ctx, userID, friendID)
 	if err != nil {
 		return err

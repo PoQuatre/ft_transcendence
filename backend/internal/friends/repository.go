@@ -18,14 +18,14 @@ var (
 )
 
 type Repository interface {
-	CreateFriendRelation(ctx context.Context, userID uuid.UUID, friendID uuid.UUID) error
-	CreateFriendRequest(ctx context.Context, senderID uuid.UUID, receiverID uuid.UUID) error
+	CreateFriendRelation(ctx context.Context, userID, friendID uuid.UUID) error
+	CreateFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) error
 	DeleteFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) error
 	DeleteFriendRelation(ctx context.Context, senderID, receiverID uuid.UUID) error
-	AreFriend(ctx context.Context, userID uuid.UUID, friendID uuid.UUID) (bool, error)
+	AreFriend(ctx context.Context, userID, friendID uuid.UUID) (bool, error)
 
 	GetFriendsList(ctx context.Context, userID uuid.UUID) (FriendRelationListResponse, error)
-	GetFriendRequest(ctx context.Context, senderID uuid.UUID, receiverID uuid.UUID) (FriendRequestResponse, error)
+	GetFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) (FriendRequestResponse, error)
 	GetPendingFriendRequests(ctx context.Context, receiverID uuid.UUID) (FriendRequestsListResponse, error)
 }
 
@@ -175,7 +175,7 @@ func (r *bunRepository) GetPendingFriendRequests(ctx context.Context, receiverID
 	}, nil
 }
 
-func (r *bunRepository) CreateFriendRelation(ctx context.Context, userID uuid.UUID, friendID uuid.UUID) error {
+func (r *bunRepository) CreateFriendRelation(ctx context.Context, userID, friendID uuid.UUID) error {
 	req := &FriendRelations{
 		UserID:   userID,
 		FriendID: friendID,
