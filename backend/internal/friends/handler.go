@@ -90,6 +90,17 @@ func (h *handler) sendRequest(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "request successfully sent."})
 }
 
+// acceptRequest godoc
+// @Summary		Accept Requests
+// @Description	Requires the session cookie from login. Accepts a friend request from a specified user
+// @Tags		Friends
+// @Accept		json
+// @Produce		json
+// @Param        request body friends.HandleFriendRequestRequest true "Sender ID"
+// @Success      200 {object} map[string]string "request successfully accepted."
+// @Failure      400 {object} map[string]string "invalid request body"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Router       /api/friends/requests/accept [post].
 func (h *handler) acceptRequest(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userIDStr := h.sessionManager.GetString(ctx, "user_id")
@@ -111,6 +122,17 @@ func (h *handler) acceptRequest(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "request successfully accepted."})
 }
 
+// declineRequest godoc
+// @Summary      Decline Requests
+// @Description  Requires the session cookie from login. Declines a friend request from a specified user
+// @Tags         Friends
+// @Accept       json
+// @Produce      json
+// @Param        request body friends.HandleFriendRequestRequest true "Sender ID"
+// @Success      200 {object} map[string]string "request successfully declined."
+// @Failure      400 {object} map[string]string "invalid request body"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Router       /api/friends/requests/decline [post].
 func (h *handler) declineRequest(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userIDStr := h.sessionManager.GetString(ctx, "user_id")
@@ -132,6 +154,14 @@ func (h *handler) declineRequest(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "request successfully declined."})
 }
 
+// getFriendRequestsList godoc
+// @Summary      List Requests
+// @Description  Requires the session cookie from login. Lists the friend requests
+// @Tags         Friends
+// @Produce      json
+// @Success      200 {object} friends.FriendRequestsListResponse
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Router       /api/friends/requests/list [get].
 func (h *handler) getFriendRequestsList(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userIDStr := h.sessionManager.GetString(ctx, "user_id")
@@ -149,6 +179,14 @@ func (h *handler) getFriendRequestsList(c *echo.Context) error {
 	return c.JSON(http.StatusOK, friendRequestList)
 }
 
+// getFriendsList godoc
+// @Summary      List Friends
+// @Description  Requires the session cookie from login. Lists the friends
+// @Tags         Friends
+// @Produce      json
+// @Success      200 {object} friends.FriendRelationListResponse
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Router       /api/friends/list [get].
 func (h *handler) getFriendsList(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userIDStr := h.sessionManager.GetString(ctx, "user_id")
@@ -166,6 +204,17 @@ func (h *handler) getFriendsList(c *echo.Context) error {
 	return c.JSON(http.StatusOK, friendsList)
 }
 
+// unfriendFriend godoc
+// @Summary      Unfriend User
+// @Description  Requires the session cookie from login. Unfriends a specified user
+// @Tags         Friends
+// @Accept       json
+// @Produce      json
+// @Param        request body friends.UnfriendRequest true "Friend ID"
+// @Success      200 {object} map[string]string "successfully unfriended."
+// @Failure      400 {object} map[string]string "invalid request body"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Router       /api/friends/unfriend [post].
 func (h *handler) unfriendFriend(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userIDStr := h.sessionManager.GetString(ctx, "user_id")
