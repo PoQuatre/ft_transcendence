@@ -59,6 +59,7 @@ func apiError(err error) error {
 // @Success      200 {object} map[string]string "request successfully sent"
 // @Failure      400 {object} map[string]string "invalid request body"
 // @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      403 {object} map[string]string "you need to verify your email"
 // @Router       /api/friends/requests/send [post].
 func (h *handler) sendRequest(c *echo.Context) error {
 	ctx := c.Request().Context()
@@ -69,6 +70,13 @@ func (h *handler) sendRequest(c *echo.Context) error {
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	user, err := h.authService.GetUserByID(ctx, userID)
+	if err != nil {
+		return apiError(err)
+	}
+	if !user.Verified {
+		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
 	}
 
 	var req FriendRequestRequest
@@ -92,15 +100,16 @@ func (h *handler) sendRequest(c *echo.Context) error {
 }
 
 // acceptRequest godoc
-// @Summary		Accept Requests
-// @Description	Requires the session cookie from login. Accepts a friend request from a specified user
-// @Tags		Friends
-// @Accept		json
-// @Produce		json
+// @Summary      Accept Requests
+// @Description  Requires the session cookie from login. Accepts a friend request from a specified user
+// @Tags         Friends
+// @Accept       json
+// @Produce      json
 // @Param        request body friends.HandleFriendRequestRequest true "Sender ID"
 // @Success      200 {object} map[string]string "request successfully accepted."
 // @Failure      400 {object} map[string]string "invalid request body"
 // @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      403 {object} map[string]string "you need to verify your email"
 // @Router       /api/friends/requests/accept [post].
 func (h *handler) acceptRequest(c *echo.Context) error {
 	ctx := c.Request().Context()
@@ -111,6 +120,14 @@ func (h *handler) acceptRequest(c *echo.Context) error {
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	user, err := h.authService.GetUserByID(ctx, userID)
+	if err != nil {
+		return apiError(err)
+	}
+	if !user.Verified {
+		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
 	}
 	var req HandleFriendRequestRequest
 	if err = c.Bind(&req); err != nil {
@@ -133,6 +150,7 @@ func (h *handler) acceptRequest(c *echo.Context) error {
 // @Success      200 {object} map[string]string "request successfully declined."
 // @Failure      400 {object} map[string]string "invalid request body"
 // @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      403 {object} map[string]string "you need to verify your email"
 // @Router       /api/friends/requests/decline [post].
 func (h *handler) declineRequest(c *echo.Context) error {
 	ctx := c.Request().Context()
@@ -143,6 +161,14 @@ func (h *handler) declineRequest(c *echo.Context) error {
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	user, err := h.authService.GetUserByID(ctx, userID)
+	if err != nil {
+		return apiError(err)
+	}
+	if !user.Verified {
+		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
 	}
 	var req HandleFriendRequestRequest
 	if err = c.Bind(&req); err != nil {
@@ -162,6 +188,7 @@ func (h *handler) declineRequest(c *echo.Context) error {
 // @Produce      json
 // @Success      200 {object} friends.FriendRequestsListResponse
 // @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      403 {object} map[string]string "you need to verify your email"
 // @Router       /api/friends/requests/list [get].
 func (h *handler) getFriendRequestsList(c *echo.Context) error {
 	ctx := c.Request().Context()
@@ -172,6 +199,14 @@ func (h *handler) getFriendRequestsList(c *echo.Context) error {
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	user, err := h.authService.GetUserByID(ctx, userID)
+	if err != nil {
+		return apiError(err)
+	}
+	if !user.Verified {
+		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
 	}
 	friendRequestList, err := h.service.repo.GetPendingFriendRequests(ctx, userID)
 	if err != nil {
@@ -187,6 +222,7 @@ func (h *handler) getFriendRequestsList(c *echo.Context) error {
 // @Produce      json
 // @Success      200 {object} friends.FriendRelationListResponse
 // @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      403 {object} map[string]string "you need to verify your email"
 // @Router       /api/friends/list [get].
 func (h *handler) getFriendsList(c *echo.Context) error {
 	ctx := c.Request().Context()
@@ -197,6 +233,14 @@ func (h *handler) getFriendsList(c *echo.Context) error {
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	user, err := h.authService.GetUserByID(ctx, userID)
+	if err != nil {
+		return apiError(err)
+	}
+	if !user.Verified {
+		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
 	}
 	friendsList, err := h.service.repo.GetFriendsList(ctx, userID)
 	if err != nil {
@@ -215,6 +259,7 @@ func (h *handler) getFriendsList(c *echo.Context) error {
 // @Success      200 {object} map[string]string "successfully unfriended."
 // @Failure      400 {object} map[string]string "invalid request body"
 // @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      403 {object} map[string]string "you need to verify your email"
 // @Router       /api/friends/unfriend [post].
 func (h *handler) unfriendFriend(c *echo.Context) error {
 	ctx := c.Request().Context()
@@ -225,6 +270,14 @@ func (h *handler) unfriendFriend(c *echo.Context) error {
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	user, err := h.authService.GetUserByID(ctx, userID)
+	if err != nil {
+		return apiError(err)
+	}
+	if !user.Verified {
+		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
 	}
 	var req UnfriendRequest
 	if err = c.Bind(&req); err != nil {

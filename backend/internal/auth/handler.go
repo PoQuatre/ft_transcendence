@@ -189,15 +189,15 @@ func (h *handler) confirmEmailVerification(c *echo.Context) error {
 // @Produce      json
 // @Success      200 {object} map[string]string "email verification sent"
 // @Failure      400 {object} map[string]string "email already verified"
-// @Failure      401 {object} map[string]string "unauthorized"
-// @Failure      500 {object} map[string]string "invalid session user id or internal server error"
+// @Failure      401 {object} map[string]string "unauthorized or invalid session user id"
+// @Failure      500 {object} map[string]string "internal server error"
 // @Router       /api/auth/verify-email/request [post].
 func (h *handler) requestEmailVerification(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userIDStr := h.sessionManager.GetString(ctx, "user_id")
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "invalid session user id")
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid session user id")
 	}
 	user, err := h.service.GetUserByID(ctx, userID)
 	if err != nil {
