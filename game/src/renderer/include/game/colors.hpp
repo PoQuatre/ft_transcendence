@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/14 20:06:01 by uanglade          #+#    #+#             */
-/*   Updated: 2026/10/14 20:08:58 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/07 09:58:36 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,8 @@ namespace game::renderer::Colors {
     X(COLOR_AMBER, 0xFF, 0xBB, 0x24, 0xFF)                                     \
     X(COLOR_BACKGROUND, 0x0B, 0x08, 0x11, 0xFF)                                \
     X(COLOR_GRID, 0x16, 0x10, 0x22, 0xFF)                                      \
-    X(COLOR_BLACK, 0x00, 0x00, 0x00, 0xFF)
+    X(COLOR_BLACK, 0x00, 0x00, 0x00, 0xFF)                                     \
+    X(COLOR_TRANSPARENT, 0x00, 0x00, 0x00, 0x00)
 
 enum type : uint8_t {
 #define X(name, _, __, ___, ____) name,

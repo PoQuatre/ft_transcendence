@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:41 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/11/05 00:32:52 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/10 12:55:23 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,18 +29,17 @@ Simulation::Simulation() = default;
 void Simulation::update_physics(float delta_seconds)
 {
     // const int simulation_steps = 10;
-    const auto &view
-        = registry_.view<Transform, PhysicalObject, ShapeType, Shape, State>();
-    for (auto [entity, transform, physics, shape_type, shape, state] :
-        view.each()) {
+    const auto &view = registry_.view<Transform, ShapeType, Shape>();
+    for (auto [entity, transform, shape_type, shape] : view.each()) {
 
         transform.vel += transform.acc * delta_seconds;
 
-        transform.vel *= std::max(0.0F, 1.0F - (physics.drag * delta_seconds));
+        // transform.vel *= std::max(0.0F, 1.0F - (physics.drag *
+        // delta_seconds));
 
-        if (!physics.is_static) {
-            transform.pos += transform.vel * delta_seconds;
-        }
+        // if (!physics.is_static) {
+        transform.pos += transform.vel * delta_seconds;
+        // }
     }
 }
 
@@ -48,32 +47,32 @@ void Simulation::update(float delta_seconds)
 {
     update_physics(delta_seconds);
 
-    for (const auto entity : registry_.view<Transform, Projectile>()) {
-        auto &projectile = registry_.get<Projectile>(entity);
-
-        if (platform::Platform::get_time() - projectile.creation_time
-            > projectile.lifetime) {
-            auto &state_proj = registry_.get<State>(entity);
-            state_proj = State::STATE_DESTROYED;
-        }
-    }
-
-    for (const auto entity : registry_.view<Ressource>()) {
-
-        auto &state = registry_.get<State>(entity);
-        auto &res = registry_.get<Ressource>(entity);
-        if (res.health <= 0) {
-            state = State::STATE_DESTROYED;
-        }
-    }
-
-    for (const auto entity : registry_.view<State>()) {
-        auto &state = registry_.get<State>(entity);
-
-        if (state == State::STATE_DESTROYED) {
-            registry_.destroy(entity);
-        }
-    }
+    // for (const auto entity : registry_.view<Transform, Projectile>()) {
+    //     auto &projectile = registry_.get<Projectile>(entity);
+    //
+    //     if (platform::Platform::get_time() - projectile.creation_time
+    //         > projectile.lifetime) {
+    //         auto &state_proj = registry_.get<State>(entity);
+    //         state_proj = State::STATE_DESTROYED;
+    //     }
+    // }
+    //
+    // for (const auto entity : registry_.view<Ressource>()) {
+    //
+    //     auto &state = registry_.get<State>(entity);
+    //     auto &res = registry_.get<Ressource>(entity);
+    //     if (res.health <= 0) {
+    //         state = State::STATE_DESTROYED;
+    //     }
+    // }
+    //
+    // for (const auto entity : registry_.view<State>()) {
+    //     auto &state = registry_.get<State>(entity);
+    //
+    //     if (state == State::STATE_DESTROYED) {
+    //         registry_.destroy(entity);
+    //     }
+    // }
 }
 
 void Simulation::create_player_tank(Tank &tank, Transform transform, Color col)

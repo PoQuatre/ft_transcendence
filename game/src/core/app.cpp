@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:46 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/11/05 00:31:18 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/09 20:11:41 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,6 +70,14 @@ void App::sync_world(
                         .maximum = 100,
                     })
                 .value = state->health();
+            registry->emplace_or_replace<simulation::PointLight>(entity,
+                simulation::PointLight {
+                    .radius = 300.F,
+                    .color
+                    = renderer::Colors::colors[renderer::Colors::COLOR_CYAN],
+                    .intensity = 1.F,
+                    .cast_shadows = true,
+                });
         } else if (state->kind() == protocol::EntityKind::Resource) {
             transform.pos -= glm::vec2(20.F);
             transform.rotation = state->rotation()
@@ -95,6 +103,14 @@ void App::sync_world(
                     .lifetime = 0,
                     .creation_time = 0,
                     .type = simulation::ProjectileType::PROJECTILE_BASIC,
+                });
+            registry->emplace_or_replace<simulation::PointLight>(entity,
+                simulation::PointLight {
+                    .radius = 100.F,
+                    .color
+                    = renderer::Colors::colors[renderer::Colors::COLOR_GREEN],
+                    .intensity = 1.F,
+                    .cast_shadows = true,
                 });
         }
 
@@ -238,6 +254,7 @@ void App::iterate()
         input_elapsed_ = 0;
         send_input();
     }
+    // simulation_.update(delta_seconds);
 #else
     update_player();
     simulation_.update(delta_seconds);
