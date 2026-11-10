@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:34 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/13 16:44:24 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/07 11:26:50 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,8 +47,6 @@ private:
 
     entt::registry registry_;
     entt::entity player_tank_;
-
-    const int ressource_count_ = 100;
 };
 
 } // namespace game::simulation

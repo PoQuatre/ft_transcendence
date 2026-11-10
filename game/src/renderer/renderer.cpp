@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/11/04 23:31:28 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/10 13:54:30 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -148,12 +148,17 @@ void Renderer::init()
         nullptr, CMAKE_SOURCE_DIR "/src/renderer/assets/shaders/bloom_blur.fs");
     composite_shader_ = LoadShader(nullptr,
         CMAKE_SOURCE_DIR "/src/renderer/assets/shaders/bloom_composite.fs");
+    light_map_shader_ = LoadShader(CMAKE_SOURCE_DIR
+        "/src/renderer/assets/shaders/light_map.vs",
+        CMAKE_SOURCE_DIR "/src/renderer/assets/shaders/light_map.fs");
 
     threshold_loc_ = GetShaderLocation(extract_shader_, "threshold");
     texel_size_loc_ = GetShaderLocation(blur_shader_, "texelSize");
     direction_loc_ = GetShaderLocation(blur_shader_, "direction");
     bloom_texture_loc_ = GetShaderLocation(composite_shader_, "bloomTexture");
     intensity_loc_ = GetShaderLocation(composite_shader_, "bloomIntensity");
+    light_map_texture_loc_ = GetShaderLocation(composite_shader_, "lightMap");
+    shadow_map_texture_loc_ = GetShaderLocation(light_map_shader_, "shadowMap");
 }
 
 Renderer::~Renderer()
@@ -168,6 +173,8 @@ Renderer::~Renderer()
     UnloadFont(font_);
     UnloadTexture(crosshair_);
 
+    UnloadRenderTexture(light_map_);
+    UnloadRenderTexture(shadow_map_);
     UnloadRenderTexture(scene_target_);
     UnloadRenderTexture(bright_target_);
     UnloadRenderTexture(blur_v_target_);
@@ -176,6 +183,7 @@ Renderer::~Renderer()
     UnloadShader(extract_shader_);
     UnloadShader(blur_shader_);
     UnloadShader(composite_shader_);
+    UnloadShader(light_map_shader_);
 }
 
 void Renderer::update_render_textures()
@@ -185,11 +193,15 @@ void Renderer::update_render_textures()
         render_width_ = GetRenderWidth();
         render_height_ = GetRenderHeight();
 
+        UnloadRenderTexture(light_map_);
+        UnloadRenderTexture(shadow_map_);
         UnloadRenderTexture(scene_target_);
         UnloadRenderTexture(bright_target_);
         UnloadRenderTexture(blur_v_target_);
         UnloadRenderTexture(blur_h_target_);
 
+        light_map_ = LoadRenderTexture(render_width_, render_height_);
+        shadow_map_ = LoadRenderTexture(render_width_, render_height_);
         scene_target_ = LoadRenderTexture(render_width_, render_height_);
         bright_target_ = LoadRenderTexture(render_width_, render_height_);
         blur_v_target_ = LoadRenderTexture(render_width_, render_height_);
@@ -200,6 +212,7 @@ void Renderer::update_render_textures()
 void Renderer::draw(simulation::Simulation &sim)
 {
     update_render_textures();
+    update_camera(sim);
 
     render_scene(sim);
 
@@ -215,15 +228,17 @@ void Renderer::draw(simulation::Simulation &sim)
         SHADER_UNIFORM_FLOAT);
     SetShaderValueTexture(
         composite_shader_, bloom_texture_loc_, blur_v_target_.texture);
+    SetShaderValueTexture(
+        composite_shader_, light_map_texture_loc_, light_map_.texture);
 
     DrawTextureRec(scene_target_.texture,
         Rectangle {
-            .x = 0.0F,
-            .y = 0.0F,
+            .x = 0,
+            .y = 0,
             .width = static_cast<float>(scene_target_.texture.width),
             .height = -static_cast<float>(scene_target_.texture.height),
         },
-        Vector2 { .x = 0.0F, .y = 0.0F }, WHITE);
+        Vector2 { .x = 0, .y = 0 }, WHITE);
 
     EndShaderMode();
 
@@ -234,7 +249,6 @@ void Renderer::draw(simulation::Simulation &sim)
 
 void Renderer::render_scene(simulation::Simulation &sim)
 {
-    update_camera(sim);
     auto *registry = sim.get_registry();
 
     BeginTextureMode(scene_target_);
@@ -291,9 +305,13 @@ void Renderer::render_scene(simulation::Simulation &sim)
             24, 2, Color { .r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF });
     }
 
+    std::vector<std::pair<glm::vec2, glm::vec2>> shadow_segments;
+    std::vector<entt::entity> circles;
+
     for (const auto entity :
         registry->view<simulation::Color, simulation::Transform,
             simulation::ShapeType>(entt::exclude<simulation::Projectile>)) {
+
         const auto &transform = registry->get<simulation::Transform>(entity);
         const auto &color = registry->get<simulation::Color>(entity);
 
@@ -316,18 +334,28 @@ void Renderer::render_scene(simulation::Simulation &sim)
                 glm::vec2 { -half.x, half.y },
             };
             for (int i = 0; i < 4; ++i) {
-                const auto a = corners[i];
-                const auto b = corners[(i + 1) % 4];
+                auto a = corners[i];
+                auto b = corners[(i + 1) % 4];
+                a = {
+                    center.x + (a.x * c) - (a.y * s),
+                    center.y + (a.x * s) + (a.y * c),
+                };
+                b = {
+                    center.x + (b.x * c) - (b.y * s),
+                    center.y + (b.x * s) + (b.y * c),
+                };
+
                 DrawLineV(
                     {
-                        .x = center.x + (a.x * c) - (a.y * s),
-                        .y = center.y + (a.x * s) + (a.y * c),
+                        .x = a.x,
+                        .y = a.y,
                     },
                     {
-                        .x = center.x + (b.x * c) - (b.y * s),
-                        .y = center.y + (b.x * s) + (b.y * c),
+                        .x = b.x,
+                        .y = b.y,
                     },
                     color);
+                shadow_segments.emplace_back(a, b);
             }
             if (res != nullptr && res->health != res->max_health) {
                 Renderer::draw_progress_bar(
@@ -340,6 +368,7 @@ void Renderer::render_scene(simulation::Simulation &sim)
             break;
         }
         case simulation::ShapeType::SHAPE_CIRCLE:
+            circles.push_back(entity);
             DrawCircleLinesV(
                 Vector2 {
                     .x = transform.pos.x + (shape.circle.size / 2.0F),
@@ -400,6 +429,134 @@ void Renderer::render_scene(simulation::Simulation &sim)
 
     EndMode2D();
     EndTextureMode();
+
+    draw_shadow_map(sim, shadow_segments, circles);
+}
+
+namespace {
+
+std::array<glm::vec2, 4> project_shadow(
+    const std::pair<glm::vec2, glm::vec2> &segment, glm::vec2 light_position,
+    float projection_distance)
+{
+    const glm::vec2 a = segment.first;
+    const glm::vec2 b = segment.second;
+
+    const glm::vec2 dir_a { a.x - light_position.x, a.y - light_position.y };
+
+    const glm::vec2 dir_b { b.x - light_position.x, b.y - light_position.y };
+
+    const glm::vec2 projected_a { a.x + (dir_a.x * projection_distance),
+        a.y + (dir_a.y * projection_distance) };
+
+    const glm::vec2 projected_b { b.x + (dir_b.x * projection_distance),
+        b.y + (dir_b.y * projection_distance) };
+
+    return { a, b, projected_b, projected_a };
+}
+
+void draw_shadow_quad(std::array<glm::vec2, 4> &quad)
+{
+    DrawTriangle({ .x = quad[0].x, .y = quad[0].y },
+        { .x = quad[1].x, .y = quad[1].y }, { .x = quad[2].x, .y = quad[2].y },
+        Colors::colors[Colors::COLOR_BLACK]);
+    DrawTriangle({ .x = quad[0].x, .y = quad[0].y },
+        { .x = quad[2].x, .y = quad[2].y }, { .x = quad[3].x, .y = quad[3].y },
+        Colors::colors[Colors::COLOR_BLACK]);
+}
+
+}
+
+void Renderer::draw_shadow_map(simulation::Simulation &sim,
+    std::vector<std::pair<glm::vec2, glm::vec2>> &shadow_segments,
+    std::vector<entt::entity> &circles)
+{
+    BeginTextureMode(light_map_);
+    ClearBackground(
+        renderer::Colors::colors[renderer::Colors::COLOR_TRANSPARENT]);
+    EndTextureMode();
+
+    auto *registry = sim.get_registry();
+    const auto &view
+        = registry->view<simulation::PointLight, simulation::Transform>();
+
+    for (const auto &[entity, light, transform] : view.each()) {
+        if (light.cast_shadows) {
+            BeginTextureMode(shadow_map_);
+            ClearBackground(
+                renderer::Colors::colors[renderer::Colors::COLOR_WHITE]);
+            BeginMode2D(camera_);
+            for (const auto &segment : shadow_segments) {
+                auto quad = project_shadow(segment, transform.pos, 100.F);
+                draw_shadow_quad(quad);
+            }
+            for (const auto &entity : circles) {
+                const auto &circle = registry->get<simulation::Shape>(entity);
+                const auto &c_transform
+                    = registry->get<simulation::Transform>(entity);
+                const float radius = circle.circle.size / 2.0F;
+                const glm::vec2 pos(
+                    c_transform.pos.x + radius, c_transform.pos.y + radius);
+                const glm::vec2 to_light = transform.pos - pos;
+                const float distance_squared = glm::dot(to_light, to_light);
+                const float radius_squared = radius * circle.circle.size;
+                if (distance_squared <= radius_squared)
+                    continue;
+
+                const float distance = std::sqrt(distance_squared);
+                const float base_angle = std::atan2(to_light.y, to_light.x);
+                const float tangent_angle = std::acos(radius / distance);
+
+                const float angle_a = base_angle + tangent_angle;
+                const float angle_b = base_angle - tangent_angle;
+
+                const glm::vec2 point_a { pos.x + (radius * std::cos(angle_a)),
+                    pos.y + (radius * std::sin(angle_a)) };
+
+                const glm::vec2 point_b { pos.x + (radius * std::cos(angle_b)),
+                    pos.y + (radius * std::sin(angle_b)) };
+                auto segment = std::make_pair(point_a, point_b);
+                auto quad = project_shadow(segment, transform.pos, 100.F);
+                draw_shadow_quad(quad);
+            }
+            EndMode2D();
+            EndTextureMode();
+        }
+
+        BeginTextureMode(light_map_);
+        BeginShaderMode(light_map_shader_);
+        BeginBlendMode(BLEND_ADD_COLORS);
+        BeginMode2D(camera_);
+        draw_grid();
+
+        SetShaderValue(light_map_shader_,
+            GetShaderLocation(light_map_shader_, "light_intensity"),
+            &light.intensity, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(light_map_shader_,
+            GetShaderLocation(light_map_shader_, "light_radius"), &light.radius,
+            SHADER_UNIFORM_FLOAT);
+        glm::vec4 color
+            = glm::vec4(light.color.r / 255.F, light.color.g / 255.F,
+                light.color.b / 255.F, light.color.a / 255.F);
+        SetShaderValue(light_map_shader_,
+            GetShaderLocation(light_map_shader_, "light_color"), &color,
+            SHADER_UNIFORM_VEC4);
+        SetShaderValue(light_map_shader_,
+            GetShaderLocation(light_map_shader_, "light_position"),
+            &transform.pos, SHADER_UNIFORM_VEC2);
+        glm::vec2 resolution(
+            light_map_.texture.width, light_map_.texture.height);
+        SetShaderValue(light_map_shader_,
+            GetShaderLocation(light_map_shader_, "resolution"), &resolution,
+            SHADER_UNIFORM_VEC2);
+        SetShaderValueTexture(
+            light_map_shader_, shadow_map_texture_loc_, shadow_map_.texture);
+
+        EndMode2D();
+        EndShaderMode();
+        EndBlendMode();
+        EndTextureMode();
+    }
 }
 
 void Renderer::apply_bloom()
@@ -489,6 +646,11 @@ void Renderer::apply_bloom()
 void Renderer::draw_grid()
 {
     const glm::vec2 grid_size { 30.F, 30.F };
+
+    DrawRectangle(simulation::map_bounds_.min_x, simulation::map_bounds_.min_y,
+        simulation::map_bounds_.max_x - simulation::map_bounds_.min_x,
+        simulation::map_bounds_.max_y - simulation::map_bounds_.min_y,
+        renderer::Colors::colors[renderer::Colors::COLOR_BACKGROUND]);
 
     const int grid_count_y
         = (simulation::map_bounds_.max_y - simulation::map_bounds_.min_y)

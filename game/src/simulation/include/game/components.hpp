@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 14:29:13 by uanglade          #+#    #+#             */
-/*   Updated: 2026/11/04 23:30:52 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/07 09:46:02 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,6 +104,13 @@ struct Ressource {
 struct Health {
     float value;
     float maximum;
+};
+
+struct PointLight {
+    float radius;
+    Color color;
+    float intensity;
+    bool cast_shadows = true;
 };
 
 namespace TankType {
