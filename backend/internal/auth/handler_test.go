@@ -32,7 +32,7 @@ func setupTestServer(t *testing.T) (*echo.Echo, *scs.SessionManager) {
 	}
 	group.Use(echo.WrapMiddleware(sessionManager.LoadAndSave))
 
-	RegisterRoutes(group, *svc, sessionManager, validat)
+	RegisterRoutes(group, svc, sessionManager, validat)
 
 	return e, sessionManager
 }

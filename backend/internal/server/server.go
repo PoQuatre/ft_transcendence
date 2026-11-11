@@ -70,9 +70,9 @@ func New(options ...Option) (http.Handler, error) {
 	swagger.RegisterRoutes(e.Group("/api/docs"))
 
 	if cfg.database != nil {
-		authService := *auth.NewService(auth.NewRepository(cfg.database))
+		authService := auth.NewService(auth.NewRepository(cfg.database))
 		auth.RegisterRoutes(e.Group("/api/auth"), authService, sessionManager, validat)
-		friends.RegisterRoutes(e.Group("/api/friends"), *friends.NewService(friends.NewRepository(cfg.database)), sessionManager, authService)
+		friends.RegisterRoutes(e.Group("/api/friends"), friends.NewService(friends.NewRepository(cfg.database)), sessionManager, authService)
 	}
 
 	return e, nil

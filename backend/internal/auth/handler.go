@@ -14,12 +14,12 @@ import (
 )
 
 type handler struct {
-	service        Service
+	service        *Service
 	validator      *helpers.CustomValidator
 	sessionManager *scs.SessionManager
 }
 
-func RegisterRoutes(group *echo.Group, service Service, sessionManager *scs.SessionManager, val *helpers.CustomValidator) {
+func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.SessionManager, val *helpers.CustomValidator) {
 	h := handler{
 		service:        service,
 		validator:      val,

@@ -12,12 +12,12 @@ import (
 )
 
 type handler struct {
-	service        Service
-	authService    auth.Service
+	service        *Service
+	authService    *auth.Service
 	sessionManager *scs.SessionManager
 }
 
-func RegisterRoutes(group *echo.Group, service Service, sessionManager *scs.SessionManager, authService auth.Service) {
+func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.SessionManager, authService *auth.Service) {
 	h := handler{
 		service:        service,
 		authService:    authService,
