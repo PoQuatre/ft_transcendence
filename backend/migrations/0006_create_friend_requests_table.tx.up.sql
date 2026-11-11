@@ -1,7 +1,0 @@
-SET statement_timeout = 0;
-CREATE TABLE friend_requests (
-    sender_id uuid NOT NULL,
-    receiver_id uuid NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT current_timestamp,
-    PRIMARY KEY (sender_id, receiver_id)
-);

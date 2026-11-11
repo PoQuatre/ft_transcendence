@@ -1,4 +1,4 @@
 SET statement_timeout = 0;
 CREATE TABLE friend_relations (
-    user_id uuid NOT NULL, friend_id uuid NOT NULL, PRIMARY KEY (user_id, friend_id)
+    id BIGSERIAL NOT NULL, user_id UUID NOT NULL, friend_id UUID NOT NULL, PRIMARY KEY (id)
 );
