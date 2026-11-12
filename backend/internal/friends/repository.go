@@ -15,6 +15,8 @@ var (
 	ErrSessionNotFound             = errors.New("session not found")
 	ErrFriendRequestAlreadyExists  = errors.New("request already exists")
 	ErrFriendRelationAlreadyExists = errors.New("already friends")
+
+	pageSize = 25
 )
 
 type Repository interface {
@@ -24,9 +26,9 @@ type Repository interface {
 	DeleteFriendRelation(ctx context.Context, senderID, receiverID uuid.UUID) error
 	AreFriend(ctx context.Context, userID, friendID uuid.UUID) (bool, error)
 
-	GetFriendsList(ctx context.Context, userID uuid.UUID) (FriendRelationListResponse, error)
+	GetFriendsList(ctx context.Context, userID uuid.UUID, page int) (FriendRelationListResponse, error)
 	GetFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) (FriendRequestResponse, error)
-	GetPendingFriendRequests(ctx context.Context, receiverID uuid.UUID) (FriendRequestsListResponse, error)
+	GetPendingFriendRequests(ctx context.Context, receiverID uuid.UUID, page int) (FriendRequestsListResponse, error)
 }
 
 type bunRepository struct {
@@ -127,8 +129,7 @@ func (r *bunRepository) GetFriendRequest(ctx context.Context, senderID, receiver
 	return req, nil
 }
 
-// TODO: Faire un systeme de pagination.
-func (r *bunRepository) GetFriendsList(ctx context.Context, userID uuid.UUID) (FriendRelationListResponse, error) {
+func (r *bunRepository) GetFriendsList(ctx context.Context, userID uuid.UUID, page int) (FriendRelationListResponse, error) {
 	var friends []FriendRelationResponse
 
 	subSelect := r.db.NewSelect().
@@ -141,22 +142,30 @@ func (r *bunRepository) GetFriendsList(ctx context.Context, userID uuid.UUID) (F
 		ColumnExpr("friends_list.target_friend_id AS friend_id").
 		ColumnExpr("users.username AS username").
 		Join("JOIN users ON users.id = friends_list.target_friend_id").
+		Limit(pageSize).
+		Offset(page*pageSize-pageSize).
 		Scan(ctx, &friends)
 	if err != nil {
 		return FriendRelationListResponse{}, err
 	}
-
+	nb, err := r.db.NewSelect().
+		TableExpr("(?) AS friends_list", subSelect).
+		Count(ctx)
+	if err != nil {
+		return FriendRelationListResponse{}, err
+	}
 	if friends == nil {
 		friends = []FriendRelationResponse{}
 	}
 
 	return FriendRelationListResponse{
-		Requests: friends,
+		Requests:    friends,
+		TotalPages:  (nb + pageSize - 1) / pageSize,
+		CurrentPage: page,
 	}, nil
 }
 
-// TODO: Faire un systeme de pagination.
-func (r *bunRepository) GetPendingFriendRequests(ctx context.Context, receiverID uuid.UUID) (FriendRequestsListResponse, error) {
+func (r *bunRepository) GetPendingFriendRequests(ctx context.Context, receiverID uuid.UUID, page int) (FriendRequestsListResponse, error) {
 	var requests []FriendRequestResponse
 
 	err := r.db.NewSelect().
@@ -166,7 +175,16 @@ func (r *bunRepository) GetPendingFriendRequests(ctx context.Context, receiverID
 		ColumnExpr("friend_requests.created_at AS created_at").
 		Join("JOIN users ON users.id = friend_requests.sender_id").
 		Where("friend_requests.receiver_id = ?", receiverID).
+		Limit(pageSize).
+		Offset(page*pageSize-pageSize).
 		Scan(ctx, &requests)
+	if err != nil {
+		return FriendRequestsListResponse{}, err
+	}
+	nb, err := r.db.NewSelect().
+		Table("friend_requests").
+		Where("friend_requests.receiver_id = ?", receiverID).
+		Count(ctx)
 	if err != nil {
 		return FriendRequestsListResponse{}, err
 	}
@@ -174,7 +192,9 @@ func (r *bunRepository) GetPendingFriendRequests(ctx context.Context, receiverID
 		requests = []FriendRequestResponse{}
 	}
 	return FriendRequestsListResponse{
-		Requests: requests,
+		Requests:    requests,
+		TotalPages:  (nb + pageSize - 1) / pageSize,
+		CurrentPage: page,
 	}, nil
 }
 

@@ -186,6 +186,7 @@ func (h *handler) declineRequest(c *echo.Context) error {
 // @Description  Requires the session cookie from login. Lists the friend requests
 // @Tags         Friends
 // @Produce      json
+// @Param        request query GetListPageRequest false "Page index"
 // @Success      200 {object} friends.FriendRequestsListResponse
 // @Failure      401 {object} map[string]string "unauthorized"
 // @Failure      403 {object} map[string]string "you need to verify your email"
@@ -200,6 +201,10 @@ func (h *handler) getFriendRequestsList(c *echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
+	var req GetListPageRequest
+	if err = c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
 
 	user, err := h.authService.GetUserByID(ctx, userID)
 	if err != nil {
@@ -208,7 +213,7 @@ func (h *handler) getFriendRequestsList(c *echo.Context) error {
 	if !user.Verified {
 		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
 	}
-	friendRequestList, err := h.service.repo.GetPendingFriendRequests(ctx, userID)
+	friendRequestList, err := h.service.repo.GetPendingFriendRequests(ctx, userID, req.Page)
 	if err != nil {
 		return apiError(err)
 	}
@@ -220,6 +225,7 @@ func (h *handler) getFriendRequestsList(c *echo.Context) error {
 // @Description  Requires the session cookie from login. Lists the friends
 // @Tags         Friends
 // @Produce      json
+// @Param        request query GetListPageRequest false "Page index"
 // @Success      200 {object} friends.FriendRelationListResponse
 // @Failure      401 {object} map[string]string "unauthorized"
 // @Failure      403 {object} map[string]string "you need to verify your email"
@@ -234,6 +240,10 @@ func (h *handler) getFriendsList(c *echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
+	var req GetListPageRequest
+	if err = c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
 
 	user, err := h.authService.GetUserByID(ctx, userID)
 	if err != nil {
@@ -242,7 +252,7 @@ func (h *handler) getFriendsList(c *echo.Context) error {
 	if !user.Verified {
 		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
 	}
-	friendsList, err := h.service.repo.GetFriendsList(ctx, userID)
+	friendsList, err := h.service.repo.GetFriendsList(ctx, userID, req.Page)
 	if err != nil {
 		return apiError(err)
 	}
