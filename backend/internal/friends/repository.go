@@ -40,37 +40,35 @@ func NewRepository(db *bun.DB) Repository {
 }
 
 func (r *bunRepository) CreateFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) error {
-	alreadyExists, err := r.db.NewSelect().
+	subQuery := r.db.NewSelect().
+		ColumnExpr("?0::uuid AS sender_id, ?1::uuid AS receiver_id", senderID, receiverID).
+		Where(`NOT EXISTS (
+			SELECT 1 FROM friend_requests
+			WHERE (sender_id = ?0 AND receiver_id = ?1)
+				OR (sender_id = ?1 AND receiver_id = ?0))`, senderID, receiverID).
+		Where(`NOT EXISTS (
+			SELECT 1 FROM friend_relations
+			WHERE (user_id = ?0 AND friend_id = ?1)
+				OR (user_id = ?1 AND friend_id = ?0))`, senderID, receiverID)
+
+	res, err := r.db.NewInsert().
 		Table("friend_requests").
-		Where("(sender_id = ?0 AND receiver_id = ?1) OR (sender_id = ?1 AND receiver_id = ?0)", senderID, receiverID).
-		Exists(ctx)
+		Column("sender_id", "receiver_id").
+		With("src", subQuery).
+		TableExpr("src").
+		On("CONFLICT DO NOTHING").
+		Exec(ctx)
 	if err != nil {
 		return err
 	}
-	if alreadyExists {
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
 		return ErrFriendRequestAlreadyExists
 	}
-	alreadyFriends, err := r.db.NewSelect().
-		Table("friend_relations").
-		Where("(user_id = ?0 AND friend_id = ?1) OR (user_id = ?1 AND friend_id = ?0)", senderID, receiverID).
-		Exists(ctx)
-	if err != nil {
-		return err
-	}
-	if alreadyFriends {
-		return ErrFriendRelationAlreadyExists
-	}
-
-	req := &FriendRequests{
-		SenderID:   senderID,
-		ReceiverID: receiverID,
-	}
-
-	_, err = r.db.NewInsert().
-		Model(req).
-		Exec(ctx)
-
-	return err
+	return nil
 }
 
 func (r *bunRepository) DeleteFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) error {
@@ -203,18 +201,21 @@ func (r *bunRepository) CreateFriendRelation(ctx context.Context, userID, friend
 		UserID:   userID,
 		FriendID: friendID,
 	}
-	areFriends, err := r.AreFriend(ctx, userID, friendID)
+	res, err := r.db.NewInsert().
+		Model(req).
+		On("CONFLICT DO NOTHING").
+		Exec(ctx)
 	if err != nil {
 		return err
 	}
-	if areFriends {
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
 		return ErrFriendRelationAlreadyExists
 	}
-
-	_, err = r.db.NewInsert().
-		Model(req).
-		Exec(ctx)
-	return err
+	return nil
 }
 
 func (r *bunRepository) AreFriend(ctx context.Context, userID, friendID uuid.UUID) (bool, error) {
