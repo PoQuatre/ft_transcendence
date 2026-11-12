@@ -1,5 +1,5 @@
 import { Title } from '@solidjs/meta';
-import { useNavigate } from '@solidjs/router';
+import { useNavigate, useSearchParams } from '@solidjs/router';
 import { createSignal } from 'solid-js';
 
 import { AuthCard } from '~/components/auth/AuthCard';
@@ -9,8 +9,15 @@ import { type AuthResult, login } from '~/lib/auth';
 const LABEL =
   'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-text-secondary';
 
+// Affiché au retour de /reset-password (?reset=done).
+const RESET_DONE = {
+  title: 'Password updated',
+  message: 'Connecte-toi avec ton nouveau mot de passe.',
+};
+
 export default function Login() {
   const navigate = useNavigate();
+  const [search] = useSearchParams<{ reset: string }>();
   const [error, setError] = createSignal<Extract<AuthResult, { ok: false }>>();
   const [pending, setPending] = createSignal(false);
   const [emailValue, setEmailValue] = createSignal('');
@@ -26,7 +33,7 @@ export default function Login() {
         ok: false,
         title: 'EMAIL REQUIS (PAS LE PSEUDO)',
         message:
-          'Veuillez saisir votre adresse email complète (ex: pilote@cybercore.net) et non votre Call-Sign.',
+          'Veuillez saisir votre adresse email complète (ex: pilote@example.com) et non votre Call-Sign.',
       });
       return;
     }
@@ -45,8 +52,12 @@ export default function Login() {
 
   return (
     <>
-      <Title>Log in - Cybercore</Title>
-      <AuthCard mode="login" error={error()}>
+      <Title>Log in - FT_TRANSCENDENCE</Title>
+      <AuthCard
+        mode="login"
+        error={error()}
+        notice={search.reset === 'done' ? RESET_DONE : undefined}
+      >
         {/* novalidate empêche l'infobulle invisible du navigateur */}
         <form
           novalidate
@@ -58,7 +69,7 @@ export default function Login() {
         >
           <label class="block" for="email">
             <span class={LABEL}>
-              <span>EMAIL DU PILOTE</span>
+              EMAIL DU PILOTE
               <span class="text-[10px] text-accent-primary font-mono font-bold tracking-wider">
                 [ PAS DE CALL-SIGN ]
               </span>
@@ -71,16 +82,13 @@ export default function Login() {
               autocomplete="email"
               value={emailValue()}
               onInput={(e) => setEmailValue(e.currentTarget.value)}
-              placeholder="pilote@cybercore.net"
+              placeholder="pilote@example.com"
               class={{
                 'border-accent-secondary shadow-glow-magenta-sm': Boolean(
                   error()?.title?.includes('EMAIL'),
                 ),
               }}
             />
-            <p class="text-[11px] text-text-muted font-mono mt-1">
-              ⚠️ Entrez l'adresse email renseignée à l'inscription.
-            </p>
           </label>
 
           <label class="block" for="password">
@@ -98,6 +106,14 @@ export default function Login() {
               placeholder="••••••••••"
             />
           </label>
+          <p class="-mt-space-sm text-right">
+            <a
+              href="/forgot-password"
+              class="font-label-data text-label-data text-accent-primary underline-offset-4 hover:underline"
+            >
+              Mot de passe oublié ?
+            </a>
+          </p>
 
           <Button
             type="submit"

@@ -11,12 +11,12 @@ export const buttonVariants = cva(
       variant: {
         // Variantes solidcn standard
         default: 'bg-accent-primary text-black hover:bg-accent-primary/80',
-        secondary: 'bg-surface-high text-text-primary hover:bg-surface-highest',
+        secondary: 'bg-surface-2 text-text-primary hover:bg-surface-2/80',
         destructive:
           'bg-accent-secondary text-white hover:bg-accent-secondary/80',
         outline:
-          'border border-surface-high bg-transparent hover:bg-surface-high text-text-primary',
-        ghost: 'hover:bg-surface-high text-text-primary',
+          'border border-border-default bg-transparent hover:bg-surface-2 text-text-primary',
+        ghost: 'hover:bg-surface-2 text-text-primary',
         link: 'text-accent-primary underline-offset-4 hover:underline',
         // Variantes Cyberpunk Rider
         cyan: 'border border-accent-primary text-accent-primary glow-cyan hover:bg-accent-primary hover:text-black clip-chamfer-btn',
