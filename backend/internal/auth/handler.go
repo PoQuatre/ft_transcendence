@@ -8,7 +8,6 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
 )
@@ -80,7 +79,7 @@ func (h *handler) resetPassword(c *echo.Context) error {
 
 // forgotPassword godoc
 // @Summary      Request password reset
-// @Description  Sends a password reset email with a magic link if the account exists and the email is verified
+// @Description  Sends a password reset email with a magic link if the account exists
 // @Tags         Password Reset
 // @Accept       json
 // @Produce      json
@@ -95,12 +94,9 @@ func (h *handler) forgotPassword(c *echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
-	user, err := h.service.repo.GetUserByEmail(ctx, req.Email)
+	user, err := h.service.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		return apiError(err)
-	}
-	if !user.Verified {
-		return echo.NewHTTPError(http.StatusBadRequest, "email not verified")
 	}
 
 	if err := h.service.SendForgotPasswordMail(ctx, user); err != nil {
@@ -137,18 +133,11 @@ func (h *handler) changePassword(c *echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
 	if err = h.validator.Validate(&req); err != nil {
-		return err
+		return apiError(err)
 	}
-	user, err := h.service.repo.GetUserByID(ctx, userID)
+	err = h.service.ChangeUserPassword(ctx, userID, req.OldPassword, req.NewPassword)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "found no corresponding user")
-	}
-	if err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.OldPassword)); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid password")
-	}
-	err = h.service.ChangeUserPassword(ctx, userID, req.NewPassword)
-	if err != nil {
-		return err
+		return apiError(err)
 	}
 	return c.JSON(http.StatusOK, map[string]string{"message": "password successfully changed."})
 }

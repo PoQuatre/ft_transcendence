@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
@@ -67,18 +66,10 @@ func (h *handler) sendRequest(c *echo.Context) error {
 	if userIDStr == "" {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-	user, err := h.authService.GetUserByID(ctx, userID)
-	if err != nil {
+	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
+	if !canAccess {
 		return apiError(err)
 	}
-	if !user.Verified {
-		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
-	}
-
 	var req FriendRequestRequest
 	if err = c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -117,18 +108,12 @@ func (h *handler) acceptRequest(c *echo.Context) error {
 	if userIDStr == "" {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
 
-	user, err := h.authService.GetUserByID(ctx, userID)
-	if err != nil {
+	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
+	if !canAccess {
 		return apiError(err)
 	}
-	if !user.Verified {
-		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
-	}
+
 	var req HandleFriendRequestRequest
 	if err = c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -158,23 +143,17 @@ func (h *handler) declineRequest(c *echo.Context) error {
 	if userIDStr == "" {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
 
-	user, err := h.authService.GetUserByID(ctx, userID)
-	if err != nil {
+	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
+	if !canAccess {
 		return apiError(err)
 	}
-	if !user.Verified {
-		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
-	}
+
 	var req HandleFriendRequestRequest
 	if err = c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
-	err = h.service.repo.DeleteFriendRequest(ctx, req.SenderID, userID)
+	err = h.service.DeleteFriendRequest(ctx, req.SenderID, userID)
 	if err != nil {
 		return apiError(err)
 	}
@@ -197,23 +176,18 @@ func (h *handler) getFriendRequestsList(c *echo.Context) error {
 	if userIDStr == "" {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+
+	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
+	if !canAccess {
+		return apiError(err)
 	}
+
 	var req GetListPageRequest
 	if err = c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
 
-	user, err := h.authService.GetUserByID(ctx, userID)
-	if err != nil {
-		return apiError(err)
-	}
-	if !user.Verified {
-		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
-	}
-	friendRequestList, err := h.service.repo.GetPendingFriendRequests(ctx, userID, req.Page)
+	friendRequestList, err := h.service.GetPendingFriendRequests(ctx, userID, req.Page)
 	if err != nil {
 		return apiError(err)
 	}
@@ -236,23 +210,18 @@ func (h *handler) getFriendsList(c *echo.Context) error {
 	if userIDStr == "" {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+
+	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
+	if !canAccess {
+		return apiError(err)
 	}
+
 	var req GetListPageRequest
 	if err = c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
 
-	user, err := h.authService.GetUserByID(ctx, userID)
-	if err != nil {
-		return apiError(err)
-	}
-	if !user.Verified {
-		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
-	}
-	friendsList, err := h.service.repo.GetFriendsList(ctx, userID, req.Page)
+	friendsList, err := h.service.GetFriendsList(ctx, userID, req.Page)
 	if err != nil {
 		return apiError(err)
 	}
@@ -277,18 +246,12 @@ func (h *handler) unfriendFriend(c *echo.Context) error {
 	if userIDStr == "" {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
 
-	user, err := h.authService.GetUserByID(ctx, userID)
-	if err != nil {
+	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
+	if !canAccess {
 		return apiError(err)
 	}
-	if !user.Verified {
-		return echo.NewHTTPError(http.StatusForbidden, "you need to verify your mail")
-	}
+
 	var req UnfriendRequest
 	if err = c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")

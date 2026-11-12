@@ -117,10 +117,13 @@ func (s *Service) ResetPasswordWithToken(ctx context.Context, rawToken, newPassw
 	return s.repo.DeletePasswordResetToken(ctx, resetToken.ID)
 }
 
-func (s *Service) ChangeUserPassword(ctx context.Context, userID uuid.UUID, password string) error {
+func (s *Service) ChangeUserPassword(ctx context.Context, userID uuid.UUID, oldPassword, password string) error {
 	user, err := s.repo.GetUserByID(ctx, userID)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusNotFound, "found no corresponding user")
+	}
+	if err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(oldPassword)); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid password")
 	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -234,7 +237,6 @@ func dummyCompare(password string) {
 func (s *Service) Login(ctx context.Context, req LoginRequest) (
 	*UserResponse, error,
 ) {
-	req.Password = strings.TrimSpace(req.Password)
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 
 	if req.Email == "" || req.Password == "" {
@@ -262,5 +264,11 @@ func (s *Service) GetUserByID(ctx context.Context, id uuid.UUID) (*UserResponse,
 }
 
 func (s *Service) GetUserByUsername(ctx context.Context, username string) (*User, error) {
+	username = strings.TrimSpace(username)
 	return s.repo.GetUserByUsername(ctx, username)
+}
+
+func (s *Service) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	email = strings.TrimSpace(strings.ToLower(email))
+	return s.repo.GetUserByEmail(ctx, email)
 }
