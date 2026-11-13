@@ -42,14 +42,12 @@ func NewRepository(db *bun.DB) Repository {
 func (r *bunRepository) CreateFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) error {
 	subQuery := r.db.NewSelect().
 		ColumnExpr("?0::uuid AS sender_id, ?1::uuid AS receiver_id", senderID, receiverID).
-		Where(`NOT EXISTS (
-			SELECT 1 FROM friend_requests
-			WHERE (sender_id = ?0 AND receiver_id = ?1)
-				OR (sender_id = ?1 AND receiver_id = ?0))`, senderID, receiverID).
-		Where(`NOT EXISTS (
-			SELECT 1 FROM friend_relations
-			WHERE (user_id = ?0 AND friend_id = ?1)
-				OR (user_id = ?1 AND friend_id = ?0))`, senderID, receiverID)
+		Where("NOT EXISTS (?)", r.db.NewSelect().
+			Table("friend_requests").
+			Where("((sender_id = ?0 AND receiver_id = ?1) OR (sender_id = ?1 AND receiver_id = ?0))", senderID, receiverID)).
+		Where("NOT EXISTS (?)", r.db.NewSelect().
+			Table("friend_relations").
+			Where("((user_id = ?0 AND friend_id = ?1) OR (user_id = ?1 AND friend_id = ?0))", senderID, receiverID))
 
 	res, err := r.db.NewInsert().
 		Table("friend_requests").
