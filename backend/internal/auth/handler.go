@@ -8,18 +8,17 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
 )
 
 type handler struct {
-	service        Service
+	service        *Service
 	validator      *helpers.CustomValidator
 	sessionManager *scs.SessionManager
 }
 
-func RegisterRoutes(group *echo.Group, service Service, sessionManager *scs.SessionManager, val *helpers.CustomValidator) {
+func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.SessionManager, val *helpers.CustomValidator) {
 	h := handler{
 		service:        service,
 		validator:      val,
@@ -80,7 +79,7 @@ func (h *handler) resetPassword(c *echo.Context) error {
 
 // forgotPassword godoc
 // @Summary      Request password reset
-// @Description  Sends a password reset email with a magic link if the account exists and the email is verified
+// @Description  Sends a password reset email with a magic link if the account exists
 // @Tags         Password Reset
 // @Accept       json
 // @Produce      json
@@ -95,12 +94,9 @@ func (h *handler) forgotPassword(c *echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
-	user, err := h.service.repo.GetUserByEmail(ctx, req.Email)
+	user, err := h.service.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		return apiError(err)
-	}
-	if !user.Verified {
-		return echo.NewHTTPError(http.StatusBadRequest, "email not verified")
 	}
 
 	if err := h.service.SendForgotPasswordMail(ctx, user); err != nil {
@@ -137,18 +133,11 @@ func (h *handler) changePassword(c *echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
 	if err = h.validator.Validate(&req); err != nil {
-		return err
+		return apiError(err)
 	}
-	user, err := h.service.repo.GetUserByID(ctx, userID)
+	err = h.service.ChangeUserPassword(ctx, userID, req.OldPassword, req.NewPassword)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "found no corresponding user")
-	}
-	if err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.OldPassword)); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid password")
-	}
-	err = h.service.ChangeUserPassword(ctx, userID, req.NewPassword)
-	if err != nil {
-		return err
+		return apiError(err)
 	}
 	return c.JSON(http.StatusOK, map[string]string{"message": "password successfully changed."})
 }
@@ -189,15 +178,15 @@ func (h *handler) confirmEmailVerification(c *echo.Context) error {
 // @Produce      json
 // @Success      200 {object} map[string]string "email verification sent"
 // @Failure      400 {object} map[string]string "email already verified"
-// @Failure      401 {object} map[string]string "unauthorized"
-// @Failure      500 {object} map[string]string "invalid session user id or internal server error"
+// @Failure      401 {object} map[string]string "unauthorized or invalid session user id"
+// @Failure      500 {object} map[string]string "internal server error"
 // @Router       /api/auth/verify-email/request [post].
 func (h *handler) requestEmailVerification(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userIDStr := h.sessionManager.GetString(ctx, "user_id")
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "invalid session user id")
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid session user id")
 	}
 	user, err := h.service.GetUserByID(ctx, userID)
 	if err != nil {

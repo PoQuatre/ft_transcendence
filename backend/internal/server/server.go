@@ -18,6 +18,7 @@ import (
 	"github.com/uptrace/bun"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
+	"github.com/PoQuatre/ft_transcendence/backend/internal/friends"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/swagger"
 )
@@ -69,7 +70,9 @@ func New(options ...Option) (http.Handler, error) {
 	swagger.RegisterRoutes(e.Group("/api/docs"))
 
 	if cfg.database != nil {
-		auth.RegisterRoutes(e.Group("/api/auth"), *auth.NewService(auth.NewRepository(cfg.database)), sessionManager, validat)
+		authService := auth.NewService(auth.NewRepository(cfg.database))
+		auth.RegisterRoutes(e.Group("/api/auth"), authService, sessionManager, validat)
+		friends.RegisterRoutes(e.Group("/api/friends"), friends.NewService(friends.NewRepository(cfg.database)), sessionManager, authService)
 	}
 
 	return e, nil

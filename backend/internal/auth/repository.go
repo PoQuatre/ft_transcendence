@@ -24,6 +24,8 @@ type Repository interface {
 	CreateUser(ctx context.Context, user *User) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
+	GetUserByUsername(ctx context.Context, username string) (*User, error)
+
 	SetNewPasswordToUser(ctx context.Context, user *User, passwordhash string) (*User, error)
 
 	GetUserVerificationByID(ctx context.Context, id uuid.UUID) (*UserVerify, error)
@@ -189,6 +191,18 @@ func (r *bunRepository) GetUserByEmail(ctx context.Context, email string) (*User
 func (r *bunRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	user := new(User)
 	err := r.db.NewSelect().Model(user).Where("id = ?", id).Scan(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *bunRepository) GetUserByUsername(ctx context.Context, username string) (*User, error) {
+	user := new(User)
+	err := r.db.NewSelect().Model(user).Where("username = ?", username).Scan(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
