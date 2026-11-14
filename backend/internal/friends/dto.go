@@ -59,3 +59,19 @@ type SendMessageRequest struct {
 	Message  string    `json:"message" example:"Hello my friend !"`
 	FriendID uuid.UUID `json:"friend_id" example:"018f4e2a-7b3c-7890-a1b2-c3d4e5f6a7b8"`
 }
+
+// GetMessagesRequest : GET /api/friends/chat/get-messages
+type GetMessagesRequest struct {
+	FriendID uuid.UUID `query:"friend_id" example:"018f4e2a-7b3c-7890-a1b2-c3d4e5f6a7b8"`
+}
+
+// MessageResponse : GET /api/friends/chat/get-messages	(elements in the list)
+type MessageResponse struct {
+	Message  string    `json:"message" example:"Hello my friend !"`
+	SenderID uuid.UUID `json:"sender_id" example:"018f4e2a-7b3c-7890-a1b2-c3d4e5f6a7b8"`
+}
+
+// MessagesListResponse : GET /api/friends/chat/get-messages (list wrapper)
+type MessagesListResponse struct {
+	Messages []MessageResponse `json:"messages"`
+}

@@ -82,7 +82,7 @@ func (s *Service) SendMessageToFriend(ctx context.Context, userID, friendID uuid
 	if len(message) > 140 {
 		return echo.NewHTTPError(http.StatusUnauthorized, "message too long")
 	}
-	if message != "" {
+	if message == "" {
 		return echo.NewHTTPError(http.StatusUnauthorized, "empty message")
 	}
 	err = s.repo.CreateFriendMessage(ctx, userID, friendID, message)
@@ -102,4 +102,19 @@ func (s *Service) GetFriendsList(ctx context.Context, userID uuid.UUID, page int
 
 func (s *Service) DeleteFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) error {
 	return s.repo.DeleteFriendRequest(ctx, senderID, receiverID)
+}
+
+func (s *Service) GetMessagesFromFriend(ctx context.Context, userID, friendID uuid.UUID) (MessagesListResponse, error) {
+	exists, err := s.repo.AreFriend(ctx, userID, friendID)
+	if err != nil {
+		return MessagesListResponse{}, err
+	}
+	if !exists {
+		return MessagesListResponse{}, echo.NewHTTPError(http.StatusUnauthorized, "user not in your friends list")
+	}
+	list, err := s.repo.GetMessagesFrom(ctx, userID, friendID)
+	if err != nil {
+		return MessagesListResponse{}, err
+	}
+	return list, nil
 }

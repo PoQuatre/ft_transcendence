@@ -31,6 +31,7 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 	group.GET("/list", h.getFriendsList)
 
 	group.POST("/chat/send-message", h.sendMessage)
+	group.GET("/chat/get-messages", h.getMessages)
 }
 
 func apiError(err error) error {
@@ -287,4 +288,28 @@ func (h *handler) sendMessage(c *echo.Context) error {
 		return apiError(err)
 	}
 	return c.JSON(http.StatusOK, map[string]string{"message": "successfully sent message."})
+}
+
+func (h *handler) getMessages(c *echo.Context) error {
+	ctx := c.Request().Context()
+	userIDStr := h.sessionManager.GetString(ctx, "user_id")
+	if userIDStr == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
+	if !canAccess {
+		return apiError(err)
+	}
+
+	var req GetMessagesRequest
+	if err = c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+
+	messages, err := h.service.GetMessagesFromFriend(ctx, userID, req.FriendID)
+	if err != nil {
+		return apiError(err)
+	}
+	return c.JSON(http.StatusOK, messages)
 }
