@@ -32,6 +32,6 @@ type FriendMessage struct {
 	ID         int64     `bun:",pk,autoincrement"`
 	SenderID   uuid.UUID `bun:",type:uuid,notnull"`
 	ReceiverID uuid.UUID `bun:",type:uuid,notnull"`
-	Content    string    `bun:",notnull"`
+	Body       string    `bun:",notnull"`
 	CreatedAt  time.Time `bun:",notnull,default:current_timestamp"`
 }

@@ -236,7 +236,7 @@ func (r *bunRepository) CreateFriendMessage(ctx context.Context, userID, friendI
 	req := &FriendMessage{
 		SenderID:   userID,
 		ReceiverID: friendID,
-		Content:    message,
+		Body:       message,
 	}
 	_, err := r.db.NewInsert().
 		Model(req).
@@ -253,7 +253,7 @@ func (r *bunRepository) GetMessagesFrom(ctx context.Context, userID, friendID uu
 
 	subSelect := r.db.NewSelect().
 		Table("friend_message").
-		Column("sender_id", "content", "created_at").
+		Column("sender_id", "body", "created_at").
 		Where("(sender_id = ?0 AND receiver_id = ?1) OR (sender_id = ?1 AND receiver_id = ?0)", userID, friendID).
 		Order("created_at DESC", "id DESC"). // The second order is in case of exact same millisecond
 		Limit(50)                            // I'm not sure about this limit, ask the others
@@ -261,7 +261,7 @@ func (r *bunRepository) GetMessagesFrom(ctx context.Context, userID, friendID uu
 	err := r.db.NewSelect().
 		TableExpr("(?) AS m", subSelect).
 		Column("m.sender_id").
-		ColumnExpr("m.content AS message").
+		ColumnExpr("m.body AS message").
 		ColumnExpr("m.created_at AS sent_at").
 		Order("m.created_at ASC").
 		Scan(ctx, &messages)
