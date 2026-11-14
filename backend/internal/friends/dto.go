@@ -53,3 +53,9 @@ type UnfriendRequest struct {
 type GetListPageRequest struct {
 	Page int `query:"page" example:"2"`
 }
+
+// SendMessageRequest : POST /api/friends/chat/send-message.
+type SendMessageRequest struct {
+	Message  string    `json:"message" example:"Hello my friend !"`
+	FriendID uuid.UUID `json:"friend_id" example:"018f4e2a-7b3c-7890-a1b2-c3d4e5f6a7b8"`
+}

@@ -29,6 +29,8 @@ type Repository interface {
 	GetFriendsList(ctx context.Context, userID uuid.UUID, page int) (FriendRelationListResponse, error)
 	GetFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) (FriendRequestResponse, error)
 	GetPendingFriendRequests(ctx context.Context, receiverID uuid.UUID, page int) (FriendRequestsListResponse, error)
+
+	CreateFriendMessage(ctx context.Context, userID, friendID uuid.UUID, message string) error
 }
 
 type bunRepository struct {
@@ -227,4 +229,20 @@ func (r *bunRepository) AreFriend(ctx context.Context, userID, friendID uuid.UUI
 	}
 
 	return exists, nil
+}
+
+func (r *bunRepository) CreateFriendMessage(ctx context.Context, userID, friendID uuid.UUID, message string) error {
+	req := &FriendMessage{
+		SenderID:   userID,
+		ReceiverID: friendID,
+		Content:    message,
+	}
+	_, err := r.db.NewInsert().
+		Model(req).
+		On("CONFLICT DO NOTHING").
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
