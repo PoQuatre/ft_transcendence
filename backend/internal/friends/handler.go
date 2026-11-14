@@ -266,6 +266,18 @@ func (h *handler) unfriendFriend(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "successfully unfriended."})
 }
 
+// sendMessage godoc
+// @Summary      Send Message to a friend user
+// @Description  Requires the session cookie from login. Sends a message to a specified user if they are friends
+// @Tags         Friends
+// @Accept       json
+// @Produce      json
+// @Param        request body friends.SendMessageRequest true "Friend ID and Message"
+// @Success      200 {object} map[string]string "successfully sent message."
+// @Failure      400 {object} map[string]string "invalid request body"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      403 {object} map[string]string "you need to verify your email"
+// @Router       /api/friends/chat/send-message [post].
 func (h *handler) sendMessage(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userIDStr := h.sessionManager.GetString(ctx, "user_id")
@@ -290,6 +302,18 @@ func (h *handler) sendMessage(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "successfully sent message."})
 }
 
+// getMessages godoc
+// @Summary      List Messages with a friend user
+// @Description  Requires the session cookie from login. Lists the messages with a specified user if they are friends
+// @Tags         Friends
+// @Accept       json
+// @Produce      json
+// @Param        request query friends.GetMessagesRequest false "Friend ID"
+// @Success      200 {object} friends.MessagesListResponse
+// @Failure      400 {object} map[string]string "invalid request body"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      403 {object} map[string]string "you need to verify your email"
+// @Router       /api/friends/chat/get-messages [get].
 func (h *handler) getMessages(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userIDStr := h.sessionManager.GetString(ctx, "user_id")

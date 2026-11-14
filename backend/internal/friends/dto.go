@@ -67,6 +67,7 @@ type GetMessagesRequest struct {
 
 // MessageResponse : GET /api/friends/chat/get-messages	(elements in the list)
 type MessageResponse struct {
+	SentAt   time.Time `json:"sent_at" example:"2026-11-14T18:25:02.958755Z"`
 	Message  string    `json:"message" example:"Hello my friend !"`
 	SenderID uuid.UUID `json:"sender_id" example:"018f4e2a-7b3c-7890-a1b2-c3d4e5f6a7b8"`
 }

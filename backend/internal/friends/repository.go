@@ -262,6 +262,7 @@ func (r *bunRepository) GetMessagesFrom(ctx context.Context, userID, friendID uu
 		TableExpr("(?) AS m", subSelect).
 		Column("m.sender_id").
 		ColumnExpr("m.content AS message").
+		ColumnExpr("m.created_at AS sent_at").
 		Order("m.created_at ASC").
 		Scan(ctx, &messages)
 	if err != nil {
