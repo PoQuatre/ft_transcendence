@@ -35,3 +35,7 @@ type UserResponse struct {
 	Email    string `json:"email" example:"john.doe@example.com"`
 	Verified bool   `json:"verified" example:"true"`
 }
+
+type DeleteAccountRequest struct {
+	Password string `json:"password"   validate:"required" example:"Y0urP4ssword?"`
+}

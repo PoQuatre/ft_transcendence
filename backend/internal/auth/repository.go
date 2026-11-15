@@ -36,6 +36,11 @@ type Repository interface {
 	CreatePasswordResetToken(ctx context.Context, reset *PasswordResetToken) (*PasswordResetToken, error)
 	GetPasswordResetToken(ctx context.Context, tokenHash string) (*PasswordResetToken, error)
 	DeletePasswordResetToken(ctx context.Context, tokenID uuid.UUID) error
+
+	GetUserPasswordHash(ctx context.Context, userID uuid.UUID) (string, error)
+	DeleteUser(ctx context.Context, userID uuid.UUID) error
+	DeleteEmailVerifToken(ctx context.Context, userID uuid.UUID) error
+	DeletePasswordTokenFromUserID(ctx context.Context, userID uuid.UUID) error
 }
 
 type bunRepository struct {
@@ -210,4 +215,41 @@ func (r *bunRepository) GetUserByUsername(ctx context.Context, username string) 
 		return nil, err
 	}
 	return user, nil
+}
+
+func (r *bunRepository) DeleteUser(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Table("users").
+		Where("id = ?0", userID).
+		Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) DeleteEmailVerifToken(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Table("user_verifications").
+		Where("user_id = ?0", userID).
+		Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) DeletePasswordTokenFromUserID(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Table("password_reset_tokens").
+		Where("user_id = ?0", userID).
+		Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) GetUserPasswordHash(ctx context.Context, userID uuid.UUID) (string, error) {
+	var passwordHash string
+	err := r.db.NewSelect().
+		Table("users").
+		Where("id = ?0", userID).
+		Column("password_hash").
+		Scan(ctx, &passwordHash)
+	if err != nil {
+		return "", err
+	}
+	return passwordHash, nil
 }
