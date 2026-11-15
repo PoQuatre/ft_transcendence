@@ -306,7 +306,6 @@ func (h *handler) sendMessage(c *echo.Context) error {
 // @Summary      List Messages with a friend user
 // @Description  Requires the session cookie from login. Lists the messages with a specified user if they are friends
 // @Tags         Friends
-// @Accept       json
 // @Produce      json
 // @Param        request query friends.GetMessagesRequest false "Friend ID"
 // @Success      200 {object} friends.MessagesListResponse
