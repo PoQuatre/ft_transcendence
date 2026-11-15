@@ -269,3 +269,24 @@ func (s *Service) GetUserByEmail(ctx context.Context, email string) (*User, erro
 	email = strings.TrimSpace(strings.ToLower(email))
 	return s.repo.GetUserByEmail(ctx, email)
 }
+
+func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID, password string) error {
+	passwordHash, err := s.repo.GetUserPasswordHash(ctx, userID)
+	if err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password)); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid password")
+	}
+
+	err = s.repo.DeleteUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	err = s.repo.DeleteEmailVerifToken(ctx, userID)
+	if err != nil {
+		return err
+	}
+	err = s.repo.DeletePasswordTokenFromUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
