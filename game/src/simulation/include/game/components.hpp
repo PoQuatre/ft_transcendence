@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 14:29:13 by uanglade          #+#    #+#             */
-/*   Updated: 2026/11/11 20:04:00 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/16 17:34:49 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -173,6 +173,8 @@ struct Tank {
     float size;
     glm::vec2 dir;
     TankType::type type;
+    float max_energy;
+    float energy;
 };
 
 enum State : uint8_t {

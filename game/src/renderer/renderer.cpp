@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/11/16 16:13:33 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/16 20:45:27 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -163,8 +163,8 @@ void Renderer::init()
         for (uint32_t j = 0; j < tank_teams_count; ++j) {
             Image colored_image = ImageCopy(base_texture);
             recolor_red_outline(&colored_image, Colors::colors[j]);
-            ImageResize(&colored_image, 0.6 * colored_image.width,
-                0.6 * colored_image.height);
+            ImageResize(&colored_image, 0.5 * colored_image.width,
+                0.5 * colored_image.height);
             tank_textures_[i][j] = LoadTextureFromImage(colored_image);
             UnloadImage(colored_image);
         }
@@ -247,6 +247,7 @@ Renderer::~Renderer()
     UnloadRenderTexture(bright_target_);
     UnloadRenderTexture(blur_v_target_);
     UnloadRenderTexture(blur_h_target_);
+    UnloadRenderTexture(ui_target_);
 
     UnloadShader(extract_shader_);
     UnloadShader(blur_shader_);
@@ -268,6 +269,7 @@ void Renderer::update_render_textures()
         UnloadRenderTexture(bright_target_);
         UnloadRenderTexture(blur_v_target_);
         UnloadRenderTexture(blur_h_target_);
+        UnloadRenderTexture(ui_target_);
 
         light_map_ = LoadRenderTexture(render_width_, render_height_);
         shadow_map_ = LoadRenderTexture(render_width_, render_height_);
@@ -275,6 +277,7 @@ void Renderer::update_render_textures()
         bright_target_ = LoadRenderTexture(render_width_, render_height_);
         blur_v_target_ = LoadRenderTexture(render_width_, render_height_);
         blur_h_target_ = LoadRenderTexture(render_width_, render_height_);
+        ui_target_ = LoadRenderTexture(render_width_, render_height_);
     }
 }
 
@@ -289,6 +292,8 @@ void Renderer::draw(simulation::Simulation &sim)
 
     float bloom_intensity = 3.2F;
 
+    draw_ui(sim);
+
     BeginDrawing();
     ClearBackground(Colors::colors[Colors::COLOR_BACKGROUND]);
 
@@ -299,6 +304,8 @@ void Renderer::draw(simulation::Simulation &sim)
         composite_shader_, bloom_texture_loc_, blur_v_target_.texture);
     SetShaderValueTexture(
         composite_shader_, light_map_texture_loc_, light_map_.texture);
+    SetShaderValueTexture(composite_shader_,
+        GetShaderLocation(composite_shader_, "uiTexture"), ui_target_.texture);
 
     DrawTextureRec(scene_target_.texture,
         Rectangle {
@@ -476,9 +483,10 @@ void Renderer::render_scene(simulation::Simulation &sim)
         DrawTexturePro(texture, source, dest, origin, rot, WHITE);
 
         if (const auto *health = registry->try_get<simulation::Health>(entity);
-            health != nullptr && health->value < health->maximum) {
+            health != nullptr && health->value < health->maximum
+            && entity != sim.get_player()) {
             draw_progress_bar({ transform.pos.x - 20, transform.pos.y + 20 },
-                { 40, 6 }, Colors::COLOR_WHITE, Colors::COLOR_BLACK,
+                { 40, 6 }, Colors::COLOR_WHITE, Colors::COLOR_RED,
                 health->value, health->maximum);
         }
     }
@@ -489,13 +497,13 @@ void Renderer::render_scene(simulation::Simulation &sim)
         const auto &tank = registry->get<simulation::Tank>(entity);
         const auto &color = registry->get<Colors::type>(entity);
         Texture texture = tank_textures_[tank.type][color];
-
+        const float font_size = 15;
         DrawTextEx(font_, tank.name.c_str(),
             {
-                .x = transform.pos.x - ((tank.name.size() / 2.F) + 12),
-                .y = transform.pos.y + (texture.height - 12),
+                .x = transform.pos.x - ((tank.name.size() / 2.F) + font_size),
+                .y = transform.pos.y - (texture.height + font_size),
             },
-            24, 2, Color { .r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF });
+            font_size, 2, Colors::colors[Colors::COLOR_WHITE]);
     }
 
     const Vector2 mouse_screen = GetMousePosition();
@@ -807,6 +815,89 @@ void Renderer::draw_progress_bar(glm::vec2 pos, glm::vec2 size,
     DrawRectangle(pos.x, pos.y, size.x, size.y, Colors::colors[background]);
     DrawRectangle(pos.x + 2, pos.y + 1, (value / max_value) * (size.x - 2),
         size.y - 2, Colors::colors[foreground]);
+}
+
+void Renderer::draw_ui(simulation::Simulation &sim)
+{
+    BeginTextureMode(ui_target_);
+    ClearBackground(Colors::colors[Colors::COLOR_BLACK]);
+    draw_player_status(sim);
+    EndTextureMode();
+}
+
+void Renderer::draw_player_status(simulation::Simulation &sim)
+{
+    (void)this;
+    auto *registry = sim.get_registry();
+    entt::entity player = sim.get_player();
+    simulation::Health player_health
+        = registry->get<simulation::Health>(player);
+    simulation::Tank &player_tank = registry->get<simulation::Tank>(player);
+
+    const uint32_t width = GetRenderWidth();
+    const uint32_t height = GetRenderHeight();
+
+    const float bar_width = width * 0.35F;
+    const float bar_height = height * 0.05F;
+    const float health_percentage = player_health.value / player_health.maximum;
+    const float energy_percentage = player_tank.max_energy / player_tank.energy;
+
+    DrawRectangle(width * 0.1F, height - bar_height - (bar_height * 1.25F),
+        bar_width, bar_height, Colors::colors[Colors::COLOR_GRID]);
+
+    DrawRectangle(width * 0.1F, height - bar_height - (bar_height * 1.15F),
+        bar_width * health_percentage, bar_height * 0.85F,
+        Colors::colors[Colors::COLOR_RED]);
+
+    for (uint32_t i = 0; i < 10; ++i) {
+        const float x = (width * 0.1F) + (bar_width * (i * 0.1F));
+        const float y = height - bar_height - (bar_height * 1.25F);
+        DrawLine(x, y, x, y + bar_height, Colors::colors[Colors::COLOR_GRID]);
+    }
+
+    DrawTriangle(
+        {
+            .x = width * 0.09F,
+            .y = height - bar_height - (bar_height * 1.25F),
+        },
+        {
+            .x = width * 0.09F,
+            .y = height - (bar_height * 1.25F),
+        },
+        {
+            .x = (width * 0.09F) + (bar_width * 0.15F),
+            .y = height - bar_height - (bar_height * 1.25F),
+        },
+        Colors::colors[Colors::COLOR_BLACK]);
+
+    DrawRectangle(width * 0.55F, height - bar_height - (bar_height * 1.25F),
+        bar_width, bar_height, Colors::colors[Colors::COLOR_GRID]);
+
+    DrawRectangle((width * 0.55F) + (bar_width * (1.0F - energy_percentage)),
+        height - bar_height - (bar_height * 1.15F),
+        bar_width * energy_percentage, bar_height * 0.85F,
+        Colors::colors[Colors::COLOR_BLUE]);
+
+    for (uint32_t i = 0; i < 10; ++i) {
+        const float x = (width * 0.55F) + (bar_width * (i * 0.1F));
+        const float y = height - bar_height - (bar_height * 1.25F);
+        DrawLine(x, y, x, y + bar_height, Colors::colors[Colors::COLOR_GRID]);
+    }
+
+    DrawTriangle(
+        {
+            .x = (width * 0.56F) + bar_width,
+            .y = height - bar_height - (bar_height * 1.25F),
+        },
+        {
+            .x = (width * 0.56F) + bar_width - (bar_width * 0.15F),
+            .y = height - bar_height - (bar_height * 1.25F),
+        },
+        {
+            .x = (width * 0.56F) + bar_width,
+            .y = height - (bar_height * 1.25F),
+        },
+        Colors::colors[Colors::COLOR_BLACK]);
 }
 
 } // namespace game::renderer

@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:46 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/11/11 19:35:11 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/16 20:18:32 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,6 +61,8 @@ void App::sync_world(
                         .size = 20,
                         .dir = { -1, 0 },
                         .type = simulation::TankType::TANK_BASIC,
+                        .max_energy = 100,
+                        .energy = 100,
                     })
                 .dir = { -std::cos(angle), -std::sin(angle) };
             registry
