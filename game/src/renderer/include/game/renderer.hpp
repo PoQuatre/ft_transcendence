@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:38 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/11/16 16:13:27 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/16 17:37:04 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,8 @@ private:
         std::vector<entt::entity> &circles);
 
     static void draw_grid();
+    void draw_ui(simulation::Simulation &sim);
+    void draw_player_status(simulation::Simulation &sim);
 
     Camera2D camera_;
 
@@ -62,6 +64,7 @@ private:
     RenderTexture2D bright_target_;
     RenderTexture2D blur_v_target_;
     RenderTexture2D blur_h_target_;
+    RenderTexture2D ui_target_;
 
     Shader extract_shader_;
     Shader blur_shader_;

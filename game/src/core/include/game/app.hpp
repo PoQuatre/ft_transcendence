@@ -49,6 +49,9 @@ private:
     network::Client network_;
 
     std::string tank_name_;
+#ifndef __EMSCRIPTEN__
+    void update_player();
+#endif
 #ifdef __EMSCRIPTEN__
     void send_input();
     void sync_world(

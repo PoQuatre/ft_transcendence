@@ -13,5 +13,5 @@ target_link_libraries(
         game::network
 		game::protocol::schemas
 		flatbuffers
-    PRIVATE game::base 
+    PRIVATE game::base
 )

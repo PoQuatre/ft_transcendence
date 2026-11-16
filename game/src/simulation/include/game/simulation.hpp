@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:49:34 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/11/07 11:26:50 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/16 16:36:35 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ public:
     void update(float delta_seconds);
     void create_player_tank(Tank &tank, Transform transform, Color col);
     Transform *get_player_transform();
+    entt::entity get_player() { return player_tank_; };
     Tank *get_player_tank() { return &registry_.get<Tank>(player_tank_); };
     void set_player(entt::entity entity) { player_tank_ = entity; }
     void fire_player_tank();
