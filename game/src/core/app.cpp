@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:46 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/11/09 20:11:41 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/11 19:35:11 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,9 +38,9 @@ void App::sync_world(
         auto &transform = registry->get_or_emplace<simulation::Transform>(
             entity, simulation::Transform { });
 
-        auto &color = registry->get_or_emplace<simulation::Color>(
-            entity, simulation::Color { });
-        color = renderer::Colors::colors[renderer::Colors::COLOR_AMBER];
+        auto &color = registry->get_or_emplace<renderer::Colors::type>(
+            entity, renderer::Colors::COLOR_AMBER);
+        color = renderer::Colors::COLOR_AMBER;
 
         transform.pos
             = { state->position()->x() / 5.F, state->position()->y() / 5.F };
@@ -118,7 +118,8 @@ void App::sync_world(
             simulation_.set_player(entity);
     }
 
-    for (auto it : registry->view<simulation::Transform, simulation::Color>()) {
+    for (auto it :
+        registry->view<simulation::Transform, renderer::Colors::type>()) {
         if (!present.contains(it)) {
             registry->destroy(it);
         }

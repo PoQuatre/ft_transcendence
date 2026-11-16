@@ -6,7 +6,7 @@
 /*   By: uanglade </var/spool/mail/uanglade>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/10/04 14:29:13 by uanglade          #+#    #+#             */
-/*   Updated: 2026/11/07 09:46:02 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/11 20:04:00 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,8 +33,6 @@ struct Transform {
     glm::vec2 acc;
     float rotation;
 };
-
-using Color = Color;
 
 enum ShapeType : uint8_t {
     SHAPE_CIRCLE,
@@ -118,44 +116,50 @@ namespace TankType {
 #define TANK_TYPES                                                             \
     X(TANK_BASIC,                                                              \
         CMAKE_SOURCE_DIR "/src/renderer/assets/textures/simple_tank.svg", 28,  \
-        28)                                                                    \
+        28, 79, 56)                                                            \
     X(TANK_TWIN,                                                               \
         CMAKE_SOURCE_DIR "/src/renderer/assets/textures/twin_tank.svg", 28,    \
-        25)                                                                    \
+        25, 82, 50)                                                            \
     X(TANK_QUAD,                                                               \
         CMAKE_SOURCE_DIR "/src/renderer/assets/textures/quad_tank.svg", 54,    \
-        54)                                                                    \
+        54, 108, 108)                                                          \
     X(TANK_HEAVY,                                                              \
         CMAKE_SOURCE_DIR "/src/renderer/assets/textures/heavy_tank.svg", 34,   \
-        34)                                                                    \
+        34, 90, 68)                                                            \
     X(TANK_DRONE,                                                              \
         CMAKE_SOURCE_DIR "/src/renderer/assets/textures/drone_tank.svg", 35,   \
-        53)                                                                    \
+        53, 70, 106)                                                           \
     X(TANK_SNIPER,                                                             \
         CMAKE_SOURCE_DIR "/src/renderer/assets/textures/sniper_tank.svg", 25,  \
-        25)
+        25, 95, 50)
 
 enum type : uint8_t {
-#define X(name, _, __, ___) name,
+#define X(name, _, __, ___, ____, _____) name,
     TANK_TYPES
 #undef X
         TANK_TYPE_MAX,
 };
 
 constexpr std::array<std::string_view, TANK_TYPE_MAX> strings = {
-#define X(name, _, __, ___) #name,
+#define X(name, _, __, ___, ____, _____) #name,
     TANK_TYPES
 #undef X
 };
 
 constexpr std::array<std::string_view, TANK_TYPE_MAX> paths = {
-#define X(_, path, __, ___) path,
+#define X(_, path, __, ___, ____, _____) path,
     TANK_TYPES
 #undef X
 };
 
 constexpr std::array<glm::vec2, TANK_TYPE_MAX> origins = {
-#define X(_, ___, x, y) glm::vec2(x, y),
+#define X(_, ___, x, y, ____, _____) glm::vec2(x, y),
+    TANK_TYPES
+#undef X
+};
+
+constexpr std::array<glm::vec2, TANK_TYPE_MAX> sizes = {
+#define X(_, ___, ____, _____, x, y) glm::vec2(x, y),
     TANK_TYPES
 #undef X
 };
