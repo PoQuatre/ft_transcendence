@@ -12,5 +12,6 @@ func Models() []any {
 		(*auth.PasswordResetToken)(nil),
 		(*friends.FriendRelations)(nil),
 		(*friends.FriendRequests)(nil),
+		(*friends.FriendMessage)(nil),
 	}
 }

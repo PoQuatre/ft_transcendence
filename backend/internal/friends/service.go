@@ -70,6 +70,28 @@ func (s *Service) CanAccessFriendStuffes(c *echo.Context, authService *auth.Serv
 	return true, userID, nil
 }
 
+func (s *Service) SendMessageToFriend(ctx context.Context, userID, friendID uuid.UUID, message string) error {
+	exists, err := s.repo.AreFriend(ctx, userID, friendID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return echo.NewHTTPError(http.StatusUnauthorized, "user not in your friends list")
+	}
+	// I could use validator for that but that seemed overkill to me since all I do is check the length.
+	if len(message) > 140 {
+		return echo.NewHTTPError(http.StatusUnauthorized, "message too long")
+	}
+	if message == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "empty message")
+	}
+	err = s.repo.CreateFriendMessage(ctx, userID, friendID, message)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Service) GetPendingFriendRequests(ctx context.Context, userID uuid.UUID, page int) (FriendRequestsListResponse, error) {
 	return s.repo.GetPendingFriendRequests(ctx, userID, page)
 }
@@ -80,4 +102,19 @@ func (s *Service) GetFriendsList(ctx context.Context, userID uuid.UUID, page int
 
 func (s *Service) DeleteFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) error {
 	return s.repo.DeleteFriendRequest(ctx, senderID, receiverID)
+}
+
+func (s *Service) GetMessagesFromFriend(ctx context.Context, userID, friendID uuid.UUID) (MessagesListResponse, error) {
+	exists, err := s.repo.AreFriend(ctx, userID, friendID)
+	if err != nil {
+		return MessagesListResponse{}, err
+	}
+	if !exists {
+		return MessagesListResponse{}, echo.NewHTTPError(http.StatusUnauthorized, "user not in your friends list")
+	}
+	list, err := s.repo.GetMessagesFrom(ctx, userID, friendID)
+	if err != nil {
+		return MessagesListResponse{}, err
+	}
+	return list, nil
 }
