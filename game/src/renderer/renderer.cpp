@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/11/10 13:54:30 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/16 16:13:33 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,9 @@
 
 #include <array>
 #include <cmath>
+#include <glm/common.hpp>
 #include <glm/geometric.hpp>
+#include <glm/vec3.hpp>
 
 #include "game/colors.hpp"
 #include "game/simulation.hpp"
@@ -109,16 +111,64 @@ Image LoadImageSVG(const char *fileName, int width, int height)
 
 namespace game::renderer {
 
+namespace {
+void recolor_red_outline(Image *image, Color target_color)
+{
+    for (int y = 0; y < image->height; ++y) {
+        for (int x = 0; x < image->width; ++x) {
+            Color pixel = GetImageColor(*image, x, y);
+
+            if (pixel.r == 0 && pixel.g == 0 && pixel.b == 0) {
+                ImageDrawPixel(image, x, y, BLANK);
+                continue;
+            }
+
+            if (pixel.r > 0 && pixel.g == 0 && pixel.b == 0) {
+                // const uint8_t shade = pixel.r;
+                //
+                // Color new_color = {
+                //     .r = static_cast<uint8_t>((target_color.r * shade) /
+                //     255), .g = static_cast<uint8_t>((target_color.g * shade)
+                //     / 255), .b = static_cast<uint8_t>((target_color.b *
+                //     shade) / 255), .a = pixel.a,
+                // };
+
+                ImageDrawPixel(image, x, y, target_color);
+            }
+        }
+    }
+}
+}
+
 void Renderer::init()
 {
+    std::array<Image, simulation::TankType::TANK_TYPE_MAX> base_tank_textures;
+    std::array<Image, simulation::ProjectileType::PROJECTILE_TYPE_MAX>
+        base_projectile_textures;
+
     size_t i = 0;
     for (const auto &path : simulation::TankType::paths) {
         const std::string path_copy(path);
+        // const uint32_t load_scale = 2.0;
         SPDLOG_INFO("loading texture {}", path_copy);
-        Image image = LoadImageSVG(path_copy.c_str(), 0, 0);
-        ImageResize(&image, 0.5 * image.width, 0.5 * image.height);
-        tank_textures_[i] = LoadTextureFromImage(image);
-        UnloadImage(image);
+        Image image = LoadImageSVG(path_copy.c_str(),
+            simulation::TankType::sizes[i].x, simulation::TankType::sizes[i].y);
+        ImageResize(&image, image.width, image.height);
+        base_tank_textures[i] = image;
+        ++i;
+    }
+
+    i = 0;
+    for (const auto &base_texture : base_tank_textures) {
+        for (uint32_t j = 0; j < tank_teams_count; ++j) {
+            Image colored_image = ImageCopy(base_texture);
+            recolor_red_outline(&colored_image, Colors::colors[j]);
+            ImageResize(&colored_image, 0.6 * colored_image.width,
+                0.6 * colored_image.height);
+            tank_textures_[i][j] = LoadTextureFromImage(colored_image);
+            UnloadImage(colored_image);
+        }
+        UnloadImage(base_texture);
         ++i;
     }
 
@@ -128,14 +178,28 @@ void Renderer::init()
         SPDLOG_INFO("loading texture {}", path_copy);
         Image image = LoadImageSVG(path_copy.c_str(), 0, 0);
         ImageResize(&image, 0.5 * image.width, 0.5 * image.height);
-        projectile_textures_[i] = LoadTextureFromImage(image);
-        UnloadImage(image);
+        base_projectile_textures[i] = image;
         ++i;
     }
+
+    i = 0;
+    for (const auto &base_texture : base_projectile_textures) {
+        for (uint32_t j = 0; j < tank_teams_count; ++j) {
+            Image colored_image = ImageCopy(base_texture);
+            recolor_red_outline(&colored_image, Colors::colors[j]);
+            projectile_textures_[i][j] = LoadTextureFromImage(colored_image);
+            UnloadImage(colored_image);
+        }
+        UnloadImage(base_texture);
+        ++i;
+    }
+
     font_ = LoadFont(
         CMAKE_SOURCE_DIR "/src/renderer/assets/textures/space_grotesk.ttf");
     Image crosshair_image = LoadImageSVG(
         CMAKE_SOURCE_DIR "/src/renderer/assets/textures/crosshair.svg", 0, 0);
+    ImageColorReplace(&crosshair_image, Colors::colors[Colors::COLOR_BLACK],
+        Colors::colors[Colors::COLOR_TRANSPARENT]);
     ImageResize(&crosshair_image, 0.5 * crosshair_image.width,
         0.5 * crosshair_image.height);
     crosshair_ = LoadTextureFromImage(crosshair_image);
@@ -164,11 +228,15 @@ void Renderer::init()
 Renderer::~Renderer()
 {
     for (size_t i = 0; i < simulation::TankType::paths.size(); ++i) {
-        UnloadTexture(tank_textures_[i]);
+        for (size_t j = 0; j < tank_teams_count; ++j) {
+            UnloadTexture(tank_textures_[i][j]);
+        }
     }
 
     for (size_t i = 0; i < simulation::ProjectileType::paths.size(); ++i) {
-        UnloadTexture(tank_textures_[i]);
+        for (size_t j = 0; j < tank_teams_count; ++j) {
+            UnloadTexture(tank_textures_[i][j]);
+        }
     }
     UnloadFont(font_);
     UnloadTexture(crosshair_);
@@ -190,6 +258,7 @@ void Renderer::update_render_textures()
 {
     if (render_width_ != GetRenderWidth()
         || render_height_ != GetRenderHeight()) {
+
         render_width_ = GetRenderWidth();
         render_height_ = GetRenderHeight();
 
@@ -257,63 +326,15 @@ void Renderer::render_scene(simulation::Simulation &sim)
 
     draw_grid();
 
-    for (const auto entity : registry->view<simulation::Tank, simulation::Color,
-             simulation::Transform>()) {
-
-        const auto &transform = registry->get<simulation::Transform>(entity);
-        const auto &tank = registry->get<simulation::Tank>(entity);
-        const auto &direction = tank.dir;
-
-        float rot = (atan2(direction.y, direction.x) + M_PI) * RAD2DEG;
-        Texture texture = tank_textures_[tank.type];
-        Rectangle source = {
-            .x = 0.0F,
-            .y = 0.0F,
-            .width = static_cast<float>(texture.width),
-            .height = static_cast<float>(texture.height),
-        };
-
-        Rectangle dest = {
-            .x = transform.pos.x,
-            .y = transform.pos.y,
-            .width = static_cast<float>(texture.width),
-            .height = static_cast<float>(texture.height),
-        };
-
-        Vector2 origin {
-            .x = static_cast<float>(
-                simulation::TankType::origins[tank.type].x * 0.5),
-            .y = static_cast<float>(
-                simulation::TankType::origins[tank.type].y * 0.5),
-        };
-
-        DrawTexturePro(texture, source, dest, origin, rot, WHITE);
-
-        if (const auto *health = registry->try_get<simulation::Health>(entity);
-            health != nullptr && health->value < health->maximum) {
-            draw_progress_bar({ transform.pos.x - 20, transform.pos.y + 20 },
-                { 40, 6 }, { .r = 255, .g = 255, .b = 255, .a = 255 },
-                { .r = 0, .g = 0, .b = 0, .a = 255 }, health->value,
-                health->maximum);
-        }
-
-        DrawTextEx(font_, tank.name.c_str(),
-            {
-                .x = transform.pos.x - ((tank.name.size() / 2.F) + 12),
-                .y = transform.pos.y + (texture.height - 12),
-            },
-            24, 2, Color { .r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF });
-    }
-
     std::vector<std::pair<glm::vec2, glm::vec2>> shadow_segments;
     std::vector<entt::entity> circles;
 
-    for (const auto entity :
-        registry->view<simulation::Color, simulation::Transform,
-            simulation::ShapeType>(entt::exclude<simulation::Projectile>)) {
+    for (const auto entity : registry
+             ->view<Colors::type, simulation::Transform, simulation::ShapeType>(
+                 entt::exclude<simulation::Projectile>)) {
 
         const auto &transform = registry->get<simulation::Transform>(entity);
-        const auto &color = registry->get<simulation::Color>(entity);
+        const auto &color = registry->get<Colors::type>(entity);
 
         const auto &shape_type = registry->get<simulation::ShapeType>(entity);
         const auto &shape = registry->get<simulation::Shape>(entity);
@@ -354,16 +375,17 @@ void Renderer::render_scene(simulation::Simulation &sim)
                         .x = b.x,
                         .y = b.y,
                     },
-                    color);
+                    Colors::colors[color]);
                 shadow_segments.emplace_back(a, b);
             }
             if (res != nullptr && res->health != res->max_health) {
                 Renderer::draw_progress_bar(
-                    { transform.pos.x,
-                        transform.pos.y + shape.rect.height + 4 },
-                    { 20, 10 }, { .r = 255, .g = 255, .b = 255, .a = 255 },
-                    { .r = 0, .g = 0, .b = 0, .a = 255 }, res->health,
-                    res->max_health);
+                    {
+                        transform.pos.x,
+                        transform.pos.y + shape.rect.height + 4,
+                    },
+                    { 20, 10 }, Colors::COLOR_WHITE, Colors::COLOR_BLACK,
+                    res->health, res->max_health);
             }
             break;
         }
@@ -374,14 +396,13 @@ void Renderer::render_scene(simulation::Simulation &sim)
                     .x = transform.pos.x + (shape.circle.size / 2.0F),
                     .y = transform.pos.y + (shape.circle.size / 2.0F),
                 },
-                shape.circle.size / 2.0F, color);
+                shape.circle.size / 2.0F, Colors::colors[color]);
             if (res != nullptr && res->health != res->max_health) {
                 Renderer::draw_progress_bar(
                     { transform.pos.x,
                         transform.pos.y + shape.circle.size + 4 },
-                    { 20, 10 }, { .r = 255, .g = 255, .b = 255, .a = 255 },
-                    { .r = 0, .g = 0, .b = 0, .a = 255 }, res->health,
-                    res->max_health);
+                    { 20, 10 }, Colors::COLOR_WHITE, Colors::COLOR_BLACK,
+                    res->health, res->max_health);
             }
             break;
         default:
@@ -389,14 +410,14 @@ void Renderer::render_scene(simulation::Simulation &sim)
         }
     }
 
-    for (const auto entity : registry->view<simulation::Color,
-             simulation::Transform, simulation::Projectile>()) {
+    for (const auto entity : registry->view<Colors::type, simulation::Transform,
+             simulation::Projectile>()) {
         const auto &transform = registry->get<simulation::Transform>(entity);
-        // const auto &color = registry->get<simulation::Color>(entity);
+        const auto &color = registry->get<Colors::type>(entity);
         const auto &proj = registry->get<simulation::Projectile>(entity);
 
         float rot = (transform.rotation + M_PI) * RAD2DEG;
-        Texture texture = projectile_textures_[proj.type];
+        Texture texture = projectile_textures_[proj.type][color];
         Rectangle source = {
             .x = 0.0F,
             .y = 0.0F,
@@ -419,6 +440,62 @@ void Renderer::render_scene(simulation::Simulation &sim)
         };
 
         DrawTexturePro(texture, source, dest, origin, rot, WHITE);
+    }
+
+    for (const auto entity : registry
+             ->view<simulation::Tank, Colors::type, simulation::Transform>()) {
+
+        const auto &transform = registry->get<simulation::Transform>(entity);
+        const auto &tank = registry->get<simulation::Tank>(entity);
+        const auto &color = registry->get<Colors::type>(entity);
+        const auto &direction = tank.dir;
+
+        float rot = (atan2(direction.y, direction.x) + M_PI) * RAD2DEG;
+        Texture texture = tank_textures_[tank.type][color];
+        Rectangle source = {
+            .x = 0.0F,
+            .y = 0.0F,
+            .width = static_cast<float>(texture.width),
+            .height = static_cast<float>(texture.height),
+        };
+
+        Rectangle dest = {
+            .x = transform.pos.x,
+            .y = transform.pos.y,
+            .width = static_cast<float>(texture.width),
+            .height = static_cast<float>(texture.height),
+        };
+
+        Vector2 origin {
+            .x = static_cast<float>(
+                simulation::TankType::origins[tank.type].x * 0.5),
+            .y = static_cast<float>(
+                simulation::TankType::origins[tank.type].y * 0.5),
+        };
+
+        DrawTexturePro(texture, source, dest, origin, rot, WHITE);
+
+        if (const auto *health = registry->try_get<simulation::Health>(entity);
+            health != nullptr && health->value < health->maximum) {
+            draw_progress_bar({ transform.pos.x - 20, transform.pos.y + 20 },
+                { 40, 6 }, Colors::COLOR_WHITE, Colors::COLOR_BLACK,
+                health->value, health->maximum);
+        }
+    }
+
+    for (const auto entity : registry
+             ->view<simulation::Tank, Colors::type, simulation::Transform>()) {
+        const auto &transform = registry->get<simulation::Transform>(entity);
+        const auto &tank = registry->get<simulation::Tank>(entity);
+        const auto &color = registry->get<Colors::type>(entity);
+        Texture texture = tank_textures_[tank.type][color];
+
+        DrawTextEx(font_, tank.name.c_str(),
+            {
+                .x = transform.pos.x - ((tank.name.size() / 2.F) + 12),
+                .y = transform.pos.y + (texture.height - 12),
+            },
+            24, 2, Color { .r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF });
     }
 
     const Vector2 mouse_screen = GetMousePosition();
@@ -465,6 +542,31 @@ void draw_shadow_quad(std::array<glm::vec2, 4> &quad)
         Colors::colors[Colors::COLOR_BLACK]);
 }
 
+std::optional<std::pair<glm::vec2, glm::vec2>> get_circle_segment(
+    glm::vec2 light_pos, glm::vec2 circle_pos, float radius)
+{
+    const glm::vec2 pos(circle_pos.x + radius, circle_pos.y + radius);
+    const glm::vec2 to_light = light_pos - pos;
+    const float distance_squared = glm::dot(to_light, to_light);
+    const float radius_squared = radius * radius;
+    if (distance_squared <= radius_squared)
+        return std::nullopt;
+
+    const float distance = std::sqrt(distance_squared);
+    const float base_angle = std::atan2(to_light.y, to_light.x);
+    const float tangent_angle = std::acos(radius / distance);
+
+    const float angle_a = base_angle + tangent_angle;
+    const float angle_b = base_angle - tangent_angle;
+
+    const glm::vec2 point_a { pos.x + (radius * std::cos(angle_a)),
+        pos.y + (radius * std::sin(angle_a)) };
+
+    const glm::vec2 point_b { pos.x + (radius * std::cos(angle_b)),
+        pos.y + (radius * std::sin(angle_b)) };
+    return std::make_pair(point_a, point_b);
+}
+
 }
 
 void Renderer::draw_shadow_map(simulation::Simulation &sim,
@@ -495,28 +597,12 @@ void Renderer::draw_shadow_map(simulation::Simulation &sim,
                 const auto &c_transform
                     = registry->get<simulation::Transform>(entity);
                 const float radius = circle.circle.size / 2.0F;
-                const glm::vec2 pos(
-                    c_transform.pos.x + radius, c_transform.pos.y + radius);
-                const glm::vec2 to_light = transform.pos - pos;
-                const float distance_squared = glm::dot(to_light, to_light);
-                const float radius_squared = radius * circle.circle.size;
-                if (distance_squared <= radius_squared)
-                    continue;
-
-                const float distance = std::sqrt(distance_squared);
-                const float base_angle = std::atan2(to_light.y, to_light.x);
-                const float tangent_angle = std::acos(radius / distance);
-
-                const float angle_a = base_angle + tangent_angle;
-                const float angle_b = base_angle - tangent_angle;
-
-                const glm::vec2 point_a { pos.x + (radius * std::cos(angle_a)),
-                    pos.y + (radius * std::sin(angle_a)) };
-
-                const glm::vec2 point_b { pos.x + (radius * std::cos(angle_b)),
-                    pos.y + (radius * std::sin(angle_b)) };
-                auto segment = std::make_pair(point_a, point_b);
-                auto quad = project_shadow(segment, transform.pos, 100.F);
+                auto segment = get_circle_segment(
+                    transform.pos, c_transform.pos, radius);
+                // if (!segment.has_value())
+                //     continue;
+                auto quad
+                    = project_shadow(segment.value(), transform.pos, 100.F);
                 draw_shadow_quad(quad);
             }
             EndMode2D();
@@ -715,24 +801,12 @@ void Renderer::update_camera(simulation::Simulation &sim)
 }
 
 void Renderer::draw_progress_bar(glm::vec2 pos, glm::vec2 size,
-    simulation::Color background, simulation::Color foreground, float value,
+    Colors::type background, Colors::type foreground, float value,
     float max_value)
 {
-    DrawRectangle(pos.x, pos.y, size.x, size.y,
-        Color {
-            .r = background.r,
-            .g = background.g,
-            .b = background.b,
-            .a = background.a,
-        });
+    DrawRectangle(pos.x, pos.y, size.x, size.y, Colors::colors[background]);
     DrawRectangle(pos.x + 2, pos.y + 1, (value / max_value) * (size.x - 2),
-        size.y - 2,
-        Color {
-            .r = foreground.r,
-            .g = foreground.g,
-            .b = foreground.b,
-            .a = foreground.a,
-        });
+        size.y - 2, Colors::colors[foreground]);
 }
 
 } // namespace game::renderer

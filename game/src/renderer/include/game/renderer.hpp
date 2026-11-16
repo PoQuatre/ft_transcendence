@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:38 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/11/10 13:10:40 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/16 16:13:27 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 
 #include <raylib.h>
 
+#include "game/colors.hpp"
 #include "game/simulation.hpp"
 
 namespace game::renderer {
@@ -28,7 +29,7 @@ public:
 
 private:
     static void draw_progress_bar(glm::vec2 pos, glm::vec2 size,
-        simulation::Color background, simulation::Color foreground, float value,
+        Colors::type background, Colors::type foreground, float value,
         float max_value);
     void apply_bloom();
     void render_scene(simulation::Simulation &sim);
@@ -41,8 +42,13 @@ private:
 
     Camera2D camera_;
 
-    std::array<Texture, simulation::TankType::TANK_TYPE_MAX> tank_textures_;
-    std::array<Texture, simulation::ProjectileType::PROJECTILE_TYPE_MAX>
+    static constexpr uint8_t tank_teams_count = 4;
+
+    std::array<std::array<Texture, tank_teams_count>,
+        simulation::TankType::TANK_TYPE_MAX>
+        tank_textures_;
+    std::array<std::array<Texture, tank_teams_count>,
+        simulation::ProjectileType::PROJECTILE_TYPE_MAX>
         projectile_textures_;
     Texture crosshair_;
     Font font_;
