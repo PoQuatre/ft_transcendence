@@ -356,8 +356,6 @@ func (h *handler) deleteAccount(c *echo.Context) error {
 		return apiError(err)
 	}
 
-	// TODO: delete tous les trucs dans friends
-
 	h.sessionManager.Remove(c.Request().Context(), "user_id")
 	return c.JSON(http.StatusNoContent, map[string]any{"message": "successfully deleted account."})
 }
