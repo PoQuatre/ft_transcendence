@@ -41,6 +41,9 @@ type Repository interface {
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 	DeleteEmailVerifToken(ctx context.Context, userID uuid.UUID) error
 	DeletePasswordTokenFromUserID(ctx context.Context, userID uuid.UUID) error
+	DeleteFriendRequestsWithUserID(ctx context.Context, userID uuid.UUID) error
+	DeleteFriendRelationsWithUserID(ctx context.Context, userID uuid.UUID) error
+	DeleteFriendMessagesFromUserID(ctx context.Context, userID uuid.UUID) error
 }
 
 type bunRepository struct {
@@ -237,6 +240,30 @@ func (r *bunRepository) DeletePasswordTokenFromUserID(ctx context.Context, userI
 	_, err := r.db.NewDelete().
 		Table("password_reset_tokens").
 		Where("user_id = ?0", userID).
+		Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) DeleteFriendRequestsWithUserID(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Table("friend_requests").
+		Where("sender_id = ?0 OR receiver_id = ?0", userID).
+		Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) DeleteFriendRelationsWithUserID(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Table("friend_relations").
+		Where("user_id = ?0 OR friend_id = ?0", userID).
+		Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) DeleteFriendMessagesFromUserID(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Table("friend_message").
+		Where("sender_id = ?0", userID).
 		Exec(ctx)
 	return err
 }
