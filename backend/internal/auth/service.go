@@ -305,3 +305,23 @@ func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID, password 
 	}
 	return nil
 }
+
+func (s *Service) UpdateProfile(ctx context.Context, userID uuid.UUID, email, username string) error {
+	user, err := s.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if email != "" && user.Email != email {
+		err = s.repo.UpdateEmail(ctx, userID, email)
+		if err != nil {
+			return err
+		}
+	}
+	if username != "" && user.Username != username {
+		err = s.repo.UpdateUsername(ctx, userID, username)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

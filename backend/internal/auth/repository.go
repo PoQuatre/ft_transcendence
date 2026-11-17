@@ -44,6 +44,9 @@ type Repository interface {
 	DeleteFriendRequestsWithUserID(ctx context.Context, userID uuid.UUID) error
 	DeleteFriendRelationsWithUserID(ctx context.Context, userID uuid.UUID) error
 	DeleteFriendMessagesFromUserID(ctx context.Context, userID uuid.UUID) error
+
+	UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error
+	UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error
 }
 
 type bunRepository struct {
@@ -279,4 +282,29 @@ func (r *bunRepository) GetUserPasswordHash(ctx context.Context, userID uuid.UUI
 		return "", err
 	}
 	return passwordHash, nil
+}
+
+func (r *bunRepository) UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error {
+	_, err := r.db.NewUpdate().
+		Model((*User)(nil)).
+		Set("email = ?0", email).
+		Set("verified = false").
+		Where("id = ?0", userID).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *bunRepository) UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error {
+	_, err := r.db.NewUpdate().
+		Model((*User)(nil)).
+		Set("username = ?0", username).
+		Where("id = ?0", userID).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
