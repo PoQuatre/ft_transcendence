@@ -39,3 +39,8 @@ type UserResponse struct {
 type DeleteAccountRequest struct {
 	Password string `json:"password"   validate:"required" example:"Y0urP4ssword?"`
 }
+
+type PatchProfileRequest struct {
+	Username string `json:"username" validate:"omitempty,min=3,max=30,username_chars" example:"Great_player"`
+	Email    string `json:"email"    validate:"omitempty,min=3,max=998,email" example:"great@example.com"`
+}
