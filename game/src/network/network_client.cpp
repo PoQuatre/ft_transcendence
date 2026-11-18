@@ -54,12 +54,13 @@ bool Client::append(protocol::Channel chan, std::span<const std::uint8_t> msg)
         return false;
 
     outgoing_.reserve(outgoing_.size() + 3 + size);
-    outgoing_.append_range(std::array {
-        static_cast<std::uint8_t>(id),
-        static_cast<std::uint8_t>(size),
-        static_cast<std::uint8_t>(size >> 8U),
-    });
-    outgoing_.append_range(msg);
+    outgoing_.insert(outgoing_.end(),
+        {
+            static_cast<std::uint8_t>(id),
+            static_cast<std::uint8_t>(size),
+            static_cast<std::uint8_t>(size >> 8U),
+        });
+    outgoing_.insert(outgoing_.end(), msg.begin(), msg.end());
     return true;
 }
 
