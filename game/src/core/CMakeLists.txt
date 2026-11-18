@@ -11,5 +11,5 @@ target_link_libraries(
         spdlog::spdlog
         game::renderer
         game::network
-    PRIVATE game::base
+    PRIVATE game::base game::protocol::schemas flatbuffers
 )

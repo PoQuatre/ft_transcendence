@@ -33,6 +33,7 @@ public:
     void create_player_tank(Tank &tank, Transform transform, Color col);
     Transform *get_player_transform();
     Tank *get_player_tank() { return &registry_.get<Tank>(player_tank_); };
+    void set_player(entt::entity entity) { player_tank_ = entity; }
     void fire_player_tank();
     [[nodiscard]] entt::registry *get_registry() { return &registry_; };
 
