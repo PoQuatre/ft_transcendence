@@ -8,9 +8,38 @@ export { Separator, type SeparatorProps } from './Separator';
 export { Avatar, type AvatarProps } from './Avatar';
 export { Switch, type SwitchProps } from './Switch';
 export { Slider, type SliderProps } from './Slider';
-export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './Table';
-export { Alert, AlertTitle, AlertDescription, alertVariants, type AlertProps } from './Alert';
-export { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, type DialogProps } from './Dialog';
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from './Table';
+export {
+  Alert,
+  AlertTitle,
+  AlertDescription,
+  alertVariants,
+  type AlertProps,
+} from './Alert';
+export {
+  Dialog,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  type DialogProps,
+} from './Dialog';
 export { Tooltip, type TooltipProps } from './Tooltip';
-export { Tabs, TabsList, TabsTrigger, TabsContent, type TabsProps, type TabsListProps, type TabsTriggerProps, type TabsContentProps } from './Tabs';
+export {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  type TabsProps,
+  type TabsListProps,
+  type TabsTriggerProps,
+  type TabsContentProps,
+} from './Tabs';
 export { PasswordInput, type PasswordInputProps } from './PasswordInput';
