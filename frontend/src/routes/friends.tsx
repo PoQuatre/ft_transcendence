@@ -2,8 +2,9 @@ import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
 import { createEffect, Show } from 'solid-js';
 
+import { FriendRequestForm } from '~/components/friends/FriendRequestForm';
 import { FriendsList } from '~/components/friends/FriendsList';
-import { Badge, Card } from '~/components/ui';
+import { Badge, Card, Separator } from '~/components/ui';
 import { currentUser } from '~/lib/auth';
 import { paths } from '~/router';
 
@@ -54,6 +55,8 @@ export default function Friends() {
                       Tes amis et les demandes reçues.
                     </p>
                   </div>
+                  <FriendRequestForm />
+                  <Separator />
                   <FriendsList />
                 </div>
               </Card>
