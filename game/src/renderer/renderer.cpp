@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:30 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/11/16 20:45:27 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/18 05:54:18 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -607,11 +607,11 @@ void Renderer::draw_shadow_map(simulation::Simulation &sim,
                 const float radius = circle.circle.size / 2.0F;
                 auto segment = get_circle_segment(
                     transform.pos, c_transform.pos, radius);
-                // if (!segment.has_value())
-                //     continue;
-                auto quad
-                    = project_shadow(segment.value(), transform.pos, 100.F);
-                draw_shadow_quad(quad);
+                if (segment.has_value()) {
+                    auto quad
+                        = project_shadow(segment.value(), transform.pos, 100.F);
+                    draw_shadow_quad(quad);
+                }
             }
             EndMode2D();
             EndTextureMode();

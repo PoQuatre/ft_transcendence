@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:50:46 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/11/16 20:18:32 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/18 05:58:14 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,8 +133,9 @@ void App::sync_world(
         if (!present.contains(it->first)) {
             registry->destroy(it->second);
             it = entities_.erase(it);
-        } else
+        } else {
             ++it;
+        }
     }
 }
 
@@ -225,21 +226,6 @@ bool App::initialize()
         return false;
     }
     renderer_.init();
-#ifndef __EMSCRIPTEN__
-    tank_name_ = "test";
-    simulation::Tank tank { .name = tank_name_,
-        .size = 20,
-        .dir = glm::vec2(0),
-        .type = simulation::TankType::TANK_BASIC,
-        .max_energy = 100,
-        .energy = 100 };
-    simulation_.create_player_tank(tank,
-        simulation::Transform { .pos = { 100.F, 100.F },
-            .vel = glm::vec2(0),
-            .acc = glm::vec2(0),
-            .rotation = 0 },
-        Color { 38, 217, 191, 255 });
-#endif
     return true;
 }
 
