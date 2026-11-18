@@ -135,6 +135,14 @@ export const Header: Component = () => {
 
                 {/* Boîte du menu */}
                 <div class="absolute right-0 top-full mt-2 w-72 bg-surface-2/95 backdrop-blur-xl border border-border-subtle/90 rounded-lg p-4 shadow-2xl z-50 font-mono space-y-3">
+                  <a
+                    href={paths.friends()}
+                    onClick={() => setSettingsOpen(false)}
+                    class="w-full py-2 px-3 rounded-md bg-accent-primary-subtle/40 hover:bg-accent-primary-subtle/80 border border-accent-primary/50 hover:border-accent-primary text-accent-primary font-bold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 no-underline shadow-glow-cyan-sm hover:shadow-glow-cyan-md"
+                  >
+                    <span class="material-symbols-outlined text-sm">group</span>
+                    <span>FRIENDS</span>
+                  </a>
                   {/* Lien vers la page paramètres */}
                   <a
                     href={paths.settings()}
