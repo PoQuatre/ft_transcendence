@@ -45,7 +45,7 @@ func TestOfferReturnsGatewayTimeoutForExpiredRequest(t *testing.T) {
 	})
 
 	e := echo.New()
-	RegisterRoutes(e.Group("/api/webrtc"), server)
+	RegisterRoutes(e.Group("/api/webrtc"), server, func(*http.Request) (Identity, error) { return Identity{}, nil })
 	ctx, cancel := context.WithDeadline(t.Context(), time.Now().Add(-time.Second))
 	defer cancel()
 	request := httptest.NewRequestWithContext(ctx, http.MethodPost, "/api/webrtc/offer", strings.NewReader(`{}`))

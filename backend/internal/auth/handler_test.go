@@ -13,7 +13,7 @@ import (
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
 )
 
-func setupTestServer(t *testing.T) (*echo.Echo, *scs.SessionManager) {
+func setupTestServer(t *testing.T, onLogout func(string)) (*echo.Echo, *scs.SessionManager) {
 	t.Helper()
 	e := echo.New()
 	repo := newMockRepository()
@@ -32,13 +32,13 @@ func setupTestServer(t *testing.T) (*echo.Echo, *scs.SessionManager) {
 	}
 	group.Use(echo.WrapMiddleware(sessionManager.LoadAndSave))
 
-	RegisterRoutes(group, svc, sessionManager, validat)
+	RegisterRoutes(group, svc, sessionManager, validat, onLogout)
 
 	return e, sessionManager
 }
 
 func TestHandler_SignUp(t *testing.T) {
-	e, _ := setupTestServer(t)
+	e, _ := setupTestServer(t, nil)
 
 	tests := []struct {
 		name           string
@@ -83,7 +83,8 @@ func TestHandler_SignUp(t *testing.T) {
 }
 
 func TestHandler_LoginAndMeFlow(t *testing.T) {
-	e, sm := setupTestServer(t)
+	var revokedID string
+	e, sm := setupTestServer(t, func(id string) { revokedID = id })
 
 	signupBody := `{"username":"dave","email":"dave@example.com","password":"SuperPassword123!"}`
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/auth/signup", strings.NewReader(signupBody))
@@ -143,6 +144,14 @@ func TestHandler_LoginAndMeFlow(t *testing.T) {
 
 	if recLogout.Code != http.StatusOK {
 		t.Errorf("expected logout to return 200 OK, got %d", recLogout.Code)
+	}
+	if revokedID == "" {
+		t.Error("logout did not revoke the user's connection")
+	}
+	for _, cookie := range recLogout.Result().Cookies() {
+		if cookie.Name == sm.Cookie.Name && cookie.Value != "" && cookie.MaxAge >= 0 {
+			t.Fatalf("logout left a session cookie: %+v", cookie)
+		}
 	}
 
 	reqAfterLogout := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/auth/me", nil)
