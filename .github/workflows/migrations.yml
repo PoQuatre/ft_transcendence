@@ -82,6 +82,7 @@ jobs:
           version: "25.12.19"
 
       - name: Generate protocol files
+        working-directory: backend
         run: flatc --go --go-namespace generated -o ./internal/game/protocol ../schemas/*.fbs
 
       - name: Migrate up

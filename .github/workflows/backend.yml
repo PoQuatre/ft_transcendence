@@ -153,4 +153,5 @@ jobs:
         run: flatc --go --go-namespace generated -o ./internal/game/protocol ../schemas/*.fbs
 
       - name: Run race tests
-        run: bash ../.github/scripts/go-test.sh -race ./...
+        # shortcut: Box2D uses uintptr-backed memory, re-enable checkptr when the binding supports it.
+        run: bash ../.github/scripts/go-test.sh -race -gcflags=github.com/oliverbestmann/box2d-go/v3=-d=checkptr=0 ./...

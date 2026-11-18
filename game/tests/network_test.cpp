@@ -6,8 +6,8 @@ TEST_CASE("network client checks framing and submits one batch")
 {
     game::network::Client client;
     const std::array<std::uint8_t, 2> message { 4, 5 };
-    REQUIRE_FALSE(client.append(game::protocol::Channel::Control, message));
-    REQUIRE_FALSE(client.append(
+    REQUIRE(!client.append(game::protocol::Channel::Control, message));
+    REQUIRE(!client.append(
         game::protocol::Channel::Event, std::array<std::uint8_t, 8193> { }));
     REQUIRE(client.append(game::protocol::Channel::State, message));
     int sends = 0;
@@ -33,7 +33,7 @@ TEST_CASE("network client checks framing and submits one batch")
         },
         handler));
     REQUIRE(handled == 0);
-    REQUIRE_FALSE(client.receive(
+    REQUIRE(!client.receive(
         [](std::span<std::uint8_t> bytes) {
             bytes[0] = 1;
             bytes[1] = 2;
@@ -41,7 +41,7 @@ TEST_CASE("network client checks framing and submits one batch")
             return 3;
         },
         handler));
-    REQUIRE_FALSE(client.receive(
+    REQUIRE(!client.receive(
         [](std::span<std::uint8_t> bytes) {
             bytes[0] = 0;
             bytes[1] = 0;
