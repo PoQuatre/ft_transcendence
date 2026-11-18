@@ -10,6 +10,8 @@ require (
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/hashicorp/vault/api/auth/approle v0.12.0
 	github.com/labstack/echo/v5 v5.3.1
+	github.com/mlange-42/ark v0.8.3
+	github.com/oliverbestmann/box2d-go/v3 v3.2.1
 	github.com/pion/ice/v4 v4.4.7
 	github.com/pion/webrtc/v4 v4.2.23
 	github.com/spf13/cobra v1.10.2
