@@ -1,4 +1,10 @@
-import { type Component, createSignal, For, onSettled, Show } from 'solid-js';
+import {
+  type Component,
+  createEffect,
+  createSignal,
+  For,
+  Show,
+} from 'solid-js';
 
 import {
   type Feedback,
@@ -10,7 +16,8 @@ import { type Friend, listFriends } from '~/lib/friends';
 export const ROW =
   'flex items-center justify-between gap-space-md rounded-md border border-border-subtle/60 bg-surface-1/60 px-space-md py-space-sm';
 
-export const FriendsList: Component = () => {
+// Changer `version` recharge la liste (après une demande acceptée).
+export const FriendsList: Component<{ version?: number }> = (props) => {
   const [friends, setFriends] = createSignal<Friend[]>();
   const [feedback, setFeedback] = createSignal<Feedback>();
 
@@ -27,9 +34,12 @@ export const FriendsList: Component = () => {
     }
   };
 
-  onSettled(() => {
-    void load();
-  });
+  createEffect(
+    () => props.version,
+    () => {
+      void load();
+    },
+  );
 
   return (
     <section class="space-y-space-md" aria-labelledby="friends-title">
