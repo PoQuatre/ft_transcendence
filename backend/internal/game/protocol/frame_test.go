@@ -16,27 +16,9 @@ func TestParseMessage(t *testing.T) {
 		want    bool
 	}{
 		{
-			name:    "control client hello",
+			name:    "binary control is not a framed protocol",
 			channel: ChannelControl,
-			message: append([]byte{byte(wire.ControlPacketIdClientHello)}, clientHelloPayload()...),
-			want:    true,
-		},
-		{
-			name:    "invalid control disconnect reason",
-			channel: ChannelControl,
-			message: append([]byte{byte(wire.ControlPacketIdServerDisconnect)}, disconnectPayload(wire.DisconnectReason(3))...),
-			want:    false,
-		},
-		{
-			name:    "valid control disconnect reason",
-			channel: ChannelControl,
-			message: append([]byte{byte(wire.ControlPacketIdServerDisconnect)}, disconnectPayload(wire.DisconnectReasonProtocolError)...),
-			want:    true,
-		},
-		{
-			name:    "unknown control packet",
-			channel: ChannelControl,
-			message: []byte{0xff},
+			message: []byte{1, 0},
 			want:    false,
 		},
 		{
@@ -116,22 +98,6 @@ func TestParseMessagePanicsForMalformedPayload(t *testing.T) {
 	}()
 
 	ParseMessage(ChannelEvent, []byte{byte(wire.EventPacketIdWorldResyncRequest), 0})
-}
-
-func clientHelloPayload() []byte {
-	builder := flatbuffers.NewBuilder(0)
-	wire.ClientHelloStart(builder)
-	wire.ClientHelloAddProtocolVersion(builder, 1)
-	builder.Finish(wire.ClientHelloEnd(builder))
-	return builder.FinishedBytes()
-}
-
-func disconnectPayload(reason wire.DisconnectReason) []byte {
-	builder := flatbuffers.NewBuilder(0)
-	wire.ServerDisconnectStart(builder)
-	wire.ServerDisconnectAddReason(builder, reason)
-	builder.Finish(wire.ServerDisconnectEnd(builder))
-	return builder.FinishedBytes()
 }
 
 func worldReadyPayload() []byte {

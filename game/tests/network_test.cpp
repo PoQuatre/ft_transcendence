@@ -8,7 +8,7 @@ TEST_CASE("network client checks framing and submits one batch")
     const std::array<std::uint8_t, 2> message { 4, 5 };
     REQUIRE_FALSE(client.append(game::protocol::Channel::Control, message));
     REQUIRE_FALSE(client.append(
-        game::protocol::Channel::Event, std::array<std::uint8_t, 1025> { }));
+        game::protocol::Channel::Event, std::array<std::uint8_t, 8193> { }));
     REQUIRE(client.append(game::protocol::Channel::State, message));
     int sends = 0;
     auto send = [&](std::span<const std::uint8_t> bytes) {

@@ -7,7 +7,7 @@ type OutgoingData = [Uint8Array[], Uint8Array[], Uint8Array[]];
 
 const channelNames = ['event', 'state', 'sync'] as const;
 
-const maxPacketSize = 1024;
+const maxPacketSize = 8192;
 const incomingLimit = 4 * 1024 * 1024;
 const bufferThreshold = 256 * 1024;
 

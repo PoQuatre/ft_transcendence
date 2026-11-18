@@ -4,7 +4,7 @@ package protocol
 import wire "github.com/PoQuatre/ft_transcendence/backend/internal/game/protocol/generated"
 
 const (
-	MaxPayloadBytes = 1024
+	MaxPayloadBytes = 8190
 	MaxInputFrames  = 12
 )
 
@@ -28,21 +28,15 @@ type Frame struct {
 // payload is malformed; callers are responsible for recovering and closing
 // the offending client.
 func ParseMessage(channel Channel, message []byte) (Frame, bool) {
-	headerSize := 2
-	if channel == ChannelControl {
-		headerSize = 1
-	}
-	if len(message) < headerSize {
+	if channel == ChannelControl || len(message) < 2 {
 		return Frame{}, false
 	}
 
 	frame := Frame{
-		Channel:  channel,
-		PacketID: message[0],
-		Payload:  message[headerSize:],
-	}
-	if channel != ChannelControl {
-		frame.SessionGeneration = message[1]
+		Channel:           channel,
+		PacketID:          message[0],
+		SessionGeneration: message[1],
+		Payload:           message[2:],
 	}
 
 	if len(frame.Payload) > MaxPayloadBytes || !validatePayload(frame) {
@@ -53,31 +47,12 @@ func ParseMessage(channel Channel, message []byte) (Frame, bool) {
 
 func validatePayload(frame Frame) bool {
 	switch frame.Channel {
-	case ChannelControl:
-		return validateControlPayload(frame.PacketID, frame.Payload)
 	case ChannelEvent:
 		return validateEventPayload(frame.PacketID, frame.Payload)
 	case ChannelState:
 		return validateStatePayload(frame.PacketID, frame.Payload)
 	case ChannelSync:
 		return validateSyncPayload(frame.PacketID, frame.Payload)
-
-	default:
-		return false
-	}
-}
-
-func validateControlPayload(packetID byte, payload []byte) bool {
-	switch wire.ControlPacketId(packetID) {
-	case wire.ControlPacketIdClientHello,
-		wire.ControlPacketIdServerHello,
-		wire.ControlPacketIdPing,
-		wire.ControlPacketIdPong:
-		return true
-
-	case wire.ControlPacketIdServerDisconnect:
-		reason := wire.GetRootAsServerDisconnect(payload, 0).Reason()
-		return reason >= wire.DisconnectReasonUnknown && reason <= wire.DisconnectReasonUnsupportedVersion
 
 	default:
 		return false
@@ -140,6 +115,9 @@ func validateSyncPayload(packetID byte, payload []byte) bool {
 }
 
 func validateEntity(entity *wire.EntityState) bool {
+	if entity.Kind() == wire.EntityKindResource && entity.ResourceShape() > wire.ResourceShapeSquare {
+		return false
+	}
 	switch entity.Kind() {
 	case wire.EntityKindTank, wire.EntityKindProjectile, wire.EntityKindResource:
 		return entity.Position(nil) != nil && entity.Velocity(nil) != nil
