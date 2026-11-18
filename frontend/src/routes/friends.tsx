@@ -1,15 +1,17 @@
 import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
-import { createEffect, Show } from 'solid-js';
+import { createEffect, createSignal, Show } from 'solid-js';
 
 import { FriendRequestForm } from '~/components/friends/FriendRequestForm';
 import { FriendsList } from '~/components/friends/FriendsList';
+import { IncomingRequests } from '~/components/friends/IncomingRequests';
 import { Badge, Card, Separator } from '~/components/ui';
 import { currentUser } from '~/lib/auth';
 import { paths } from '~/router';
 
 export default function Friends() {
   const navigate = useNavigate();
+  const [version, setVersion] = createSignal(0);
 
   createEffect(
     () => currentUser(),
@@ -57,7 +59,11 @@ export default function Friends() {
                   </div>
                   <FriendRequestForm />
                   <Separator />
-                  <FriendsList />
+                  <IncomingRequests
+                    onAccepted={() => setVersion((v) => v + 1)}
+                  />
+                  <Separator />
+                  <FriendsList version={version()} />
                 </div>
               </Card>
             )}
