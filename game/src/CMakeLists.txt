@@ -1,10 +1,11 @@
 add_subdirectory(simulation)
 add_subdirectory(platform)
 add_subdirectory(renderer)
+add_subdirectory(protocol)
+add_subdirectory(network)
 add_subdirectory(core)
 
 add_executable(game main.cpp)
-
 
 target_link_libraries(game PUBLIC glm::glm PRIVATE game::base game::core)
 
@@ -13,11 +14,13 @@ if(EMSCRIPTEN)
     target_link_options(
         game
         PRIVATE
+            $<$<CONFIG:Debug>:-gsource-map=inline>
+            $<$<CONFIG:Debug>:SHELL:--source-map-base=/assets/game/>
             -sASYNCIFY
             -sENVIRONMENT=web
             -sEXPORTED_RUNTIME_METHODS=requestFullscreen
             -sUSE_GLFW=3
             -sALLOW_MEMORY_GROWTH=1
-			--embed-file "${CMAKE_SOURCE_DIR}/src/renderer/assets/"
+            "--embed-file=${CMAKE_SOURCE_DIR}/src/renderer/assets/"
     )
 endif()

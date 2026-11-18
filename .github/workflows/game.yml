@@ -60,6 +60,9 @@ jobs:
       - name: Enable Clang problem matcher
         run: echo "::add-matcher::${{ github.workspace }}/.github/problem-matchers/clang.json"
 
+      - name: Generate protocol headers
+        run: cmake --build --preset native-debug --target GENERATE_game_protocol_schemas
+
       - name: Run clang-tidy
         run: git ls-files -z -- '**.cpp' | xargs -0r run-clang-tidy-23 -p build/native-debug
 
@@ -91,6 +94,9 @@ jobs:
 
       - name: Enable Clang problem matcher
         run: echo "::add-matcher::${{ github.workspace }}/.github/problem-matchers/clang.json"
+
+      - name: Generate protocol headers
+        run: cmake --build --preset web-debug --target GENERATE_game_protocol_schemas
 
       - name: Run clang-tidy
         run: git ls-files -z -- '**.cpp' | xargs -0r run-clang-tidy-23 -p build/web-debug

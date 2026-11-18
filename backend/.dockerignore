@@ -11,3 +11,5 @@
 **/*_test.go
 docs/
 docs/**
+internal/game/protocol/generated/
+internal/game/protocol/generated/**

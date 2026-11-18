@@ -38,8 +38,9 @@ not tested.
 ## Production-like setup
 
 This stack is for local production-like or evaluation use, not public internet
-deployment. It listens only on `127.0.0.1:8443` and uses local TLS
-certificates.
+deployment. HAProxy is the host-networked TLS passthrough ingress on port
+`8443`; nginx remains on Podman's internal networks and its port is published
+only to `127.0.0.1:9443`. It uses local TLS certificates.
 
 Install these host tools:
 

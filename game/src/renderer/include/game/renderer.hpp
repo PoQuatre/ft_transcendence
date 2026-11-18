@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/10 21:41:38 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/10/14 20:07:14 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/16 17:37:04 by uanglade         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 
 #include <raylib.h>
 
+#include "game/colors.hpp"
 #include "game/simulation.hpp"
 
 namespace game::renderer {
@@ -28,18 +29,28 @@ public:
 
 private:
     static void draw_progress_bar(glm::vec2 pos, glm::vec2 size,
-        simulation::Color background, simulation::Color foreground, float value,
+        Colors::type background, Colors::type foreground, float value,
         float max_value);
     void apply_bloom();
     void render_scene(simulation::Simulation &sim);
     void update_camera(simulation::Simulation &sim);
+    void draw_shadow_map(simulation::Simulation &sim,
+        std::vector<std::pair<glm::vec2, glm::vec2>> &shadow_segments,
+        std::vector<entt::entity> &circles);
 
     static void draw_grid();
+    void draw_ui(simulation::Simulation &sim);
+    void draw_player_status(simulation::Simulation &sim);
 
     Camera2D camera_;
 
-    std::array<Texture, simulation::TankType::TANK_TYPE_MAX> tank_textures_;
-    std::array<Texture, simulation::ProjectileType::PROJECTILE_TYPE_MAX>
+    static constexpr uint8_t tank_teams_count = 4;
+
+    std::array<std::array<Texture, tank_teams_count>,
+        simulation::TankType::TANK_TYPE_MAX>
+        tank_textures_;
+    std::array<std::array<Texture, tank_teams_count>,
+        simulation::ProjectileType::PROJECTILE_TYPE_MAX>
         projectile_textures_;
     Texture crosshair_;
     Font font_;
@@ -47,19 +58,25 @@ private:
     int render_width_ = 800;
     int render_height_ = 600;
 
+    RenderTexture2D light_map_;
+    RenderTexture2D shadow_map_;
     RenderTexture2D scene_target_;
     RenderTexture2D bright_target_;
     RenderTexture2D blur_v_target_;
     RenderTexture2D blur_h_target_;
+    RenderTexture2D ui_target_;
 
     Shader extract_shader_;
     Shader blur_shader_;
     Shader composite_shader_;
+    Shader light_map_shader_;
 
     int threshold_loc_;
     int texel_size_loc_;
     int direction_loc_;
     int bloom_texture_loc_;
+    int shadow_map_texture_loc_;
+    int light_map_texture_loc_;
     int intensity_loc_;
 };
 

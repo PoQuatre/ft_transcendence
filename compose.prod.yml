@@ -5,6 +5,8 @@ services:
       context: ./backend
       dockerfile: ./Containerfile
       target: prod
+      additional_contexts:
+        schemas: ./schemas
     depends_on:
       postgres:
         condition: service_healthy
@@ -28,6 +30,11 @@ services:
     networks:
       vault-migrate:
       postgres-migrate:
+
+  frontend:
+    build:
+      additional_contexts:
+        game: ./game
 
   backend:
     depends_on:

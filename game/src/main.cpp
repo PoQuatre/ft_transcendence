@@ -25,12 +25,8 @@ std::unique_ptr<game::core::App> app;
 #ifdef __EMSCRIPTEN__
 void iterate(void *state)
 {
+    // Raylib's web WindowShouldClose sleeps and can resume after shutdown.
     auto &application = *static_cast<game::core::App *>(state);
-    if (game::core::App::should_quit()) {
-        emscripten_cancel_main_loop();
-        app.reset();
-        return;
-    }
     application.iterate();
 }
 #endif

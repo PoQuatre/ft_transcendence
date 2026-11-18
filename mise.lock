@@ -42,6 +42,49 @@ checksum = "sha256:4d52ebab7193a698651639ed80d8d04fd903358843572cf44c7fd234cb7c2
 url = "https://github.com/Kitware/CMake/releases/download/v4.4.3/cmake-4.4.3-windows-x86_64.zip"
 url_api = "https://api.github.com/repos/Kitware/CMake/releases/assets/529578311"
 
+[[tools.flatc]]
+version = "25.12.19-2026-02-06-03fffb2"
+backend = "github:google/flatbuffers"
+specifiers = [
+    "25.12.19",
+    "latest",
+]
+
+[tools.flatc."platforms.linux-arm64"]
+checksum = "sha256:c5e0adf44ffc20556620427eb6f183022d1e94d64f751a6b67e2ebd9cec76c9a"
+url = "https://github.com/google/flatbuffers/releases/download/v25.12.19-2026-02-06-03fffb2/Linux.flatc.binary.g%2B%2B-13.zip"
+url_api = "https://api.github.com/repos/google/flatbuffers/releases/assets/351911179"
+
+[tools.flatc."platforms.linux-arm64-musl"]
+checksum = "sha256:c5e0adf44ffc20556620427eb6f183022d1e94d64f751a6b67e2ebd9cec76c9a"
+url = "https://github.com/google/flatbuffers/releases/download/v25.12.19-2026-02-06-03fffb2/Linux.flatc.binary.g%2B%2B-13.zip"
+url_api = "https://api.github.com/repos/google/flatbuffers/releases/assets/351911179"
+
+[tools.flatc."platforms.linux-x64"]
+checksum = "sha256:c5e0adf44ffc20556620427eb6f183022d1e94d64f751a6b67e2ebd9cec76c9a"
+url = "https://github.com/google/flatbuffers/releases/download/v25.12.19-2026-02-06-03fffb2/Linux.flatc.binary.g%2B%2B-13.zip"
+url_api = "https://api.github.com/repos/google/flatbuffers/releases/assets/351911179"
+
+[tools.flatc."platforms.linux-x64-musl"]
+checksum = "sha256:c5e0adf44ffc20556620427eb6f183022d1e94d64f751a6b67e2ebd9cec76c9a"
+url = "https://github.com/google/flatbuffers/releases/download/v25.12.19-2026-02-06-03fffb2/Linux.flatc.binary.g%2B%2B-13.zip"
+url_api = "https://api.github.com/repos/google/flatbuffers/releases/assets/351911179"
+
+[tools.flatc."platforms.macos-arm64"]
+checksum = "sha256:2407cfb9060bc4d13ea71550ec27c6635f2fd88fa716ba76493c1be285ce27ab"
+url = "https://github.com/google/flatbuffers/releases/download/v25.12.19-2026-02-06-03fffb2/Mac.flatc.binary.zip"
+url_api = "https://api.github.com/repos/google/flatbuffers/releases/assets/351911476"
+
+[tools.flatc."platforms.macos-x64"]
+checksum = "sha256:2407cfb9060bc4d13ea71550ec27c6635f2fd88fa716ba76493c1be285ce27ab"
+url = "https://github.com/google/flatbuffers/releases/download/v25.12.19-2026-02-06-03fffb2/Mac.flatc.binary.zip"
+url_api = "https://api.github.com/repos/google/flatbuffers/releases/assets/351911476"
+
+[tools.flatc."platforms.windows-x64"]
+checksum = "sha256:68d51916873a3dbdaf7997ddfbbbfd6472b5907ffc62ccc9a88d146bbc0db87d"
+url = "https://github.com/google/flatbuffers/releases/download/v25.12.19-2026-02-06-03fffb2/Windows.flatc.binary.zip"
+url_api = "https://api.github.com/repos/google/flatbuffers/releases/assets/351911903"
+
 [[tools.go]]
 version = "1.27.0"
 backend = "core:go"
