@@ -42,6 +42,7 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 
 	group.DELETE("/me", h.deleteAccount)
 	group.PATCH("/me", h.changeEmailAnsUsername)
+	group.GET("/me/export", h.exportData)
 }
 
 func apiError(err error) error {
@@ -382,4 +383,21 @@ func (h *handler) changeEmailAnsUsername(c *echo.Context) error {
 		return apiError(err)
 	}
 	return c.JSON(http.StatusNoContent, map[string]any{"message": "successfully updated profile."})
+}
+
+func (h *handler) exportData(c *echo.Context) error {
+	ctx := c.Request().Context()
+	userIDStr := h.sessionManager.GetString(ctx, "user_id")
+	if userIDStr == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+	dataResponse, err := h.service.GetDataFromUser(ctx, userID)
+	if err != nil {
+		return apiError(err)
+	}
+	return c.JSON(http.StatusOK, dataResponse)
 }

@@ -47,6 +47,11 @@ type Repository interface {
 
 	UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error
 	UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error
+
+	GetFriendListFromUserID(ctx context.Context, userID uuid.UUID) ([]string, error)
+	GetFriendRequestsFromUserID(ctx context.Context, userID uuid.UUID) ([]string, error)
+	GetFriendRequestsToUserID(ctx context.Context, userID uuid.UUID) ([]string, error)
+	GetMessagesFromUserID(ctx context.Context, userID uuid.UUID) ([]MessageExport, error)
 }
 
 type bunRepository struct {
@@ -307,4 +312,96 @@ func (r *bunRepository) UpdateUsername(ctx context.Context, userID uuid.UUID, us
 		return err
 	}
 	return nil
+}
+
+// TODO: Faire ces 3 repositories qui renvoient un array de string contenant les usernames des users en question
+func (r *bunRepository) GetFriendListFromUserID(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	var friends []string
+
+	subQ := r.db.NewSelect().
+		Table("friend_relations").
+		ColumnExpr("CASE WHEN user_id = ?0 THEN friend_id ELSE user_id END AS target_friend_id", userID).
+		Where("user_id = ?0 OR friend_id = ?0", userID)
+
+	err := r.db.NewSelect().
+		TableExpr("(?) AS friends_list", subQ).
+		ColumnExpr("users.username AS username").
+		Join("JOIN users ON users.id = friends_list.target_friend_id").
+		Scan(ctx, &friends)
+	if err != nil {
+		return []string{}, err
+	}
+	if friends == nil {
+		friends = []string{}
+	}
+	return friends, nil
+}
+
+func (r *bunRepository) GetFriendRequestsFromUserID(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	var friendsReq []string
+
+	subQ := r.db.NewSelect().
+		Table("friend_requests").
+		Where("sender_id = ?0", userID).
+		ColumnExpr("receiver_id AS target_friend_id")
+
+	err := r.db.NewSelect().
+		TableExpr("(?) AS friends_req", subQ).
+		ColumnExpr("users.username AS username").
+		Join("JOIN users ON users.id = friends_req.target_friend_id").
+		Scan(ctx, &friendsReq)
+	if err != nil {
+		return []string{}, err
+	}
+	if friendsReq == nil {
+		friendsReq = []string{}
+	}
+	return friendsReq, nil
+}
+
+func (r *bunRepository) GetFriendRequestsToUserID(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	var friendsReq []string
+
+	subQ := r.db.NewSelect().
+		Table("friend_requests").
+		Where("receiver_id = ?0", userID).
+		ColumnExpr("sender_id AS target_friend_id")
+
+	err := r.db.NewSelect().
+		TableExpr("(?) AS friends_req", subQ).
+		ColumnExpr("users.username AS username").
+		Join("JOIN users ON users.id = friends_req.target_friend_id").
+		Scan(ctx, &friendsReq)
+	if err != nil {
+		return []string{}, err
+	}
+	if friendsReq == nil {
+		friendsReq = []string{}
+	}
+	return friendsReq, nil
+}
+
+func (r *bunRepository) GetMessagesFromUserID(ctx context.Context, userID uuid.UUID) ([]MessageExport, error) {
+	var msg []MessageExport
+
+	subQ := r.db.NewSelect().
+		Table("friend_message").
+		Where("sender_id = ?0", userID).
+		Column("body", "created_at").
+		ColumnExpr("receiver_id AS target_friend_id")
+
+	err := r.db.NewSelect().
+		TableExpr("(?) AS friend_msg", subQ).
+		ColumnExpr("users.username AS receiver_name").
+		Column("friend_msg.body").
+		ColumnExpr("friend_msg.created_at AS sent_at").
+		Join("JOIN users ON users.id = friend_msg.target_friend_id").
+		Scan(ctx, &msg)
+	if err != nil {
+		return nil, err
+	}
+	if msg == nil {
+		msg = []MessageExport{}
+	}
+	return msg, nil
 }

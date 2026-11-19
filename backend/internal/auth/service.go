@@ -171,7 +171,7 @@ func generateCodeForMailVerif() (string, error) {
 }
 
 func (s *Service) SendVerificationEmail(ctx context.Context, userID uuid.UUID, email string) error {
-	if os.Getenv("HOSTNAME") == "" {
+	if os.Getenv("HOSTNAME") != "" {
 		return s.repo.MarkEmailAsVerified(ctx, userID)
 	}
 
@@ -321,4 +321,38 @@ func (s *Service) UpdateProfile(ctx context.Context, userID uuid.UUID, email, us
 		}
 	}
 	return nil
+}
+
+func (s *Service) GetDataFromUser(ctx context.Context, userID uuid.UUID) (*DataExport, error) {
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	friendList, err := s.repo.GetFriendListFromUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	friendRequestsSent, err := s.repo.GetFriendRequestsFromUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	friendRequestsReceived, err := s.repo.GetFriendRequestsToUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	friendMessages, err := s.repo.GetMessagesFromUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	userData := new(DataExport)
+	userData.Email = user.Email
+	userData.Username = user.Username
+	userData.ID = user.ID.String()
+	userData.Verified = user.Verified
+	userData.Friends = friendList
+	userData.FriendRequestsSent = friendRequestsSent
+	userData.FriendRequestsReceived = friendRequestsReceived
+	userData.Messages = friendMessages
+	return userData, nil
 }
