@@ -29,6 +29,9 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 	group.POST("/unfriend", h.unfriendFriend)
 	group.GET("/requests/list", h.getFriendRequestsList)
 	group.GET("/list", h.getFriendsList)
+
+	group.POST("/chat/send-message", h.sendMessage)
+	group.GET("/chat/get-messages", h.getMessages)
 }
 
 func apiError(err error) error {
@@ -261,4 +264,75 @@ func (h *handler) unfriendFriend(c *echo.Context) error {
 		return apiError(err)
 	}
 	return c.JSON(http.StatusOK, map[string]string{"message": "successfully unfriended."})
+}
+
+// sendMessage godoc
+// @Summary      Send Message to a friend user
+// @Description  Requires the session cookie from login. Sends a message to a specified user if they are friends
+// @Tags         Friends
+// @Accept       json
+// @Produce      json
+// @Param        request body friends.SendMessageRequest true "Friend ID and Message"
+// @Success      200 {object} map[string]string "successfully sent message."
+// @Failure      400 {object} map[string]string "invalid request body"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      403 {object} map[string]string "you need to verify your email"
+// @Router       /api/friends/chat/send-message [post].
+func (h *handler) sendMessage(c *echo.Context) error {
+	ctx := c.Request().Context()
+	userIDStr := h.sessionManager.GetString(ctx, "user_id")
+	if userIDStr == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
+	if !canAccess {
+		return apiError(err)
+	}
+
+	var req SendMessageRequest
+	if err = c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+
+	err = h.service.SendMessageToFriend(ctx, userID, req.FriendID, req.Message)
+	if err != nil {
+		return apiError(err)
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "successfully sent message."})
+}
+
+// getMessages godoc
+// @Summary      List Messages with a friend user
+// @Description  Requires the session cookie from login. Lists the messages with a specified user if they are friends
+// @Tags         Friends
+// @Produce      json
+// @Param        request query friends.GetMessagesRequest false "Friend ID"
+// @Success      200 {object} friends.MessagesListResponse
+// @Failure      400 {object} map[string]string "invalid request body"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      403 {object} map[string]string "you need to verify your email"
+// @Router       /api/friends/chat/get-messages [get].
+func (h *handler) getMessages(c *echo.Context) error {
+	ctx := c.Request().Context()
+	userIDStr := h.sessionManager.GetString(ctx, "user_id")
+	if userIDStr == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+
+	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
+	if !canAccess {
+		return apiError(err)
+	}
+
+	var req GetMessagesRequest
+	if err = c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+
+	messages, err := h.service.GetMessagesFromFriend(ctx, userID, req.FriendID)
+	if err != nil {
+		return apiError(err)
+	}
+	return c.JSON(http.StatusOK, messages)
 }

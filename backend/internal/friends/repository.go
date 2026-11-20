@@ -29,6 +29,9 @@ type Repository interface {
 	GetFriendsList(ctx context.Context, userID uuid.UUID, page int) (FriendRelationListResponse, error)
 	GetFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) (FriendRequestResponse, error)
 	GetPendingFriendRequests(ctx context.Context, receiverID uuid.UUID, page int) (FriendRequestsListResponse, error)
+
+	CreateFriendMessage(ctx context.Context, userID, friendID uuid.UUID, message string) error
+	GetMessagesFrom(ctx context.Context, userID, friendID uuid.UUID) (MessagesListResponse, error)
 }
 
 type bunRepository struct {
@@ -227,4 +230,49 @@ func (r *bunRepository) AreFriend(ctx context.Context, userID, friendID uuid.UUI
 	}
 
 	return exists, nil
+}
+
+func (r *bunRepository) CreateFriendMessage(ctx context.Context, userID, friendID uuid.UUID, message string) error {
+	req := &FriendMessage{
+		SenderID:   userID,
+		ReceiverID: friendID,
+		Body:       message,
+	}
+	_, err := r.db.NewInsert().
+		Model(req).
+		On("CONFLICT DO NOTHING").
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *bunRepository) GetMessagesFrom(ctx context.Context, userID, friendID uuid.UUID) (MessagesListResponse, error) {
+	var messages []MessageResponse
+
+	subSelect := r.db.NewSelect().
+		Table("friend_message").
+		Column("sender_id", "body", "created_at").
+		Where("(sender_id = ?0 AND receiver_id = ?1) OR (sender_id = ?1 AND receiver_id = ?0)", userID, friendID).
+		Order("created_at DESC", "id DESC"). // The second order is in case of exact same millisecond
+		Limit(50)                            // I'm not sure about this limit, ask the others
+
+	err := r.db.NewSelect().
+		TableExpr("(?) AS m", subSelect).
+		Column("m.sender_id").
+		ColumnExpr("m.body AS message").
+		ColumnExpr("m.created_at AS sent_at").
+		Order("m.created_at ASC").
+		Scan(ctx, &messages)
+	if err != nil {
+		return MessagesListResponse{}, err
+	}
+	if messages == nil {
+		messages = []MessageResponse{}
+	}
+
+	return MessagesListResponse{
+		Messages: messages,
+	}, nil
 }
