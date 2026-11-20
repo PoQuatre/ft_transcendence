@@ -16,6 +16,7 @@ export const cardVariants = cva(
           'bg-surface-1/70 hover:bg-surface-2/80 backdrop-blur-xl border border-border-subtle/50 hover:border-accent-primary/50 shadow-xl cursor-pointer',
         chamfer:
           'bg-surface-1/70 backdrop-blur-xl border border-border-subtle/60 clip-chamfer shadow-xl',
+        panel: 'min-w-0 rounded-lg border border-border-subtle bg-surface-1',
       },
     },
     defaultVariants: {

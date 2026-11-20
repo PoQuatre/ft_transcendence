@@ -144,6 +144,8 @@
   --color-red-900: #4c1022;
   --color-red-950: #300916;
 
+  --color-podium-bronze: #cd7f32;
+
   /* Rôles (Figma 02 / Dark, by design) : fonds et surfaces */
   --color-background: var(--color-neutral-950);
   --color-surface-1: var(--color-neutral-900);
@@ -192,6 +194,8 @@
   /* Halos néon : chaque --shadow-* génère shadow-glow-* et ses variantes
      hover:. xs = trait net, sm/md = halo, ambient = diffus et large. */
   --shadow-glow-cyan-xs: 0 0 6px var(--color-accent-primary);
+  --shadow-glow-cyan-soft: 0 0 6px
+    color-mix(in oklab, var(--color-accent-primary) 15%, transparent);
   --shadow-glow-cyan-sm: 0 0 10px
     color-mix(in oklab, var(--color-accent-primary) 25%, transparent);
   --shadow-glow-cyan-md: 0 0 15px

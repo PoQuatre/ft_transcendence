@@ -17,6 +17,8 @@ export const buttonVariants = cva(
         outline:
           'border border-border-default bg-transparent hover:bg-surface-2 text-text-primary',
         ghost: 'hover:bg-surface-2 text-text-primary',
+        filter:
+          'h-auto min-h-11 rounded-md border border-border-subtle bg-surface-2 font-label-data text-label-data text-text-muted hover:border-accent-primary md:min-h-8 pointer-coarse:min-h-11',
         link: 'text-accent-primary underline-offset-4 hover:underline',
         // Variantes Cyberpunk Rider
         cyan: 'border border-accent-primary text-accent-primary glow-cyan hover:bg-accent-primary hover:text-black clip-chamfer-btn',
