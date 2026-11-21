@@ -3,6 +3,7 @@ import type { Component } from 'solid-js';
 import { createSignal, onSettled, Show } from 'solid-js';
 
 import basicTankLogo from '~/assets/basic-tank.svg';
+import { FriendsPanel } from '~/components/friends/FriendsPanel';
 import { currentUser, getMe, logout } from '~/lib/auth';
 import { paths } from '~/router';
 
@@ -20,6 +21,7 @@ export const Header: Component = () => {
     },
   ];
   const [settingsOpen, setSettingsOpen] = createSignal(false);
+  const [friendsOpen, setFriendsOpen] = createSignal(false);
 
   // Initialisation et récupération de la session dès le montage client
   onSettled(() => {
@@ -29,6 +31,7 @@ export const Header: Component = () => {
   // Déconnexion propre avec fermeture du menu et redirection vers /login
   const handleLogout = async () => {
     setSettingsOpen(false);
+    setFriendsOpen(false);
     await logout();
     navigate('/login');
   };
@@ -118,7 +121,30 @@ export const Header: Component = () => {
               </span>
             </div>
 
-            {/* 2. Bouton Paramètres & Popover Déroulant */}
+            {/* 2. Bouton amis : le panneau s'ouvre par-dessus la page en cours */}
+            <button
+              type="button"
+              aria-label="Friends"
+              aria-expanded={friendsOpen() ? 'true' : 'false'}
+              title="Friends"
+              onClick={() => setFriendsOpen(!friendsOpen())}
+              class={[
+                'p-2 rounded-md border transition-all cursor-pointer flex items-center justify-center',
+                {
+                  'bg-accent-primary-subtle/70 border-accent-primary text-accent-primary shadow-glow-cyan-md':
+                    friendsOpen(),
+                  'bg-surface-1 border-border-subtle/85 text-text-muted hover:text-accent-primary hover:border-accent-primary/50':
+                    !friendsOpen(),
+                },
+              ]}
+            >
+              <span class="material-symbols-outlined text-lg">group</span>
+            </button>
+            <Show when={friendsOpen()}>
+              <FriendsPanel onClose={() => setFriendsOpen(false)} />
+            </Show>
+
+            {/* 3. Bouton Paramètres & Popover Déroulant */}
             <div class="relative">
               <button
                 type="button"
@@ -149,14 +175,6 @@ export const Header: Component = () => {
 
                 {/* Boîte du menu */}
                 <div class="absolute right-0 top-full mt-2 w-72 bg-surface-2/95 backdrop-blur-xl border border-border-subtle/90 rounded-lg p-4 shadow-2xl z-50 font-mono space-y-3">
-                  <a
-                    href={paths.friends()}
-                    onClick={() => setSettingsOpen(false)}
-                    class="w-full py-2 px-3 rounded-md bg-accent-primary-subtle/40 hover:bg-accent-primary-subtle/80 border border-accent-primary/50 hover:border-accent-primary text-accent-primary font-bold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 no-underline shadow-glow-cyan-sm hover:shadow-glow-cyan-md"
-                  >
-                    <span class="material-symbols-outlined text-sm">group</span>
-                    <span>FRIENDS</span>
-                  </a>
                   {/* Lien vers la page paramètres */}
                   <a
                     href={paths.settings()}
