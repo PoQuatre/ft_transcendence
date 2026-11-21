@@ -2,6 +2,7 @@ export { Button, buttonVariants, type ButtonProps } from './Button';
 export { Badge, badgeVariants, type BadgeProps } from './Badge';
 export { Card, cardVariants, type CardProps } from './Card';
 export { Input, type InputProps } from './Input';
+export { Select, type SelectProps, type SelectOption } from './Select';
 export { Progress, progressVariants, type ProgressProps } from './Progress';
 export { Kbd, kbdVariants, type KbdProps } from './Kbd';
 export { Separator, type SeparatorProps } from './Separator';
