@@ -25,7 +25,12 @@ export const ROW =
   'flex items-center justify-between gap-space-md rounded-md border border-border-subtle/60 bg-surface-1/60 px-space-md py-space-sm';
 
 // Changer `version` recharge la liste (après une demande acceptée).
-export const FriendsList: Component<{ version?: number }> = (props) => {
+export type FriendsListProps = {
+  version?: number;
+  onChat?: (friend: Friend) => void;
+};
+
+export const FriendsList: Component<FriendsListProps> = (props) => {
   const [friends, setFriends] = createSignal<Friend[]>();
   const [feedback, setFeedback] = createSignal<Feedback>();
   const [target, setTarget] = createSignal<Friend>();
@@ -91,15 +96,28 @@ export const FriendsList: Component<{ version?: number }> = (props) => {
               <span class="font-label-mono-caps text-label-mono-caps text-text-primary">
                 {friend.username}
               </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-label={`Remove ${friend.username}`}
-                onClick={() => setTarget(friend)}
-              >
-                Remove
-              </Button>
+              <div class="flex gap-space-xs">
+                <Show when={props.onChat}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Chat with ${friend.username}`}
+                    onClick={() => props.onChat?.(friend)}
+                  >
+                    Chat
+                  </Button>
+                </Show>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label={`Remove ${friend.username}`}
+                  onClick={() => setTarget(friend)}
+                >
+                  Remove
+                </Button>
+              </div>
             </li>
           )}
         </For>

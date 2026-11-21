@@ -8,8 +8,10 @@ import {
   Separator,
 } from '~/components/ui';
 import { currentUser } from '~/lib/auth';
+import type { Friend } from '~/lib/friends';
 import { paths } from '~/router';
 
+import { Conversation } from './Conversation';
 import { FriendRequestForm } from './FriendRequestForm';
 import { FriendsList } from './FriendsList';
 import { IncomingRequests } from './IncomingRequests';
@@ -18,6 +20,7 @@ export type FriendsPanelProps = { onClose: () => void };
 
 export const FriendsPanel: Component<FriendsPanelProps> = (props) => {
   const [version, setVersion] = createSignal(0);
+  const [chatWith, setChatWith] = createSignal<Friend>();
 
   onSettled(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -78,13 +81,27 @@ export const FriendsPanel: Component<FriendsPanelProps> = (props) => {
               </Alert>
             }
           >
-            <div class="space-y-space-lg">
-              <FriendRequestForm />
-              <Separator />
-              <IncomingRequests onAccepted={() => setVersion((v) => v + 1)} />
-              <Separator />
-              <FriendsList version={version()} />
-            </div>
+            <Show
+              when={chatWith()}
+              fallback={
+                <div class="space-y-space-lg">
+                  <FriendRequestForm />
+                  <Separator />
+                  <IncomingRequests
+                    onAccepted={() => setVersion((v) => v + 1)}
+                  />
+                  <Separator />
+                  <FriendsList version={version()} onChat={setChatWith} />
+                </div>
+              }
+            >
+              {(friend) => (
+                <Conversation
+                  friend={friend()}
+                  onBack={() => setChatWith(undefined)}
+                />
+              )}
+            </Show>
           </Show>
         </div>
       </aside>

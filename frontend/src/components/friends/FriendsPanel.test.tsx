@@ -22,10 +22,12 @@ function backend() {
     return Promise.resolve(
       url.startsWith('/api/friends/requests/list')
         ? json({ ...page, requests: [] }, 200)
-        : json(
-            { ...page, relations: [{ username: 'ghost', friend_id: 'f1' }] },
-            200,
-          ),
+        : url.startsWith('/api/friends/chat/get-messages')
+          ? json({ messages: [] }, 200)
+          : json(
+              { ...page, relations: [{ username: 'ghost', friend_id: 'f1' }] },
+              200,
+            ),
     );
   });
 }
@@ -47,6 +49,22 @@ describe('<FriendsPanel />', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('ADD A FRIEND')).toBeInTheDocument();
     expect(await screen.findByText('ghost')).toBeInTheDocument();
+  });
+
+  test('opens a chat with a friend and comes back', async () => {
+    setCurrentUser({ ...me, verified: true });
+    vi.stubGlobal('fetch', backend());
+    render(() => <FriendsPanel onClose={vi.fn<() => void>()} />);
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Chat with ghost' }),
+    );
+    expect(
+      await screen.findByRole('log', { name: 'Messages with ghost' }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to friends' }));
+    expect(await screen.findByText('ADD A FRIEND')).toBeInTheDocument();
   });
 
   test('asks for a verified email first', () => {
