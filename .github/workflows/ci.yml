@@ -40,10 +40,13 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
+              - 'schemas/**'
             frontend:
               - 'frontend/**'
+              - 'schemas/**'
             game:
               - 'game/**'
+              - 'schemas/**'
             sql:
               - '**/*.sql'
             migrations:
@@ -108,6 +111,8 @@ jobs:
         with:
           context: backend
           file: backend/Containerfile
+          build-contexts: |
+            schemas=./schemas
           target: prod
           push: false
           cache-from: type=gha,scope=backend
@@ -130,8 +135,11 @@ jobs:
       - name: Build frontend image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
-          context: .
+          context: frontend
           file: frontend/Containerfile
+          build-contexts: |
+            schemas=./schemas
+            game=./game
           target: prod
           push: false
           cache-from: type=gha,scope=frontend

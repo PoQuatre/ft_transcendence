@@ -4,8 +4,6 @@ services:
       MODSEC_RULE_ENGINE: "Off"
 
   vault:
-    ports:
-      - 127.0.0.1:8200:8200
     networks:
       vault-pgweb:
 
@@ -70,8 +68,10 @@ services:
       target: dev
     volumes:
       - ./backend:/app:ro,Z
+      - ./schemas:/schemas:ro,z
       - backend-tmp:/app/tmp:Z
       - backend-docs:/app/docs:Z
+      - backend-generated:/app/internal/game/protocol/generated:Z
       - backend-go-mod:/go/pkg/mod:Z
       - backend-go-build:/go-build:Z
     command: ["air"]
@@ -105,6 +105,7 @@ services:
       retries: 3
     volumes:
       - ./game:/app:ro,Z
+      - ./schemas:/schemas:ro,z
       - game-build:/app/build:Z
       - game-out:/out:z
     networks:
@@ -115,6 +116,7 @@ volumes:
   frontend-pnpm-store:
   backend-tmp:
   backend-docs:
+  backend-generated:
   backend-go-mod:
   backend-go-build:
   game-build:

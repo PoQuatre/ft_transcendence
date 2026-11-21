@@ -9,12 +9,10 @@ project(game LANGUAGES CXX)
 add_library(game_base INTERFACE)
 add_library(game::base ALIAS game_base)
 
-if(MSVC)
-    target_compile_options(game_base INTERFACE /W3 /WX)
-else()
-    target_compile_options(game_base INTERFACE -Wall -Wextra -Werror)
-endif()
-
+target_compile_options(
+    game_base
+    INTERFACE $<$<CONFIG:Debug>:-g> -Wall -Wextra -Werror
+)
 target_compile_features(game_base INTERFACE cxx_std_23)
 
 # ------------------------------------------------------------------------------
@@ -45,14 +43,51 @@ endif()
 
 include(FetchContent)
 
-FetchContent_Declare(
-    raylib
-    GIT_REPOSITORY https://github.com/raysan5/raylib.git
-    GIT_TAG 6.0
-    GIT_SHALLOW TRUE
-)
+set(RAYLIB_SOURCE_DIR "${CMAKE_BINARY_DIR}/_deps/raylib-src")
+
+if(NOT EXISTS "${RAYLIB_SOURCE_DIR}/CMakeLists.txt")
+    message(STATUS "Cloning raylib 6.0 with sparse checkout...")
+
+    execute_process(
+        COMMAND git clone
+            --single-branch
+            --branch=6.0
+            --filter=blob:none
+            --sparse
+            --depth=1
+            https://github.com/raysan5/raylib.git
+            "${RAYLIB_SOURCE_DIR}"
+        RESULT_VARIABLE GIT_CLONE_RESULT
+    )
+
+    if(NOT GIT_CLONE_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to clone raylib")
+    endif()
+
+    execute_process(
+        COMMAND git sparse-checkout set
+            --no-cone
+            "/*"
+            "!/examples/*"
+            "!/projects/*"
+        WORKING_DIRECTORY "${RAYLIB_SOURCE_DIR}"
+        RESULT_VARIABLE GIT_SPARSE_RESULT
+    )
+
+    if(NOT GIT_SPARSE_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to configure raylib sparse checkout")
+    endif()
+endif()
+
+# Raylib configuration
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(USE_EXTERNAL_GLFW IF_POSSIBLE CACHE STRING "")
+set(USE_EXTERNAL_GLFW IF_POSSIBLE CACHE STRING "" FORCE)
+
+# Add raylib to the project
+add_subdirectory(
+    "${RAYLIB_SOURCE_DIR}"
+    "${CMAKE_BINARY_DIR}/_deps/raylib-build"
+)
 
 FetchContent_Declare(
     EnTT
@@ -75,16 +110,16 @@ set(SPDLOG_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(SPDLOG_BUILD_BENCH OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
-	glm
-	GIT_REPOSITORY https://github.com/g-truc/glm.git
-	GIT_TAG 1.0.3
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 1.0.3
     GIT_SHALLOW TRUE
 )
 set(GLM_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
-	box2d
+    box2d
     GIT_REPOSITORY https://github.com/erincatto/box2d.git
     GIT_TAG v3.1.1
     GIT_SHALLOW TRUE
@@ -93,17 +128,58 @@ set(BOX2D_SAMPLES OFF CACHE BOOL "" FORCE)
 set(BOX2D_UNIT_TESTS OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
-	nanosvg
+    nanosvg
     GIT_REPOSITORY https://github.com/memononen/nanosvg.git
-	GIT_TAG master
+    GIT_TAG master
     GIT_SHALLOW TRUE
 )
 
-FetchContent_MakeAvailable(raylib EnTT spdlog glm box2d nanosvg)
-
-target_include_directories(nanosvg PUBLIC
-    $<BUILD_INTERFACE:${nanosvg_SOURCE_DIR}/src>
+FetchContent_Declare(
+    flatbuffers
+    GIT_REPOSITORY https://github.com/google/flatbuffers.git
+    GIT_TAG v25.12.19
+    GIT_SHALLOW TRUE
 )
+if(EMSCRIPTEN)
+    set(FLATBUFFERS_BUILD_FLATC OFF CACHE BOOL "" FORCE)
+    set(FLATBUFFERS_FLATC_EXECUTABLE "${CMAKE_BINARY_DIR}/host-flatc/flatc")
+endif()
+set(FLATBUFFERS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(FLATBUFFERS_BUILD_GRPCTEST OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(
+    EnTT
+    spdlog
+    glm
+    box2d
+    nanosvg
+    flatbuffers
+)
+
+target_include_directories(
+    nanosvg
+    PUBLIC $<BUILD_INTERFACE:${nanosvg_SOURCE_DIR}/src>
+)
+
+if(EMSCRIPTEN)
+    include(ExternalProject)
+
+    set(HOST_FLATC_DIR "${CMAKE_BINARY_DIR}/host-flatc")
+    set(HOST_FLATC "${HOST_FLATC_DIR}/flatc")
+
+    ExternalProject_Add(
+        host_flatc
+        SOURCE_DIR "${flatbuffers_SOURCE_DIR}"
+        BINARY_DIR "${HOST_FLATC_DIR}"
+        CMAKE_ARGS
+            -DFLATBUFFERS_BUILD_TESTS=OFF -DFLATBUFFERS_BUILD_FLATLIB=OFF
+            -DFLATBUFFERS_BUILD_FLATC=ON -DFLATBUFFERS_INSTALL=OFF
+            -DCMAKE_BUILD_TYPE=Release
+        BUILD_COMMAND "${CMAKE_COMMAND}" --build <BINARY_DIR> --target flatc
+        INSTALL_COMMAND ""
+        BUILD_BYPRODUCTS "${HOST_FLATC}"
+    )
+endif()
 
 include(CTest)
 
@@ -120,8 +196,16 @@ if(BUILD_TESTING)
     include(Catch)
 endif()
 
-if(NOT EXISTS "${CMAKE_SOURCE_DIR}/src/renderer/assets/textures/space_grotesk.ttf")
-	execute_process(COMMAND wget https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj62UUsj.ttf -O "${CMAKE_SOURCE_DIR}/src/renderer/assets/textures/space_grotesk.ttf")
+if(
+    NOT EXISTS "${CMAKE_SOURCE_DIR}/src/renderer/assets/textures/space_grotesk.ttf"
+)
+    execute_process(
+        COMMAND
+            wget
+            https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj62UUsj.ttf
+            -O
+            "${CMAKE_SOURCE_DIR}/src/renderer/assets/textures/space_grotesk.ttf"
+    )
 endif()
 
 # ------------------------------------------------------------------------------
@@ -129,6 +213,15 @@ endif()
 # ------------------------------------------------------------------------------
 
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+
+add_subdirectory(
+    "${CMAKE_CURRENT_SOURCE_DIR}/../schemas"
+    "${CMAKE_CURRENT_BINARY_DIR}/schemas"
+)
+
+if(EMSCRIPTEN)
+    add_dependencies(GENERATE_game_protocol_schemas host_flatc)
+endif()
 
 add_subdirectory(src)
 

@@ -6,3 +6,10 @@ target_link_libraries(
 )
 
 catch_discover_tests(simulation_test)
+
+add_executable(network_test network_test.cpp)
+target_link_libraries(
+    network_test
+    PRIVATE game::base Catch2::Catch2WithMain game::network
+)
+catch_discover_tests(network_test)

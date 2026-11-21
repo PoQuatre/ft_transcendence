@@ -1,6 +1,8 @@
 DOCKER = podman
 COMPOSE = $(DOCKER) compose
 DEV_DIRS = frontend/.generated frontend/node_modules frontend/public/assets/game backend/tmp game/build
+GAME_SOURCE_DIRS = src tests
+SQL_SOURCE_DIRS = backend/migrations postgres/init
 PASSWORD_VARS = POSTGRES_PASSWORD POSTGRES_VAULT_PASSWORD
 ROLE_VARS = BOOTSTRAP_ROLE_ID BACKEND_ROLE_ID MIGRATE_ROLE_ID PGWEB_ROLE_ID NGINX_PKI_ROLE_ID POSTGRES_PKI_ROLE_ID
 JFLAG := $(filter -j%,$(MAKEFLAGS))
@@ -52,11 +54,13 @@ setup:
 	cd frontend && pnpm install
 	cd backend && go mod download
 	cd backend && swag init -g internal/server/server.go --parseInternal
-	cd game && cmake --preset native-debug
+	cd backend && flatc --go --go-namespace generated -o ./internal/game/protocol ../schemas/*.fbs
+	cd game && cmake --preset native-debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	cd game && cmake --build --preset native-debug --target GENERATE_game_protocol_schemas
 
 .PHONY: fclean
 fclean:
-	$(RM) -r .cache backend/bin/ backend/docs/ frontend/dist/ frontend/node_modules/ game/.cache/ game/build/ game/compile_commands.json
+	$(RM) -r .cache backend/bin/ backend/docs/ backend/internal/game/protocol/generated/ frontend/dist/ frontend/node_modules/ game/.cache/ game/build/ game/compile_commands.json
 
 .PHONY: test
 test: test-frontend test-backend test-game
@@ -90,14 +94,14 @@ lint-backend:
 lint-game:
 	cd game && cmake --preset native-debug
 ifneq ($(JFLAG),)
-	cd game && run-clang-tidy -hide-progress -quiet -use-color -extra-arg-before=-resource-dir="$$(clang -print-resource-dir)" -p build/native-debug -j $(or $(patsubst -j%,%,$(JFLAG)),0) $$(git ls-files -- '*.cpp')
+	cd game && run-clang-tidy -hide-progress -quiet -use-color -p build/native-debug -j $(or $(patsubst -j%,%,$(JFLAG)),0) $$(find $(GAME_SOURCE_DIRS) -type f -name '*.cpp')
 else
-	cd game && clang-tidy -quiet -extra-arg-before=-resource-dir="$$(clang -print-resource-dir)" -p build/native-debug $$(git ls-files -- '*.cpp')
+	cd game && clang-tidy -quiet -p build/native-debug $$(find $(GAME_SOURCE_DIRS) -type f -name '*.cpp')
 endif
 
 .PHONY: lint-sql
 lint-sql:
-	sqlfluff lint $$(git ls-files -- '*.sql')
+	sqlfluff lint $$(find $(SQL_SOURCE_DIRS) -type f -name '*.sql')
 
 .PHONY: lint-migrations
 lint-migrations:
@@ -118,14 +122,14 @@ lint-fix-backend:
 lint-fix-game:
 	cd game && cmake --preset native-debug
 ifneq ($(JFLAG),)
-	cd game && run-clang-tidy -hide-progress -quiet -use-color -fix -extra-arg-before=-resource-dir="$$(clang -print-resource-dir)" -p build/native-debug -j $(or $(patsubst -j%,%,$(JFLAG)),0) $$(git ls-files -- '*.cpp')
+	cd game && run-clang-tidy -hide-progress -quiet -use-color -fix -p build/native-debug -j $(or $(patsubst -j%,%,$(JFLAG)),0) $$(find $(GAME_SOURCE_DIRS) -type f -name '*.cpp')
 else
-	cd game && clang-tidy --quiet --fix -extra-arg-before=-resource-dir="$$(clang -print-resource-dir)" -p build/native-debug $$(git ls-files -- '*.cpp')
+	cd game && clang-tidy --quiet --fix -p build/native-debug $$(find $(GAME_SOURCE_DIRS) -type f -name '*.cpp')
 endif
 
 .PHONY: lint-fix-sql
 lint-fix-sql:
-	sqlfluff fix --dialect postgres $$(git ls-files -- '*.sql')
+	sqlfluff fix --dialect postgres $$(find $(SQL_SOURCE_DIRS) -type f -name '*.sql')
 
 .PHONY: format
 format: format-frontend format-backend format-game format-sql
@@ -140,11 +144,11 @@ format-backend:
 
 .PHONY: format-game
 format-game:
-	cd game && clang-format --dry-run --Werror $$(git ls-files -- '*.cpp' '*.hpp')
+	cd game && clang-format --dry-run --Werror $$(find $(GAME_SOURCE_DIRS) -type f -name '*.[ch]pp')
 
 .PHONY: format-sql
 format-sql:
-	@files="$$(git ls-files -- '*.sql')"; \
+	@files="$$(find $(SQL_SOURCE_DIRS) -type f -name '*.sql')"; \
 	trap 'for file in $$files; do rm -f "$${file%.sql}.sqlfluff-format.sql"; done' 0; \
 	set -e; \
 	sqlfluff format --dialect postgres --fixed-suffix .sqlfluff-format $$files; \
@@ -165,19 +169,21 @@ format-fix-backend:
 
 .PHONY: format-fix-game
 format-fix-game:
-	cd game && clang-format -i $$(git ls-files -- '*.cpp' '*.hpp')
+	cd game && clang-format -i $$(find $(GAME_SOURCE_DIRS) -type f -name '*.[ch]pp')
 
 .PHONY: format-fix-sql
 format-fix-sql:
-	sqlfluff format --dialect postgres $$(git ls-files -- '*.sql')
+	sqlfluff format --dialect postgres $$(find $(SQL_SOURCE_DIRS) -type f -name '*.sql')
 
 .PHONY: start
 start: certs env
-	$(COMPOSE) -f compose.yml -f compose.prod.yml up --build --force-recreate -d
+	EXTERNAL_IP=$$(ip -4 -o addr show | awk '{print $$4}' | cut -d/ -f1 | paste -sd, -) \
+		$(COMPOSE) -f compose.yml -f compose.prod.yml up --build --force-recreate -d
 
 .PHONY: dev
 dev: certs env $(DEV_DIRS)
-	$(COMPOSE) -f compose.yml -f compose.dev.yml up --build --force-recreate -d
+	EXTERNAL_IP=$$(ip -4 -o addr show | awk '{print $$4}' | cut -d/ -f1 | paste -sd, -) \
+		$(COMPOSE) -f compose.yml -f compose.dev.yml up --build --force-recreate -d
 
 $(DEV_DIRS):
 	mkdir -p $@

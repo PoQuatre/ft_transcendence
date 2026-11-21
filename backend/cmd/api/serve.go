@@ -7,10 +7,14 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/database"
+	"github.com/PoQuatre/ft_transcendence/backend/internal/game/webrtc"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/server"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/vault"
 
@@ -19,8 +23,9 @@ import (
 
 func newServeCmd() *cobra.Command {
 	var (
-		port int
-		host string
+		port       int
+		webrtcPort int
+		host       string
 	)
 
 	cmd := &cobra.Command{
@@ -28,6 +33,19 @@ func newServeCmd() *cobra.Command {
 		Short: "Start the API server",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
+
+			external := strings.Split(os.Getenv("EXTERNAL_IP"), ",")
+			external = slices.DeleteFunc(external, func(str string) bool { return str == "" })
+			webRTC, err := webrtc.New(webrtcPort, external)
+			if err != nil {
+				return fmt.Errorf("start WebRTC server: %w", err)
+			}
+			defer func() {
+				closeErr := webRTC.Close()
+				if closeErr != nil {
+					slog.Error("close WebRTC server", "error", closeErr)
+				}
+			}()
 
 			vaultConfig, err := vault.ConfigFromEnv()
 			if err != nil {
@@ -48,7 +66,7 @@ func newServeCmd() *cobra.Command {
 				}
 			}()
 
-			srv, err := server.New(server.WithDatabase(db))
+			srv, err := server.New(server.WithDatabase(db), server.WithWebRTC(webRTC))
 			if err != nil {
 				return fmt.Errorf("initialize server: %w", err)
 			}
@@ -59,6 +77,7 @@ func newServeCmd() *cobra.Command {
 	}
 
 	cmd.Flags().IntVarP(&port, "port", "p", 8080, "port to listen on")
+	cmd.Flags().IntVarP(&webrtcPort, "webrtc-port", "P", 9000, "port to listen on")
 	cmd.Flags().StringVarP(&host, "host", "H", "0.0.0.0", "host to listen on")
 
 	return cmd

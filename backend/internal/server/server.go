@@ -7,11 +7,14 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
@@ -19,18 +22,63 @@ import (
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/friends"
+	"github.com/PoQuatre/ft_transcendence/backend/internal/game/webrtc"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/swagger"
 )
 
+const (
+	authPrefix   = "/api/auth"
+	webrtcPrefix = "/api/webrtc"
+)
+
 type config struct {
 	database *bun.DB
+	webrtc   *webrtc.Server
+}
+
+type keyedLocks struct {
+	locks map[string]*keyedLock
+	mu    sync.Mutex
+}
+
+type keyedLock struct {
+	mu   sync.Mutex
+	refs int
+}
+
+func (k *keyedLocks) lock(key string) func() {
+	k.mu.Lock()
+	if k.locks == nil {
+		k.locks = make(map[string]*keyedLock)
+	}
+	lock := k.locks[key]
+	if lock == nil {
+		lock = &keyedLock{}
+		k.locks[key] = lock
+	}
+	lock.refs++
+	k.mu.Unlock()
+	lock.mu.Lock()
+	return func() {
+		lock.mu.Unlock()
+		k.mu.Lock()
+		lock.refs--
+		if lock.refs == 0 {
+			delete(k.locks, key)
+		}
+		k.mu.Unlock()
+	}
 }
 
 type Option func(*config)
 
 func WithDatabase(database *bun.DB) Option {
 	return func(config *config) { config.database = database }
+}
+
+func WithWebRTC(webrtcServer *webrtc.Server) Option {
+	return func(config *config) { config.webrtc = webrtcServer }
 }
 
 func New(options ...Option) (http.Handler, error) {
@@ -40,6 +88,7 @@ func New(options ...Option) (http.Handler, error) {
 	}
 
 	e := echo.New()
+	e.IPExtractor = echo.ExtractIPFromXFFHeader()
 
 	e.Use(middleware.RequestID())
 	e.Use(middleware.RequestLogger())
@@ -51,7 +100,34 @@ func New(options ...Option) (http.Handler, error) {
 	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
 	sessionManager.Cookie.Secure = true
 
+	// Lock before loading a session, then by account to cover multiple sessions.
+	var sessionLocks, accountLocks keyedLocks
+	needsLock := func(path string) bool {
+		return path == webrtcPrefix+webrtc.OfferPath || path == authPrefix+auth.LogoutPath
+	}
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			if needsLock(c.Request().URL.Path) {
+				if cookie, err := c.Request().Cookie(sessionManager.Cookie.Name); err == nil && cookie.Value != "" {
+					unlock := sessionLocks.lock(cookie.Value)
+					defer unlock()
+				}
+			}
+			return next(c)
+		}
+	})
 	e.Use(echo.WrapMiddleware(sessionManager.LoadAndSave))
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			if needsLock(c.Request().URL.Path) {
+				if id := sessionManager.GetString(c.Request().Context(), "user_id"); id != "" {
+					unlock := accountLocks.lock(id)
+					defer unlock()
+				}
+			}
+			return next(c)
+		}
+	})
 
 	validat, err := helpers.NewCustomValidator()
 	if err != nil {
@@ -70,9 +146,33 @@ func New(options ...Option) (http.Handler, error) {
 	swagger.RegisterRoutes(e.Group("/api/docs"))
 
 	if cfg.database != nil {
+		var onLogout func(string)
+		if cfg.webrtc != nil {
+			onLogout = cfg.webrtc.DisconnectAccount
+		}
 		authService := auth.NewService(auth.NewRepository(cfg.database))
-		auth.RegisterRoutes(e.Group("/api/auth"), authService, sessionManager, validat)
+		auth.RegisterRoutes(e.Group("/api/auth"), authService, sessionManager, validat, onLogout)
 		friends.RegisterRoutes(e.Group("/api/friends"), friends.NewService(friends.NewRepository(cfg.database)), sessionManager, authService)
+	}
+	if cfg.webrtc != nil {
+		webrtc.RegisterRoutes(e.Group(webrtcPrefix), cfg.webrtc, func(r *http.Request) (webrtc.Identity, error) {
+			_, cookieErr := r.Cookie(sessionManager.Cookie.Name)
+			if errors.Is(cookieErr, http.ErrNoCookie) && r.Header.Get("Authorization") == "" {
+				return webrtc.Identity{}, nil
+			}
+			id, err := uuid.Parse(sessionManager.GetString(r.Context(), "user_id"))
+			if err != nil || cfg.database == nil || r.Header.Get("Authorization") != "" {
+				return webrtc.Identity{}, echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired credentials")
+			}
+			user, err := auth.NewService(auth.NewRepository(cfg.database)).GetUserByID(r.Context(), id)
+			if err != nil {
+				if errors.Is(err, auth.ErrNotFound) {
+					return webrtc.Identity{}, echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired credentials")
+				}
+				return webrtc.Identity{}, err
+			}
+			return webrtc.Identity{AccountID: id.String(), Username: user.Username}, nil
+		})
 	}
 
 	return e, nil
