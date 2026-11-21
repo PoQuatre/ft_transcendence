@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	_ "embed"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -41,15 +42,20 @@ func toUserResponse(user *User) *UserResponse {
 	}
 }
 
+//go:embed passwordMail.html
+var passwordMailTemplate string
+
+//go:embed verifMail.html
+var verifMailTemplate string
+
 func createForgotPasswordMail(resetURL string) string {
-	// TODO: Turn this to a proper html mail
-	rep := "Hello,\n\n"
-	rep += "We received a request to reset the password for your ft_transcendence account.\n\n"
-	rep += "Click the link below to set a new password:\n"
-	rep += resetURL
-	rep += "\n\nThis link is valid for 15 minutes. If you did not request a password reset, you can safely ignore this email — your password will remain unchanged.\n\n"
-	rep += "Best regards,\nThe ft_transcendence Team"
-	return rep
+	strRep := fmt.Sprintf(passwordMailTemplate, resetURL, resetURL, resetURL)
+	return strRep
+}
+
+func createMailVerificationMail(code string) string {
+	strRep := fmt.Sprintf(verifMailTemplate, code)
+	return strRep
 }
 
 func (s *Service) SendForgotPasswordMail(ctx context.Context, user *User) error {
@@ -150,15 +156,6 @@ func (s *Service) CheckVerificationEmail(ctx context.Context, userID uuid.UUID, 
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return nil
-}
-
-// TODO: Turn to a cool html message.
-func createMailVerificationMail(code string) string {
-	// TODO: Turn this to a proper html mail
-	rep := "Hello,\n\nThank you for signing up with ft_transcendence.\n\nHere is your verification code to enter on the authentication page:\n["
-	rep += code
-	rep += "]\nThis code is valid for 10 minutes. If you did not request this code, you can safely ignore this email.\n\nBest regards,\nThe ft_transcendence Team"
-	return rep
 }
 
 func generateCodeForMailVerif() (string, error) {

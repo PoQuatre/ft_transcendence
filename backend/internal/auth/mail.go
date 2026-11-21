@@ -17,9 +17,7 @@ func SendMail(ctx context.Context, to, from, subj, body string) error {
 	}
 	m.Subject(subj)
 
-	// NOTE: Once we have the cool html message, turn this to
-	// m.SetBodyString(mail.TypeTextHTML, body)
-	m.SetBodyString(mail.TypeTextPlain, body)
+	m.SetBodyString(mail.TypeTextHTML, body)
 
 	// NOTE: mailpit version (for dev and tests)
 	c, err := mail.NewClient("mailpit",
