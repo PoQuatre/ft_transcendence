@@ -1,4 +1,4 @@
-import { cleanup, render } from '@solidjs/testing-library';
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { FriendsList } from './FriendsList';
@@ -45,5 +45,47 @@ describe('<FriendsList />', () => {
     const view = render(() => <FriendsList />);
 
     expect(await view.findByText('Uplink lost')).toBeInTheDocument();
+  });
+
+  test('removes a friend after confirmation', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(page([{ username: 'ghost', friend_id: 'f1' }]))
+      .mockResolvedValueOnce(json({ message: 'ok' }, 200))
+      .mockResolvedValueOnce(page([]));
+    vi.stubGlobal('fetch', fetchMock);
+    const view = render(() => <FriendsList />);
+
+    fireEvent.click(await view.findByRole('button', { name: 'Remove ghost' }));
+    await screen.findByRole('dialog', { name: 'Remove friend' });
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+    expect(await view.findByText('Friend removed')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      '/api/friends/unfriend',
+      expect.objectContaining({ body: JSON.stringify({ friend_id: 'f1' }) }),
+    );
+    expect(
+      await view.findByText("Pas encore d'amis dans ton escouade."),
+    ).toBeInTheDocument();
+  });
+
+  test('keeps the friend on cancel', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(page([{ username: 'ghost', friend_id: 'f1' }]));
+    vi.stubGlobal('fetch', fetchMock);
+    const view = render(() => <FriendsList />);
+
+    fireEvent.click(await view.findByRole('button', { name: 'Remove ghost' }));
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(view.getByText('ghost')).toBeInTheDocument();
   });
 });
