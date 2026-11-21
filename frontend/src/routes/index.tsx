@@ -12,28 +12,10 @@ const isEditableTarget = (target: EventTarget | null) =>
   (target.isContentEditable ||
     ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
-// Call-sign d'invité : ANONYM_ + 4 hexadécimaux, généré une fois et conservé
-// dans localStorage pour survivre au rechargement.
-const GUEST_CALLSIGN_KEY = 'cybercore.guest-callsign';
-const loadGuestCallsign = () => {
-  try {
-    const saved = localStorage.getItem(GUEST_CALLSIGN_KEY);
-    if (saved) return saved;
-  } catch {
-    // Stockage indisponible (navigation privée, etc.) : on régénère.
-  }
-  const hex = Array.from(crypto.getRandomValues(new Uint8Array(2)), (byte) =>
-    byte.toString(16).padStart(2, '0'),
-  )
-    .join('')
-    .toUpperCase();
-  const generated = `ANONYM_${hex}`;
-  try {
-    localStorage.setItem(GUEST_CALLSIGN_KEY, generated);
-  } catch {
-    // Idem : le nom ne sera pas conservé entre deux visites.
-  }
-  return generated;
+// Call-sign d'invité : ANONYM_ + 4 hexadécimaux, tiré à chaque visite.
+const randomGuestCallsign = () => {
+  const [value = 0] = crypto.getRandomValues(new Uint16Array(1));
+  return `ANONYM_${value.toString(16).padStart(4, '0').toUpperCase()}`;
 };
 
 export default function Home() {
@@ -62,25 +44,21 @@ export default function Home() {
     {
       hex: '#00e5ff',
       glow: 'rgba(0, 229, 255, 0.75)',
-      ref: '#00E5FF',
       name: 'Electric Cyan',
     },
     {
       hex: '#ff50df',
       glow: 'rgba(255, 80, 223, 0.75)',
-      ref: '#FF50DF',
       name: 'Hot Pink',
     },
     {
       hex: '#12ee83',
       glow: 'rgba(18, 238, 131, 0.75)',
-      ref: '#12EE83',
       name: 'Neon Green',
     },
     {
       hex: '#ffbb24',
       glow: 'rgba(255, 187, 36, 0.75)',
-      ref: '#FFBB24',
       name: 'Electric Amber',
     },
   ];
@@ -124,15 +102,13 @@ export default function Home() {
     setTimeout(() => {
       setDeployText('WARPING...');
       setTimeout(() => {
-        navigate(
-          `/game?pilot=${encodeURIComponent(callsign())}&class=${activeChassis()}&color=${encodeURIComponent(selectedColor().hex)}`,
-        );
+        navigate('/game');
       }, 700);
     }, 800);
   };
 
   onSettled(() => {
-    setGuestCallsign(loadGuestCallsign());
+    setGuestCallsign(randomGuestCallsign());
     //Raccourci Déploiement
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Enter') return;
@@ -469,7 +445,7 @@ export default function Home() {
                   <div class="flex items-center justify-between text-[10px] text-text-muted pt-1">
                     <span>SHIELDS: 100%</span>
                     <span class="tracking-widest">
-                      CORE REF: {selectedColor().ref}
+                      CORE REF: {selectedColor().hex.toUpperCase()}
                     </span>
                   </div>
                 </div>
