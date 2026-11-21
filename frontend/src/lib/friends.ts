@@ -62,3 +62,35 @@ export const declineFriendRequest = (senderId: string) =>
 
 export const unfriend = (friendId: string) =>
   sendAuthenticated('POST', '/api/friends/unfriend', { friend_id: friendId });
+
+export type ChatMessage = {
+  message: string;
+  sender_id: string;
+  sent_at: string;
+};
+
+type MessagesResult =
+  | { ok: true; messages: ChatMessage[] }
+  | Extract<AuthResult, { ok: false }>;
+
+// Le backend renvoie les 50 derniers messages, du plus ancien au plus récent.
+export async function getMessages(friendId: string): Promise<MessagesResult> {
+  const result = await getAuthenticated(
+    `/api/friends/chat/get-messages?friend_id=${encodeURIComponent(friendId)}`,
+  );
+  if (!result.ok) return result;
+  return {
+    ok: true,
+    messages: (result.data as { messages: ChatMessage[] }).messages,
+  };
+}
+
+export const sendMessage = (friendId: string, message: string) =>
+  sendAuthenticated('POST', '/api/friends/chat/send-message', {
+    friend_id: friendId,
+    message,
+  });
+
+// La limite du backend porte sur les octets UTF-8 : un accent compte double.
+export const isMessageTooLong = (message: string) =>
+  new TextEncoder().encode(message).length > 140;

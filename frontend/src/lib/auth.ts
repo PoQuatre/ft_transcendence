@@ -136,10 +136,23 @@ function toError(
         message: "Cette demande n'existe plus.",
       };
     case 'friend not found':
+    case 'user not in your friends list':
       return {
         ok: false,
         title: 'Not a friend',
         message: "Ce pilote n'est plus dans tes amis.",
+      };
+    case 'message too long':
+      return {
+        ok: false,
+        title: 'Message too long',
+        message: 'Ton message dépasse 140 caractères.',
+      };
+    case 'empty message':
+      return {
+        ok: false,
+        title: 'Empty message',
+        message: "Écris quelque chose avant d'envoyer.",
       };
     case 'you need to verify your mail':
       return {

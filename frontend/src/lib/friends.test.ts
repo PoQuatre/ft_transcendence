@@ -4,9 +4,12 @@ import { setCurrentUser } from './auth';
 import {
   acceptFriendRequest,
   declineFriendRequest,
+  getMessages,
+  isMessageTooLong,
   listFriendRequests,
   listFriends,
   sendFriendRequest,
+  sendMessage,
   unfriend,
 } from './friends';
 
@@ -143,5 +146,64 @@ describe('friend actions', () => {
       ok: false,
       title,
     });
+  });
+});
+
+describe('chat', () => {
+  test('reads the conversation with a friend', async () => {
+    const message = {
+      message: 'gg',
+      sender_id: 'f1',
+      sent_at: '2026-11-21T18:02:00Z',
+    };
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(json({ messages: [message] }, 200));
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await getMessages('f 1')).toEqual({
+      ok: true,
+      messages: [message],
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/friends/chat/get-messages?friend_id=f%201',
+      expect.objectContaining({ credentials: 'include' }),
+    );
+  });
+
+  test('sends a message', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(json({ message: 'ok' }, 200));
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await sendMessage('f1', 'gg')).toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/friends/chat/send-message',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ friend_id: 'f1', message: 'gg' }),
+      }),
+    );
+  });
+
+  test('does not take the 401 of a long message for a lost session', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(json({ message: 'message too long' }, 401))
+        .mockResolvedValueOnce(json({ id: '1' }, 200)),
+    );
+
+    expect(await sendMessage('f1', 'gg')).toMatchObject({
+      ok: false,
+      title: 'Message too long',
+    });
+  });
+
+  test('counts the length in bytes like the backend', () => {
+    expect(isMessageTooLong('a'.repeat(140))).toBe(false);
+    expect(isMessageTooLong('é'.repeat(71))).toBe(true);
   });
 });
