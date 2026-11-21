@@ -171,7 +171,7 @@ func generateCodeForMailVerif() (string, error) {
 }
 
 func (s *Service) SendVerificationEmail(ctx context.Context, userID uuid.UUID, email string) error {
-	if os.Getenv("HOSTNAME") != "" {
+	if os.Getenv("HOSTNAME") == "" {
 		return s.repo.MarkEmailAsVerified(ctx, userID)
 	}
 
