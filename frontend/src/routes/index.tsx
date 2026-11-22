@@ -18,6 +18,13 @@ const randomGuestCallsign = () => {
   return `ANONYM_${value.toString(16).padStart(4, '0').toUpperCase()}`;
 };
 
+// Contrôles du jeu (game/src/platform/raylib_platform.cpp).
+const CONTROLS = [
+  { action: 'THRUST / MOVE', key: 'W A S D', hint: 'Move in 8 directions' },
+  { action: 'AIM TURRET', key: 'MOUSE', hint: 'Turret follows the cursor' },
+  { action: 'DASH', key: 'SHIFT', hint: 'Short burst of speed, every 2 s' },
+];
+
 export default function Home() {
   const navigate = useNavigate();
 
@@ -727,7 +734,7 @@ export default function Home() {
             4. SECTION INFÉRIEURE : KEY MAP & ARENA APEX (7 cols + 5 cols)
             ================================================================= */}
         <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* CARTE GAUCHE : CONTRÔLES TACTIQUES (7 colonnes) */}
+          {/* CARTE GAUCHE : CONTRÔLES (7 colonnes) */}
           <Card
             variant="default"
             class="lg:col-span-7 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 sm:p-6 shadow-card-inner space-y-4"
@@ -735,7 +742,10 @@ export default function Home() {
             <div class="flex items-center justify-between border-b border-border-subtle/85 pb-3">
               <div>
                 <div class="flex items-center space-x-2">
-                  <span class="material-symbols-outlined text-sm text-accent-primary">
+                  <span
+                    class="material-symbols-outlined text-sm text-accent-primary"
+                    aria-hidden="true"
+                  >
                     keyboard
                   </span>
                   <span class="font-mono text-xs font-bold text-accent-primary tracking-wider uppercase">
@@ -743,7 +753,7 @@ export default function Home() {
                   </span>
                 </div>
                 <h2 class="text-xl font-bold text-white tracking-wide mt-1">
-                  Move. Aim. Evolve.
+                  Move. Aim. Fire.
                 </h2>
               </div>
               <div class="font-mono text-[10px] text-text-muted">
@@ -751,67 +761,30 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Grille des raccourcis Kbd */}
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 font-mono">
-              {/* 1. THRUST */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors flex flex-col justify-between">
-                <div class="flex items-center justify-between gap-1 w-full">
-                  <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
-                    THRUST / MOVE
-                  </span>
-                  <Kbd
-                    variant="glow"
-                    size="sm"
-                    class="shrink-0 whitespace-nowrap"
-                  >
-                    [ W A S D ]
-                  </Kbd>
-                </div>
-                <div class="text-[11px] text-text-muted mt-2 font-mono leading-relaxed">
-                  Multi-directional thrusters
-                </div>
-              </div>
+              <For each={CONTROLS}>
+                {(control) => (
+                  <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors flex flex-col justify-between">
+                    <div class="flex items-center justify-between gap-1 w-full">
+                      <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
+                        {control.action}
+                      </span>
+                      <Kbd
+                        variant="glow"
+                        size="sm"
+                        class="shrink-0 whitespace-nowrap"
+                      >
+                        [ {control.key} ]
+                      </Kbd>
+                    </div>
+                    <div class="text-[11px] text-text-muted mt-2 font-mono leading-relaxed">
+                      {control.hint}
+                    </div>
+                  </div>
+                )}
+              </For>
 
-              {/* 2. AIM TURRET */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors flex flex-col justify-between">
-                <div class="flex items-center justify-between gap-1 w-full">
-                  <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
-                    AIM TURRET
-                  </span>
-                  <Kbd
-                    variant="glow"
-                    size="sm"
-                    class="shrink-0 whitespace-nowrap"
-                  >
-                    [ MOUSE ]
-                  </Kbd>
-                </div>
-                <div class="text-[11px] text-text-muted mt-2 font-mono leading-relaxed">
-                  Turret lock & track
-                </div>
-              </div>
-
-              {/* 3. UPGRADE HUD */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors flex flex-col justify-between">
-                <div class="flex items-center justify-between gap-1 w-full">
-                  <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
-                    UPGRADE HUD
-                  </span>
-                  <Kbd
-                    variant="glow"
-                    size="sm"
-                    class="shrink-0 whitespace-nowrap"
-                  >
-                    [ TAB / ESC ]
-                  </Kbd>
-                </div>
-                <div class="text-[11px] text-text-muted mt-2 font-mono leading-relaxed">
-                  Chassis tree matrix
-                </div>
-              </div>
-
-              {/* 4. PRIMARY FIRE (spans 2 cols on md) */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors md:col-span-2 flex flex-col justify-between">
+              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors flex flex-col justify-between md:col-span-2">
                 <div class="flex items-center justify-between gap-2 w-full">
                   <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide">
                     PRIMARY FIRE
@@ -821,43 +794,18 @@ export default function Home() {
                     size="sm"
                     class="shrink-0 whitespace-nowrap"
                   >
-                    [ L-CLICK / SPACE ]
+                    [ L-CLICK ]
                   </Kbd>
                 </div>
                 <div class="mt-3">
                   <Badge variant="success" class="shadow-glow-green-sm">
-                    AUTO-FIRE READY
+                    HOLD TO FIRE
                   </Badge>
                 </div>
                 <div class="text-[11px] text-text-muted mt-2 font-mono leading-relaxed">
-                  Primary cannon barrage & projectile acceleration burst
+                  3 shots per second, 25 damage each
                 </div>
               </div>
-
-              {/* 5. STAT MATRIX */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors flex flex-col justify-between">
-                <div class="flex items-center justify-between gap-1 w-full">
-                  <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
-                    STAT MATRIX
-                  </span>
-                  <Kbd
-                    variant="glow"
-                    size="sm"
-                    class="shrink-0 whitespace-nowrap"
-                  >
-                    [ 1 - 6 ]
-                  </Kbd>
-                </div>
-                <div class="text-[11px] text-text-muted mt-2 font-mono leading-relaxed">
-                  Stat allocation points
-                </div>
-              </div>
-            </div>
-
-            {/* Détection Manette */}
-            <div class="pt-2 text-[11px] font-mono text-text-muted flex items-center gap-2">
-              <span class="w-2 h-2 rounded-pill bg-accent-primary shadow-glow-cyan animate-pulse" />
-              <span>CONTROLLER: DETECTED (DUAL ANALOG OVERDRIVE ACTIVE)</span>
             </div>
           </Card>
 
