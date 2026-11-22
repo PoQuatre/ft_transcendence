@@ -111,6 +111,55 @@ function toError(
         title: 'Access denied',
         message: 'Mot de passe actuel incorrect.',
       };
+    case 'user not found':
+      return {
+        ok: false,
+        title: 'Unknown pilot',
+        message: 'Aucun pilote avec ce call-sign.',
+      };
+    case 'request already exists':
+      return {
+        ok: false,
+        title: 'Already requested',
+        message: 'Une demande est déjà en attente avec ce pilote.',
+      };
+    case 'already friends':
+      return {
+        ok: false,
+        title: 'Already friends',
+        message: 'Vous êtes déjà amis.',
+      };
+    case 'friend request not found':
+      return {
+        ok: false,
+        title: 'Request gone',
+        message: "Cette demande n'existe plus.",
+      };
+    case 'friend not found':
+    case 'user not in your friends list':
+      return {
+        ok: false,
+        title: 'Not a friend',
+        message: "Ce pilote n'est plus dans tes amis.",
+      };
+    case 'message too long':
+      return {
+        ok: false,
+        title: 'Message too long',
+        message: 'Ton message dépasse 140 caractères.',
+      };
+    case 'empty message':
+      return {
+        ok: false,
+        title: 'Empty message',
+        message: "Écris quelque chose avant d'envoyer.",
+      };
+    case 'you need to verify your mail':
+      return {
+        ok: false,
+        title: 'Email not verified',
+        message: 'Vérifie ton email dans les settings pour utiliser les amis.',
+      };
     case 'invalid or expired token':
     case 'token expired':
       return {
@@ -225,7 +274,7 @@ async function refreshSession(): Promise<void> {
   }
 }
 
-async function sendAuthenticated(
+export async function sendAuthenticated(
   method: Method,
   path: string,
   payload: object,
@@ -233,6 +282,20 @@ async function sendAuthenticated(
   const result = await send(method, path, payload);
   if (!result.ok) await refreshSession();
   return result;
+}
+
+export async function getAuthenticated(
+  path: string,
+): Promise<{ ok: true; data: unknown } | Extract<AuthResult, { ok: false }>> {
+  try {
+    const res = await fetch(path, { credentials: 'include' });
+    if (res.ok) return { ok: true, data: await res.json() };
+    const error = toError(res.status, await readMessage(res));
+    await refreshSession();
+    return error;
+  } catch {
+    return UPLINK_LOST;
+  }
 }
 
 // 2. Récupération du profil connecté via /api/auth/me
@@ -374,16 +437,8 @@ export type AccountExport =
   | { ok: true; data: unknown }
   | Extract<AuthResult, { ok: false }>;
 
-export async function exportAccount(): Promise<AccountExport> {
-  try {
-    const res = await fetch('/api/auth/me/export', { credentials: 'include' });
-    if (res.ok) return { ok: true, data: await res.json() };
-    const error = toError(res.status, await readMessage(res));
-    await refreshSession();
-    return error;
-  } catch {
-    return UPLINK_LOST;
-  }
+export function exportAccount(): Promise<AccountExport> {
+  return getAuthenticated('/api/auth/me/export');
 }
 
 // 12. RGPD : suppression du compte.
