@@ -272,6 +272,9 @@ func (s *Service) GetUserByEmail(ctx context.Context, email string) (*User, erro
 
 func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID, password string) error {
 	passwordHash, err := s.repo.GetUserPasswordHash(ctx, userID)
+	if err != nil {
+		return err
+	}
 	if err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password)); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid password")
 	}

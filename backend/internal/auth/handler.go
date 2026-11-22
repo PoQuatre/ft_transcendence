@@ -347,10 +347,10 @@ func (h *handler) deleteAccount(c *echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
 	}
 	var req DeleteAccountRequest
-	if err := c.Bind(&req); err != nil {
+	if err = c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
-	if err := h.validator.Validate(&req); err != nil {
+	if err = h.validator.Validate(&req); err != nil {
 		return apiError(err)
 	}
 	err = h.service.DeleteAccount(ctx, userID, req.Password)

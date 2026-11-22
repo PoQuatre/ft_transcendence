@@ -23,8 +23,8 @@ type mockRepository struct {
 	usersverifs         map[uuid.UUID]*UserVerify
 	passwordresettokens map[uuid.UUID]*PasswordResetToken
 
-	friends        map[uuid.UUID][]uuid.UUID // userID -> liste des IDs amis
-	friendRequests map[uuid.UUID][]uuid.UUID // senderID -> liste des receiverIDs
+	friends        map[uuid.UUID][]uuid.UUID
+	friendRequests map[uuid.UUID][]uuid.UUID
 	messages       []MockMessage
 }
 
@@ -160,7 +160,7 @@ func (m *mockRepository) DeleteUser(ctx context.Context, userID uuid.UUID) error
 		}
 	}
 	if target == nil {
-		return nil // SQL DELETE ne renvoie pas d'erreur si 0 ligne affectée
+		return nil
 	}
 	delete(m.users, target.Email)
 	delete(m.users, target.Username)
@@ -185,10 +185,8 @@ func (m *mockRepository) DeleteFriendRequestsWithUserID(ctx context.Context, use
 	if m.friendRequests == nil {
 		return nil
 	}
-	// Supprime les demandes envoyées par userID
 	delete(m.friendRequests, userID)
 
-	// Supprime les demandes reçues par userID
 	for senderID, receivers := range m.friendRequests {
 		var filtered []uuid.UUID
 		for _, rID := range receivers {
@@ -236,7 +234,7 @@ func (m *mockRepository) DeleteFriendMessagesFromUserID(ctx context.Context, use
 func (m *mockRepository) UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error {
 	for _, u := range m.users {
 		if u.ID == userID {
-			delete(m.users, u.Email) // Nettoie l'ancienne clé email dans la map
+			delete(m.users, u.Email)
 			u.Email = email
 			u.Verified = false
 			m.users[email] = u
@@ -249,7 +247,7 @@ func (m *mockRepository) UpdateEmail(ctx context.Context, userID uuid.UUID, emai
 func (m *mockRepository) UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error {
 	for _, u := range m.users {
 		if u.ID == userID {
-			delete(m.users, u.Username) // Nettoie l'ancienne clé username dans la map
+			delete(m.users, u.Username)
 			u.Username = username
 			m.users[username] = u
 			return nil

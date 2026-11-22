@@ -48,18 +48,18 @@ type PatchProfileRequest struct {
 }
 
 type MessageExport struct {
+	SentAt       time.Time `json:"sent_at"`
 	ReceiverName string    `json:"receiver_name"`
 	Body         string    `json:"body"`
-	SentAt       time.Time `json:"sent_at"`
 }
 
 type DataExport struct {
 	ID                     string          `json:"id" example:"a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"`
 	Username               string          `json:"username" example:"Great_player"`
 	Email                  string          `json:"email"    example:"great@example.com"`
-	Verified               bool            `json:"verified" example:"true"`
 	Friends                []string        `json:"friends"`
 	FriendRequestsReceived []string        `json:"received_friend_requests"`
 	FriendRequestsSent     []string        `json:"sent_friend_requests"`
 	Messages               []MessageExport `json:"messages"`
+	Verified               bool            `json:"verified" example:"true"`
 }

@@ -314,7 +314,6 @@ func (r *bunRepository) UpdateUsername(ctx context.Context, userID uuid.UUID, us
 	return nil
 }
 
-// TODO: Faire ces 3 repositories qui renvoient un array de string contenant les usernames des users en question
 func (r *bunRepository) GetFriendListFromUserID(ctx context.Context, userID uuid.UUID) ([]string, error) {
 	var friends []string
 
