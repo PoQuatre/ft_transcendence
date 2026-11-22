@@ -2,8 +2,7 @@ import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
 import { createSignal, onSettled, For, Show } from 'solid-js';
 
-import { ChassisVector } from '~/components/ChassisVectors';
-import { TankSprite } from '~/components/TankSprite';
+import { type TankKind, TankSprite } from '~/components/TankSprite';
 import { Badge, Button, Card, Kbd } from '~/components/ui';
 
 //champ de saisie
@@ -27,6 +26,9 @@ const STATS = [
   { label: 'DASH', value: 'EVERY 2 S' },
 ];
 
+// Le jeu démarre en BASIC, les autres tanks sont ses évolutions.
+const ROSTER: TankKind[] = ['basic', 'twin', 'heavy', 'quad', 'drone'];
+
 // Contrôles du jeu (game/src/platform/raylib_platform.cpp).
 const CONTROLS = [
   { action: 'THRUST / MOVE', key: 'W A S D', hint: 'Move in 8 directions' },
@@ -36,10 +38,6 @@ const CONTROLS = [
 
 export default function Home() {
   const navigate = useNavigate();
-
-  const [activeChassis, setActiveChassis] = createSignal<
-    'STRIKER' | 'PHANTOM' | 'OVERSEER'
-  >('STRIKER');
 
   // Palette de couleur du cœur
   const colorOptions = [
@@ -202,7 +200,7 @@ export default function Home() {
                           <div
                             class={[
                               'flex items-center justify-between',
-                              { 'opacity-40': !mode.live },
+                              { 'opacity-25': !mode.live },
                             ]}
                           >
                             <span
@@ -225,13 +223,13 @@ export default function Home() {
                           <div
                             class={[
                               'text-[10px] text-text-muted mt-1',
-                              { 'opacity-40': !mode.live },
+                              { 'opacity-25': !mode.live },
                             ]}
                           >
                             {mode.sub}
                           </div>
                           <Show when={!mode.live}>
-                            <span class="absolute inset-0 flex items-center justify-center bg-background/50">
+                            <span class="absolute inset-0 flex items-center justify-center bg-background/70">
                               <span class="rounded-sm border border-accent-secondary/60 bg-accent-secondary-subtle px-2 py-0.5 text-[10px] font-bold tracking-widest text-accent-secondary">
                                 COMING SOON
                               </span>
@@ -342,114 +340,59 @@ export default function Home() {
         </section>
 
         {/* =================================================================
-            3. SECTION COMBAT EVOLUTION (3 Châssis)
+            3. TANK ROSTER : LE TANK DE DÉPART ET SES ÉVOLUTIONS
             ================================================================= */}
         <section class="space-y-4 scroll-mt-36 sm:scroll-mt-24" id="classes">
-          <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-border-subtle/85 pb-3">
-            <div>
-              <div class="flex items-center space-x-2">
-                <span class="material-symbols-outlined text-sm text-accent-primary">
-                  account_tree
-                </span>
-                <span class="font-mono text-xs font-bold tracking-widest text-accent-primary uppercase">
-                  CHASSIS ARCHITECTURE
-                </span>
-              </div>
-              <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white uppercase mt-1">
-                VIEW YOUR COMBAT EVOLUTION
-              </h2>
+          <div class="border-b border-border-subtle/85 pb-3">
+            <div class="flex items-center space-x-2">
+              <span
+                class="material-symbols-outlined text-sm text-accent-primary"
+                aria-hidden="true"
+              >
+                account_tree
+              </span>
+              <span class="font-mono text-xs font-bold tracking-widest text-accent-primary uppercase">
+                TANK ROSTER
+              </span>
             </div>
+            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white uppercase mt-1">
+              START AS A BASIC TANK, EVOLVE OVER TIME
+            </h2>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <For
-              each={[
-                {
-                  id: 'STRIKER' as const,
-                  badge: 'ASSAULT // MK.IV',
-                  icon: 'bolt',
-                  subtitle: 'TWIN CANNON',
-                  desc: 'High-velocity twin kinetic cannons configured for relentless strafing runs and sustained target lockdown.',
-                },
-                {
-                  id: 'PHANTOM' as const,
-                  badge: 'STEALTH // INFILTRATOR',
-                  icon: 'visibility_off',
-                  subtitle: 'PRECISION SPIKE',
-                  desc: 'Optical camouflage active cloaking with sudden hyper-damage plasma spikes from behind enemy blind spots.',
-                },
-                {
-                  id: 'OVERSEER' as const,
-                  badge: 'DRONE SWARM // LOGIC',
-                  icon: 'hub',
-                  subtitle: 'DRONE CONTROL',
-                  desc: 'Deploys self-guided micro-drone triangles that harass targets, protect flank angles, and breach enemy shields.',
-                },
-              ]}
-            >
-              {(chassis) => {
-                const isSelected = () => activeChassis() === chassis.id;
-                return (
-                  <Card
-                    variant="interactive"
-                    onClick={() => setActiveChassis(chassis.id)}
-                    class={[
-                      'bg-surface-2 backdrop-blur-md border rounded-lg p-6 shadow-card-inner flex flex-col justify-between relative overflow-hidden group transition-all cursor-pointer',
-                      {
-                        'border-accent-primary ring-1 ring-focus-primary':
-                          isSelected(),
-                        'border-border-subtle/85 hover:border-accent-primary/60':
-                          !isSelected(),
-                      },
-                    ]}
-                  >
-                    <div class="space-y-4">
-                      {/* Badge Haut */}
-                      <div class="flex items-center justify-between font-mono text-[11px]">
-                        <Badge variant="default" class="shadow-glow-cyan-sm">
-                          {chassis.badge}
-                        </Badge>
-                        <span class="material-symbols-outlined text-accent-primary text-sm">
-                          {chassis.icon}
-                        </span>
-                      </div>
-
-                      {/* Baie d'illustration Vectorielle */}
-                      <div class="relative w-full aspect-[4/3] rounded-md bg-surface-1 border border-border-subtle/85 group-hover:border-accent-primary/40 flex items-center justify-center overflow-hidden transition-colors">
-                        <div class="absolute inset-0 tactical-grid opacity-50 pointer-events-none" />
-                        <div class="absolute inset-4 rounded-pill border border-accent-primary/20 pointer-events-none" />
-                        <div class="absolute inset-12 rounded-pill border border-accent-primary/30 border-dashed pointer-events-none" />
-
-                        <div class="relative z-10 w-28 h-28 flex items-center justify-center">
-                          <ChassisVector
-                            type={chassis.id}
-                            color={selectedColor().hex}
-                            glow={selectedColor().glow}
-                            class="w-24 h-24 group-hover:scale-110 transition-transform duration-300"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Spécifications & Description */}
-                      <div>
-                        <div class="flex items-baseline justify-between">
-                          <h3 class="text-xl font-extrabold text-white tracking-wider uppercase font-mono group-hover:text-accent-primary transition-colors">
-                            {chassis.id}
-                          </h3>
-                          <span class="text-[11px] font-mono text-accent-primary uppercase font-bold">
-                            {chassis.subtitle}
-                          </span>
-                        </div>
-                        <p class="text-xs text-text-secondary font-mono mt-2 leading-relaxed">
-                          {chassis.desc}
-                        </p>
-                      </div>
+          <ul class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <For each={ROSTER}>
+              {(kind) => (
+                <li
+                  class={[
+                    'bg-surface-2 backdrop-blur-md border rounded-lg p-4 shadow-card-inner space-y-3',
+                    kind === 'basic'
+                      ? 'border-accent-primary ring-1 ring-focus-primary'
+                      : 'border-border-subtle/85',
+                  ]}
+                >
+                  <Badge variant={kind === 'basic' ? 'success' : 'default'}>
+                    {kind === 'basic' ? 'STARTING TANK' : 'EVOLUTION'}
+                  </Badge>
+                  <div class="relative aspect-square rounded-md bg-surface-1 border border-border-subtle/85 flex items-center justify-center overflow-hidden">
+                    <div class="absolute inset-0 tactical-grid opacity-50 pointer-events-none" />
+                    <div
+                      class="relative w-3/5 h-3/5"
+                      style={{
+                        color: selectedColor().hex,
+                        filter: `drop-shadow(0 0 8px ${selectedColor().glow})`,
+                      }}
+                    >
+                      <TankSprite kind={kind} class="w-full h-full" />
                     </div>
-                  </Card>
-                );
-              }}
+                  </div>
+                  <h3 class="font-mono text-lg font-extrabold tracking-wider text-white uppercase">
+                    {kind}
+                  </h3>
+                </li>
+              )}
             </For>
-          </div>
+          </ul>
         </section>
 
         {/* =================================================================
