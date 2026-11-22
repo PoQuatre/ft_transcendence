@@ -1,10 +1,10 @@
 import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
-import { createSignal, onSettled, For } from 'solid-js';
+import { createSignal, onSettled, For, Show } from 'solid-js';
 
 import { ChassisVector } from '~/components/ChassisVectors';
-import { Badge, Button, Card, Kbd, Progress } from '~/components/ui';
-import { currentUser } from '~/lib/auth';
+import { TankSprite } from '~/components/TankSprite';
+import { Badge, Button, Card, Kbd } from '~/components/ui';
 
 //champ de saisie
 const isEditableTarget = (target: EventTarget | null) =>
@@ -12,11 +12,20 @@ const isEditableTarget = (target: EventTarget | null) =>
   (target.isContentEditable ||
     ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
-// Call-sign d'invité : ANONYM_ + 4 hexadécimaux, tiré à chaque visite.
-const randomGuestCallsign = () => {
-  const [value = 0] = crypto.getRandomValues(new Uint16Array(1));
-  return `ANONYM_${value.toString(16).padStart(4, '0').toUpperCase()}`;
-};
+// Seul le FFA tourne côté serveur (lobby Quick Play) : les autres modes arrivent.
+const MODES = [
+  { label: 'FFA SOLO', sub: 'Solo Domination', icon: 'groups_3', live: true },
+  { label: 'SQUAD 4v4', sub: 'Team Combat', icon: 'shield', live: false },
+  { label: 'EXTRACTION', sub: 'Objective Hunt', icon: 'flag', live: false },
+  { label: 'OVERLOAD', sub: 'Shrinking Zone', icon: 'warning', live: false },
+];
+
+// Règles de backend/internal/game/simulation.
+const STATS = [
+  { label: 'PLAYERS', value: 'UP TO 8' },
+  { label: 'HULL', value: '100 HP' },
+  { label: 'DASH', value: 'EVERY 2 S' },
+];
 
 // Contrôles du jeu (game/src/platform/raylib_platform.cpp).
 const CONTROLS = [
@@ -28,20 +37,6 @@ const CONTROLS = [
 export default function Home() {
   const navigate = useNavigate();
 
-  // --- Signaux d'état ---
-  // Call-sign affiché : le username du compte connecté, sinon le nom d'invité.
-  // Tant que la session n'est pas vérifiée (SSR, getMe() en cours) : « … ».
-  const [guestCallsign, setGuestCallsign] = createSignal('');
-  const callsign = () => {
-    const user = currentUser();
-    if (user === undefined) return '…';
-    return user?.username ?? (guestCallsign() || '…');
-  };
-
-  const [selectedMode, setSelectedMode] = createSignal<
-    'ffa' | 'tdm' | 'ctf' | 'br'
-  >('ctf');
-  const [subMode, setSubMode] = createSignal<'casual' | 'ranked'>('ranked');
   const [activeChassis, setActiveChassis] = createSignal<
     'STRIKER' | 'PHANTOM' | 'OVERSEER'
   >('STRIKER');
@@ -71,70 +66,29 @@ export default function Home() {
   ];
   const [selectedColor, setSelectedColor] = createSignal(colorOptions[1]!);
 
-  const [deploying, setDeploying] = createSignal(false);
-  const [deployText, setDeployText] = createSignal('DEPLOY [ENTER]');
-
-  // Quêtes journalières réactives
-  const [claimedReward, setClaimedReward] = createSignal(false);
-
-  // Descriptions dynamiques des modes
-  const modeDetails = {
-    ffa: {
-      badge: 'FFA SOLO // CONTINUOUS APEX ARENA',
-      desc: 'Chaque tank pour soi. Assimilez les orbes, faites évoluer votre châssis et dominez le classement apex.',
-    },
-    tdm: {
-      badge: 'SQUAD 4v4 // TACTICAL NODE CONTROL',
-      desc: 'Coordonnez vos tirs en escouade. Contrôlez les nœuds régionaux et anéantissez les forces ennemies.',
-    },
-    ctf: {
-      badge: 'EXTRACTION / HIGH-DENSITY CORE HEIST',
-      desc: 'Infiltrez les secteurs hostiles, récupérez les cœurs singuliers haute densité et défendez les sanctuaires d’extraction.',
-    },
-    br: {
-      badge: 'OVERLOAD // SHRINKING PERIMETER ARENA',
-      desc: 'Trente blindés déployés. Collectez les composants rares avant que l’orage ionique ne referme le périmètre.',
-    },
-  };
-
   // Référence visuelle Tank Radar
   let tankPivotRef: HTMLDivElement | undefined;
   let animId: number;
 
-  const handleDeploy = () => {
-    if (deploying()) return;
-    setDeploying(true);
-    setDeployText('CONNECTING TO ARENA...');
-
-    setTimeout(() => {
-      setDeployText('WARPING...');
-      setTimeout(() => {
-        navigate('/game');
-      }, 700);
-    }, 800);
-  };
+  const quickPlay = () => navigate('/game');
 
   onSettled(() => {
-    setGuestCallsign(randomGuestCallsign());
-    //Raccourci Déploiement
+    //Raccourci Quick Play
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Enter') return;
       if (isEditableTarget(e.target)) return;
-      handleDeploy();
+      quickPlay();
     };
     window.addEventListener('keydown', onKeyDown);
     // Suivi dynamique de la visée tourelle vers la souris (60fps lerp)
     let currentAngle = 0;
     let targetAngle = 0;
-    const SPRITE_HEADING_OFFSET = Math.PI / 2;
     const onMouseMove = (e: MouseEvent) => {
       if (!tankPivotRef) return;
       const rect = tankPivotRef.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
-      targetAngle =
-        Math.atan2(e.clientY - centerY, e.clientX - centerX) +
-        SPRITE_HEADING_OFFSET;
+      targetAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
     };
     window.addEventListener('mousemove', onMouseMove);
     const updateAim = () => {
@@ -190,207 +144,108 @@ export default function Home() {
             <span class="text-accent-primary neon-text-cyan">ARENA</span>
           </h1>
           <p class="font-mono text-text-muted text-xs md:text-sm max-w-3xl pt-1">
-            High-density real-time tactical geometry. Neutralize hostiles,
-            assimilate radiant cores, and mutate combat chassis along live
-            evolution trees.
+            Up to 8 tanks share one arena: shoot drifting shapes and rival
+            pilots in real time.
           </p>
         </section>
 
         {/* =================================================================
-            2. SECTION COMBAT DASHBOARD : MODES & DAILY CHALLENGES (8 cols + 4 cols)
+            2. QUICK PLAY : SEUL MODE JOUABLE POUR L'INSTANT
             ================================================================= */}
-        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* CARTE GAUCHE : SÉLECTEUR DE MODE & RADAR (8 colonnes) */}
+        <section>
           <Card
             variant="default"
-            class="lg:col-span-8 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 sm:p-6 shadow-card-inner flex flex-col justify-between"
+            class="bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 sm:p-6 shadow-card-inner"
           >
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-              {/* Colonne commandes modes (6 cols internes) */}
-              <div class="md:col-span-6 space-y-6 flex flex-col justify-between">
-                <div>
-                  {/* Protocole Pilote */}
-                  <div class="flex items-center justify-between font-mono text-[11px] mb-2">
-                    <div class="flex items-center gap-2 text-text-muted">
-                      <span class="material-symbols-outlined text-xs text-accent-primary">
-                        badge
-                      </span>
-                      <span class="font-bold tracking-wider uppercase">
-                        OPERATOR PILOT PROTOCOL
-                      </span>
-                    </div>
-                    <div class="flex items-center gap-2 text-success-foreground font-bold">
-                      <span class="w-1.5 h-1.5 rounded-pill bg-success-foreground shadow-glow-green-xs" />
-                      <span>12,482 PILOTS</span>
-                    </div>
-                  </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="space-y-4">
+                <div class="font-mono text-xs font-bold text-accent-primary tracking-wider flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-accent-primary shadow-glow-cyan-xs" />
+                  <span>QUICK PLAY // FREE-FOR-ALL ARENA</span>
+                </div>
+                <p class="text-xs text-text-secondary leading-relaxed font-mono">
+                  Join a running arena. Each shot deals 25 damage, so 4 hits
+                  destroy a tank, which respawns at full health. Squares and
+                  circles drift across the map and come back 10 s after being
+                  destroyed.
+                </p>
+                <dl class="grid grid-cols-3 gap-3 font-mono">
+                  <For each={STATS}>
+                    {(stat) => (
+                      <div class="rounded-md border border-border-subtle/85 bg-background px-3 py-2">
+                        <dt class="text-[10px] text-text-muted">
+                          {stat.label}
+                        </dt>
+                        <dd class="mt-1 text-xs font-bold text-white">
+                          {stat.value}
+                        </dd>
+                      </div>
+                    )}
+                  </For>
+                </dl>
 
-                  {/* Call-sign (lecture seule) */}
-                  <div class="flex items-center px-4 py-3 rounded-md bg-background border border-border-subtle/85 font-mono text-xs">
-                    <div class="flex items-center space-x-2 text-white">
-                      <span class="text-accent-primary font-bold">[</span>
-                      <span class="font-bold tracking-widest text-accent-primary">
-                        {callsign()}
-                      </span>
-                      <span class="text-accent-primary font-bold">]</span>
-                    </div>
-                  </div>
-
-                  {/* Classe Active */}
-                  <div class="mt-3 px-3 py-2 rounded-md bg-surface-1 border border-border-subtle/85 flex items-center justify-between font-mono text-xs">
-                    <div class="flex items-center gap-2">
-                      <span class="material-symbols-outlined text-sm text-accent-primary">
-                        view_in_ar
-                      </span>
-                      <span class="text-text-muted text-[11px]">
-                        CHASSIS CLASS:
-                      </span>
-                    </div>
-                    <span class="text-accent-primary font-bold tracking-wider">
-                      {activeChassis()} Mk.IV
-                    </span>
-                  </div>
-
-                  {/* En-tête des Modes */}
-                  <div class="mt-4 flex items-center justify-between">
-                    <h2 class="text-xs font-mono font-bold text-text-secondary uppercase tracking-widest flex items-center gap-2">
-                      <span class="material-symbols-outlined text-sm text-accent-primary">
-                        tune
-                      </span>
-                      SELECT SIMULATION MODE:
-                    </h2>
-                  </div>
-
-                  {/* Grille 2x2 des Modes */}
-                  <div class="grid grid-cols-2 gap-3 mt-3">
-                    <For
-                      each={[
-                        {
-                          id: 'ffa' as const,
-                          label: 'FFA SOLO',
-                          sub: 'Solo Domination',
-                          icon: 'groups_3',
-                        },
-                        {
-                          id: 'tdm' as const,
-                          label: 'SQUAD 4v4',
-                          sub: 'Team Combat',
-                          icon: 'shield',
-                        },
-                        {
-                          id: 'ctf' as const,
-                          label: 'EXTRACTION',
-                          sub: 'Objective Hunt',
-                          icon: 'flag',
-                        },
-                        {
-                          id: 'br' as const,
-                          label: 'OVERLOAD',
-                          sub: 'Shrinking Zone',
-                          icon: 'warning',
-                        },
-                      ]}
-                    >
-                      {(mode) => {
-                        const isActive = () => selectedMode() === mode.id;
-                        return (
-                          <button
-                            type="button"
-                            onClick={() => setSelectedMode(mode.id)}
+                <div class="space-y-2">
+                  <h2 class="font-mono text-[11px] font-bold tracking-widest text-text-muted">
+                    GAME MODES
+                  </h2>
+                  <ul class="grid grid-cols-2 gap-3">
+                    <For each={MODES}>
+                      {(mode) => (
+                        <li
+                          class={[
+                            'relative overflow-hidden rounded-md border px-3 py-3 font-mono',
+                            mode.live
+                              ? 'border-accent-primary bg-accent-primary/15 shadow-glow-cyan-md'
+                              : 'border-border-subtle/85 bg-surface-2',
+                          ]}
+                        >
+                          <div
                             class={[
-                              'group text-left px-3 py-3 rounded-md border transition-all relative overflow-hidden cursor-pointer',
-                              {
-                                'border-accent-primary bg-accent-primary/15 shadow-glow-cyan-md text-white':
-                                  isActive(),
-                                'border-border-subtle/85 bg-surface-2 text-text-secondary hover:text-white hover:border-accent-primary/60':
-                                  !isActive(),
-                              },
+                              'flex items-center justify-between',
+                              { 'opacity-40': !mode.live },
                             ]}
                           >
-                            <div class="flex items-center justify-between">
-                              <span
-                                class={[
-                                  'text-xs font-mono font-bold tracking-wider',
-                                  {
-                                    'text-accent-primary': isActive(),
-                                    'group-hover:text-accent-primary':
-                                      !isActive(),
-                                  },
-                                ]}
-                              >
-                                {mode.label}
+                            <span
+                              class={[
+                                'text-xs font-bold tracking-wider',
+                                mode.live
+                                  ? 'text-accent-primary'
+                                  : 'text-text-secondary',
+                              ]}
+                            >
+                              {mode.label}
+                            </span>
+                            <span
+                              class="material-symbols-outlined text-xs text-text-muted"
+                              aria-hidden="true"
+                            >
+                              {mode.icon}
+                            </span>
+                          </div>
+                          <div
+                            class={[
+                              'text-[10px] text-text-muted mt-1',
+                              { 'opacity-40': !mode.live },
+                            ]}
+                          >
+                            {mode.sub}
+                          </div>
+                          <Show when={!mode.live}>
+                            <span class="absolute inset-0 flex items-center justify-center bg-background/50">
+                              <span class="rounded-sm border border-accent-secondary/60 bg-accent-secondary-subtle px-2 py-0.5 text-[10px] font-bold tracking-widest text-accent-secondary">
+                                COMING SOON
                               </span>
-                              <span
-                                class={[
-                                  'material-symbols-outlined text-xs',
-                                  {
-                                    'text-accent-primary': isActive(),
-                                    'text-text-muted group-hover:text-accent-primary':
-                                      !isActive(),
-                                  },
-                                ]}
-                              >
-                                {mode.icon}
-                              </span>
-                            </div>
-                            <div class="text-[10px] text-text-muted font-mono mt-1">
-                              {mode.sub}
-                            </div>
-                          </button>
-                        );
-                      }}
+                            </span>
+                          </Show>
+                        </li>
+                      )}
                     </For>
-                  </div>
-
-                  {/* Commutateur Casual vs Ranked */}
-                  <div class="mt-4 bg-surface-1 p-1 rounded-md border border-border-subtle/85 flex items-center">
-                    <button
-                      type="button"
-                      onClick={() => setSubMode('casual')}
-                      class={[
-                        'flex-1 py-2 text-xs font-mono font-bold rounded-sm text-center transition-all cursor-pointer',
-                        {
-                          'text-accent-primary bg-accent-primary-subtle/60 border border-accent-primary/60 shadow-glow-cyan-sm':
-                            subMode() === 'casual',
-                          'text-text-muted hover:text-white':
-                            subMode() !== 'casual',
-                        },
-                      ]}
-                    >
-                      [ CASUAL SIM ]
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSubMode('ranked')}
-                      class={[
-                        'flex-1 py-2 text-xs font-mono font-bold rounded-sm text-center transition-all cursor-pointer',
-                        {
-                          'text-accent-primary bg-accent-primary-subtle/60 border border-accent-primary/60 shadow-glow-cyan-sm':
-                            subMode() === 'ranked',
-                          'text-text-muted hover:text-white':
-                            subMode() !== 'ranked',
-                        },
-                      ]}
-                    >
-                      [ RANKED ARENA ]
-                    </button>
-                  </div>
-                </div>
-
-                {/* Description du Mode */}
-                <div class="space-y-2 pt-3 border-t border-border-subtle/85">
-                  <div class="font-mono text-xs font-bold text-accent-primary tracking-wider flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 bg-accent-primary shadow-glow-cyan-xs" />
-                    <span>{modeDetails[selectedMode()].badge}</span>
-                  </div>
-                  <p class="text-xs text-text-secondary leading-relaxed font-mono">
-                    {modeDetails[selectedMode()].desc}
-                  </p>
+                  </ul>
                 </div>
               </div>
 
-              {/* Colonne droite HUD Radar (6 cols internes) */}
-              <div class="md:col-span-6 flex flex-col justify-between bg-surface-2 rounded-lg border border-border-subtle/85 p-4 relative overflow-hidden">
+              {/* Aperçu du tank : la tourelle suit la souris */}
+              <div class="flex flex-col justify-between bg-surface-2 rounded-lg border border-border-subtle/85 p-4 relative overflow-hidden">
                 <div class="absolute inset-0 striped-pattern opacity-30 pointer-events-none z-20" />
 
                 {/* En-tête télémétrique */}
@@ -411,49 +266,17 @@ export default function Home() {
                     ref={(el) => (tankPivotRef = el)}
                     class="relative z-10 w-36 h-36 flex items-center justify-center cursor-crosshair will-change-transform"
                   >
-                    <ChassisVector
-                      type={activeChassis()}
-                      color={selectedColor().hex}
-                      glow={selectedColor().glow}
-                      class="w-32 h-32 tank-soft-halo pointer-events-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Barres Télémétriques */}
-                <div class="z-10 pt-1 font-mono text-[10px] space-y-1">
-                  <div class="flex items-center justify-between text-text-muted">
-                    <span>
-                      VELOCITY <strong class="text-white ml-1">85%</strong>
-                    </span>
-                    <span>
-                      DAMAGE{' '}
-                      <strong class="text-accent-secondary ml-1">92%</strong>
-                    </span>
-                    <span>
-                      BARRIER{' '}
-                      <strong class="text-success-foreground ml-1">74%</strong>
-                    </span>
-                  </div>
-                  <div class="w-full bg-surface-1 h-1.5 rounded-pill overflow-hidden flex gap-1">
+                    {/* Rotation autour du centre de la coque, pas du dessin */}
                     <div
-                      class="bg-accent-primary h-full rounded-l-sm transition-all duration-300"
-                      style={{ width: '45%' }}
-                    />
-                    <div
-                      class="bg-accent-secondary h-full transition-all duration-300"
-                      style={{ width: '35%' }}
-                    />
-                    <div
-                      class="bg-success-foreground h-full rounded-r-sm transition-all duration-300"
-                      style={{ width: '20%' }}
-                    />
-                  </div>
-                  <div class="flex items-center justify-between text-[10px] text-text-muted pt-1">
-                    <span>SHIELDS: 100%</span>
-                    <span class="tracking-widest">
-                      CORE REF: {selectedColor().hex.toUpperCase()}
-                    </span>
+                      class="w-32 tank-soft-halo pointer-events-none"
+                      style={{
+                        color: selectedColor().hex,
+                        filter: `drop-shadow(0 0 12px ${selectedColor().glow})`,
+                        transform: 'translateX(14.6%)',
+                      }}
+                    >
+                      <TankSprite kind="basic" class="w-full" />
+                    </div>
                   </div>
                 </div>
 
@@ -500,121 +323,20 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Bouton DEPLOY CTA */}
-            <div class="mt-6 pt-6 border-t border-border-subtle/85 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="mt-6 pt-6 border-t border-border-subtle/85">
               <Button
                 variant="default"
-                onClick={handleDeploy}
-                disabled={deploying()}
+                onClick={quickPlay}
                 class="w-full sm:w-80 py-4 px-6 rounded-md bg-accent-primary hover:bg-accent-primary-hover text-accent-primary-on font-extrabold text-sm md:text-base tracking-wider font-mono uppercase shadow-glow-cyan hover:shadow-glow-cyan-lg transform active:scale-95 transition-all flex items-center justify-center gap-3 border border-accent-primary-hover"
               >
-                <span class="material-symbols-outlined font-extrabold text-lg">
+                <span
+                  class="material-symbols-outlined font-extrabold text-lg"
+                  aria-hidden="true"
+                >
                   bolt
                 </span>
-                <span class="tracking-widest">{deployText()}</span>
+                <span class="tracking-widest">QUICK PLAY [ENTER]</span>
               </Button>
-            </div>
-          </Card>
-
-          {/* CARTE DROITE : DAILY CHALLENGES (4 colonnes) */}
-          <Card
-            variant="default"
-            class="lg:col-span-4 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 sm:p-6 shadow-card-inner flex flex-col justify-between"
-          >
-            <div>
-              {/* En-tête Défis */}
-              <div class="flex items-center justify-between border-b border-border-subtle/85 pb-3">
-                <div>
-                  <div class="flex items-center space-x-2">
-                    <span class="material-symbols-outlined text-sm text-accent-secondary">
-                      flag
-                    </span>
-                    <span class="font-mono text-xs font-bold text-accent-secondary tracking-wider uppercase">
-                      DAILY CHALLENGES
-                    </span>
-                  </div>
-                  <h2 class="text-xl font-bold text-white tracking-wide mt-1">
-                    Make every match count
-                  </h2>
-                </div>
-                <Badge variant="success">+1,500 CREDITS</Badge>
-              </div>
-
-              {/* Liste des Quêtes */}
-              <div class="mt-4 space-y-3">
-                {/* Quête 1 */}
-                <div class="bg-surface-1 border border-border-subtle/85 rounded-md p-3 space-y-2">
-                  <div class="flex items-center justify-between text-xs font-mono">
-                    <span class="text-text-primary">
-                      First strike: Destroy 5 predator tanks in FFA
-                    </span>
-                    <span class="text-accent-primary font-bold">[ 3 / 5 ]</span>
-                  </div>
-                  <Progress
-                    value={60}
-                    color="cyan"
-                    class="h-1.5 shadow-glow-cyan-xs"
-                  />
-                </div>
-
-                {/* Quête 2 (Accomplie avec bouton CLAIM) */}
-                <div class="bg-surface-1 border border-border-subtle/85 rounded-md p-3 space-y-2">
-                  <div class="flex items-center justify-between text-xs font-mono">
-                    <span class="text-text-primary">
-                      Core harvester: Absorb 50 radiant pentagons
-                    </span>
-                    <span class="text-success-foreground font-bold">
-                      [ 50 / 50 ]
-                    </span>
-                  </div>
-                  <div class="flex items-center justify-between pt-1 gap-3">
-                    <div class="w-3/5">
-                      <Progress
-                        value={100}
-                        color="lime"
-                        class="h-1.5 shadow-glow-green-xs"
-                      />
-                    </div>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      disabled={claimedReward()}
-                      onClick={() => setClaimedReward(true)}
-                      class="px-3 py-1 text-[10px] font-mono font-bold bg-success-foreground hover:bg-success-foreground/80 text-accent-primary-on rounded-sm shadow-glow-green-sm transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
-                    >
-                      <span class="material-symbols-outlined text-[11px]">
-                        redeem
-                      </span>
-                      {claimedReward() ? 'CLAIMED' : 'CLAIM REWARD'}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Quête 3 */}
-                <div class="bg-surface-1 border border-border-subtle/85 rounded-md p-3 space-y-2">
-                  <div class="flex items-center justify-between text-xs font-mono">
-                    <span class="text-text-primary">
-                      Apex predator: Reach top 3 on leaderboard
-                    </span>
-                    <span class="text-accent-secondary font-bold">
-                      +250 CREDITS
-                    </span>
-                  </div>
-                  <Progress
-                    value={25}
-                    color="pink"
-                    class="h-1.5 shadow-glow-magenta-xs"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Pied Quêtes */}
-            <div class="pt-3 mt-3 border-t border-border-subtle/85 text-[11px] font-mono text-text-muted flex items-center justify-between">
-              <span>RESETS IN: 04H 21M</span>
-              <span class="text-accent-primary font-bold tracking-wider">
-                [ TIER 4 BONUS ACTIVE ]
-              </span>
             </div>
           </Card>
         </section>
