@@ -861,142 +861,49 @@ export default function Home() {
             </div>
           </Card>
 
-          {/* CARTE DROITE : ARENA APEX LEADERBOARD (5 colonnes) */}
+          {/* CARTE DROITE : ARENA APEX (5 colonnes) */}
           <Card
             variant="default"
             id="leaderboard"
             class="lg:col-span-5 scroll-mt-36 sm:scroll-mt-24 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 shadow-card-inner flex flex-col justify-between"
           >
             <div>
-              {/* En-tête Apex */}
-              <div class="flex items-center justify-between font-mono text-xs mb-2">
-                <div class="flex items-center gap-2 font-bold text-accent-primary tracking-wider uppercase">
-                  <span class="material-symbols-outlined text-sm">trophy</span>
-                  <span>ARENA APEX</span>
-                </div>
-                <Badge variant="danger" class="animate-pulse">
-                  <span class="w-1.5 h-1.5 rounded-pill bg-error-foreground mr-1" />
-                  LIVE TELEMETRY
-                </Badge>
+              <div class="flex items-center gap-2 font-mono text-xs font-bold text-accent-primary tracking-wider uppercase mb-2">
+                <span
+                  class="material-symbols-outlined text-sm"
+                  aria-hidden="true"
+                >
+                  trophy
+                </span>
+                <span>ARENA APEX</span>
               </div>
-
-              {/* Sous-titre */}
               <div class="flex items-center justify-between border-b border-border-subtle/85 pb-3">
                 <h2 class="text-lg font-bold text-white tracking-wide font-sans">
-                  Ranked Free-for-all
+                  Quick Play · Arena
                 </h2>
-                <span class="font-mono text-[11px] text-text-muted">
-                  GLOBAL TOP 10
-                </span>
+                <span class="font-mono text-[10px] text-text-muted">TOP 5</span>
               </div>
 
-              {/* Liste Top 5 */}
-              <div class="mt-4 space-y-2 font-mono text-xs">
-                {/* 01 */}
-                <div class="flex items-center justify-between px-3 py-3 rounded-md bg-surface-2 border border-accent-primary/50 text-white shadow-glow-cyan-sm">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-accent-primary font-extrabold px-1 bg-accent-primary-subtle/80 rounded-sm border border-accent-primary/40">
-                      01
-                    </span>
-                    <span class="material-symbols-outlined text-xs text-accent-primary">
-                      verified
-                    </span>
-                    <span class="font-bold tracking-wider">NEONVOID</span>
-                    <span class="text-[10px] text-text-muted font-normal">
-                      PHANTOM
-                    </span>
-                  </div>
-                  <span class="text-accent-primary font-bold tracking-wider">
-                    248,475
-                  </span>
-                </div>
-
-                {/* 02 */}
-                <div class="flex items-center justify-between px-3 py-3 rounded-md bg-surface-2 border border-accent-secondary/40 text-text-primary shadow-glow-magenta-sm">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-accent-secondary font-extrabold px-1 bg-accent-secondary-subtle/80 rounded-sm border border-accent-secondary/40">
-                      02
-                    </span>
-                    <span class="material-symbols-outlined text-xs text-accent-secondary">
-                      target
-                    </span>
-                    <span class="font-bold tracking-wider">V3X_PILOT</span>
-                    <span class="text-[10px] text-text-muted font-normal">
-                      STRIKER
-                    </span>
-                  </div>
-                  <span class="text-accent-secondary font-bold tracking-wider">
-                    221,840
-                  </span>
-                </div>
-
-                {/* 03 */}
-                <div class="flex items-center justify-between px-3 py-3 rounded-md bg-surface-2 border border-accent-secondary-hover/40 text-text-secondary">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-accent-secondary-hover font-extrabold px-1 bg-accent-secondary-subtle/80 rounded-sm border border-accent-secondary-hover/40">
-                      03
-                    </span>
-                    <span class="material-symbols-outlined text-xs text-accent-secondary-hover">
-                      military_tech
-                    </span>
-                    <span class="tracking-wider">KAIROS</span>
-                    <span class="text-[10px] text-text-muted font-normal">
-                      OVERSEER
-                    </span>
-                  </div>
-                  <span class="font-bold text-text-primary tracking-wider">
-                    198,248
-                  </span>
-                </div>
-
-                {/* 04 */}
-                <div class="flex items-center justify-between px-3 py-2 rounded-md bg-surface-1 border border-border-subtle/85 text-text-muted">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-text-muted font-bold">04</span>
-                    <span class="tracking-wide text-text-secondary">
-                      NULLBYTE
-                    </span>
-                    <span class="text-[10px] text-text-muted">TITAN</span>
-                  </div>
-                  <span class="text-text-secondary">183,991</span>
-                </div>
-
-                {/* 05 */}
-                <div class="flex items-center justify-between px-3 py-2 rounded-md bg-surface-1 border border-border-subtle/85 text-text-muted">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-text-muted font-bold">05</span>
-                    <span class="tracking-wide text-text-secondary">
-                      SYNTAX_ERR
-                    </span>
-                    <span class="text-[10px] text-text-muted">REAPER</span>
-                  </div>
-                  <span class="text-text-secondary">162,483</span>
-                </div>
-
-                {/* Ligne Joueur Actuel (#142) */}
-                <div class="mt-3 flex items-center justify-between px-3 py-3 rounded-md bg-gradient-to-r from-accent-secondary-subtle/40 via-surface-2 to-accent-primary-subtle/40 border border-accent-secondary shadow-glow-magenta text-white">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-accent-secondary font-extrabold tracking-wider">
-                      #142
-                    </span>
-                    <span class="font-bold tracking-wider text-text-primary">
-                      YOU [{callsign()}]
-                    </span>
-                  </div>
-                  <span class="text-accent-secondary font-extrabold tracking-wider">
-                    124,179
-                  </span>
-                </div>
+              <div class="mt-4 flex flex-col items-center gap-2 rounded-md border border-dashed border-border-subtle/85 px-4 py-10 text-center font-mono">
+                <span
+                  class="material-symbols-outlined text-2xl text-text-muted"
+                  aria-hidden="true"
+                >
+                  leaderboard
+                </span>
+                <p class="text-xs font-bold tracking-widest text-text-secondary">
+                  NO RANKING YET
+                </p>
+                <p class="text-[11px] text-text-muted">
+                  Scores are not tracked in the arena yet.
+                </p>
               </div>
             </div>
 
-            {/* Pied de Carte Leaderboard */}
             <div class="pt-4 mt-4 border-t border-border-subtle/70 flex items-center justify-between font-mono text-xs">
-              <span class="text-text-muted">
-                YOUR ARENA RANK: <strong class="text-white">#142</strong>
-              </span>
+              <span class="text-text-muted">RANKING COMING SOON</span>
               <a
-                href="#leaderboard"
+                href="/leaderboard"
                 class="inline-flex items-center gap-2 font-bold text-accent-primary hover:text-white transition-colors group no-underline"
               >
                 <span>FULL RANKINGS</span>
