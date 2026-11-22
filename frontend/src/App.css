@@ -264,12 +264,6 @@
     0 0 20px var(--color-accent-primary);
 }
 
-.text-glow-pink {
-  text-shadow:
-    0 0 8px var(--color-accent-secondary),
-    0 0 20px var(--color-accent-secondary);
-}
-
 /* Coins biseautés (chamfered edges) du style brutaliste */
 .clip-chamfer {
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
@@ -349,10 +343,4 @@
   text-shadow:
     0 0 10px color-mix(in oklab, var(--color-accent-primary) 75%, transparent),
     0 0 20px color-mix(in oklab, var(--color-accent-primary) 35%, transparent);
-}
-
-.neon-text-magenta {
-  text-shadow:
-    0 0 10px color-mix(in oklab, var(--color-accent-secondary) 75%, transparent),
-    0 0 20px color-mix(in oklab, var(--color-accent-secondary) 35%, transparent);
 }
