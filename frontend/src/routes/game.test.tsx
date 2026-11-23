@@ -29,7 +29,7 @@ class Channel extends EventTarget {
 }
 
 describe('quick play lobby', () => {
-  test('joins on open, displays roster updates, and leaves on unmount', async () => {
+  test('joins on open, shows the game in a lobby, and leaves on unmount', async () => {
     const channel = new Channel();
     setChannels({ control: channel as unknown as RTCDataChannel });
     const view = render(() => <GamePage />);
@@ -40,14 +40,9 @@ describe('quick play lobby', () => {
       lobbyId: 'room',
       players: [{ id: '1', username: 'Alice' }],
     });
-    await waitFor(() => expect(view.getByText('Alice')).toBeInTheDocument());
-    channel.message({
-      type: 'LobbyState',
-      lobbyId: 'room',
-      players: [{ id: '2', username: 'Bob' }],
-    });
-    await waitFor(() => expect(view.getByText('Bob')).toBeInTheDocument());
-    expect(view.queryByText('Alice')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(view.getByText('Game prototype')).toBeInTheDocument(),
+    );
     view.unmount();
     expect(channel.send).toHaveBeenLastCalledWith(
       '{"type":"LeaveGameRequest"}',

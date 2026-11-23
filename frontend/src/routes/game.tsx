@@ -1,5 +1,5 @@
 import { Title } from '@solidjs/meta';
-import { createEffect, createSignal, For, Show } from 'solid-js';
+import { createEffect, createSignal, Show } from 'solid-js';
 
 import { useWebRTC } from '~/context/WebRTCContext';
 
@@ -100,43 +100,11 @@ export default function GamePage() {
   );
 
   return (
-    <main class="p-4 space-y-4">
-      <Title>Game - Solid App</Title>
-      <section
-        class="font-mono p-4 border border-border-subtle rounded-md space-y-2"
-        aria-label="Lobby"
-      >
-        <h1 class="text-accent-primary font-bold">QUICK PLAY LOBBY</h1>
-        <Show
-          when={lobby()}
-          fallback={
-            <output>
-              {error()
-                ? 'Lobby unavailable.'
-                : joining()
-                  ? 'Joining lobby…'
-                  : 'Connecting to server…'}
-            </output>
-          }
-        >
-          {(room) => (
-            <>
-              <p>
-                Lobby: {room().lobbyId} · {room().players.length}/8 players
-              </p>
-              <ul>
-                <For each={room().players}>
-                  {(player) => <li>{player.username}</li>}
-                </For>
-              </ul>
-              <p class="text-text-muted">
-                Move with WASD, aim with the mouse, shoot with left click, and
-                dash with Shift.
-              </p>
-            </>
-          )}
-        </Show>
-        <Show when={error()}>
+    <main class="flex flex-1 flex-col">
+      <Title>Game - FT_TRANSCENDENCE</Title>
+      <h1 class="sr-only">Quick play</h1>
+      <Show when={error()}>
+        <div class="flex items-center justify-center gap-space-md p-space-sm font-mono">
           <p role="alert">{error()}</p>
           <button
             type="button"
@@ -147,11 +115,21 @@ export default function GamePage() {
           >
             Retry
           </button>
-        </Show>
-        <a href="/">Leave lobby</a>
-      </section>
-      <Show when={lobby()}>
-        <div class="h-[calc(100vh-16rem)]">
+        </div>
+      </Show>
+      <Show
+        when={lobby()}
+        fallback={
+          <output class="flex flex-1 items-center justify-center p-4 font-mono">
+            {error()
+              ? 'Lobby unavailable.'
+              : joining()
+                ? 'Joining lobby…'
+                : 'Connecting to server…'}
+          </output>
+        }
+      >
+        <div class="h-[calc(100vh-4rem)]">
           <Game />
         </div>
       </Show>
