@@ -4,6 +4,7 @@ import { createSignal, onSettled, For, Show } from 'solid-js';
 
 import { type TankKind, TankSprite } from '~/components/TankSprite';
 import { Badge, Button, Card, Kbd } from '~/components/ui';
+import { paths } from '~/router';
 
 //champ de saisie
 const isEditableTarget = (target: EventTarget | null) =>
@@ -472,6 +473,18 @@ export default function Home() {
                 </div>
               </div>
             </div>
+            <div class="pt-4 border-t border-border-subtle/70 flex items-center justify-between font-mono text-xs">
+              <span class="text-text-muted">DEFAULT LAYOUT</span>
+              <a
+                href={`${paths.settings()}?tab=combat`}
+                class="inline-flex items-center gap-2 font-bold text-accent-primary hover:text-white transition-colors group no-underline"
+              >
+                <span>REMAP KEYS</span>
+                <span class="transform group-hover:translate-x-1 transition-transform">
+                  →
+                </span>
+              </a>
+            </div>
           </Card>
 
           {/* CARTE DROITE : ARENA APEX (5 colonnes) */}
@@ -516,7 +529,7 @@ export default function Home() {
             <div class="pt-4 mt-4 border-t border-border-subtle/70 flex items-center justify-between font-mono text-xs">
               <span class="text-text-muted">RANKING COMING SOON</span>
               <a
-                href="/leaderboard"
+                href={paths.leaderboard()}
                 class="inline-flex items-center gap-2 font-bold text-accent-primary hover:text-white transition-colors group no-underline"
               >
                 <span>FULL RANKINGS</span>
