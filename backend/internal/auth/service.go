@@ -48,14 +48,54 @@ var passwordMailTemplate string
 //go:embed verifMail.html
 var verifMailTemplate string
 
+//go:embed deleteMail.html
+var deleteMailTemplate string
+
+//go:embed exportMail.html
+var exportMailTemplate string
+
 func createForgotPasswordMail(resetURL string) string {
 	strRep := fmt.Sprintf(passwordMailTemplate, resetURL, resetURL, resetURL)
 	return strRep
 }
 
 func createMailVerificationMail(code string) string {
-	strRep := fmt.Sprintf(verifMailTemplate, code)
+	strRep := fmt.Sprintf(verifMailTemplate, code, code)
 	return strRep
+}
+
+func createDeleteMail(username string) string {
+	utcTime := time.Now().UTC().Format("02-01-2006 15:04:05")
+	strRep := fmt.Sprintf(deleteMailTemplate, username, utcTime)
+	return strRep
+}
+
+func createExportMail(username string) string {
+	utcTime := time.Now().UTC().Format("02-01-2006 15:04:05")
+	strRep := fmt.Sprintf(exportMailTemplate, username, utcTime)
+	return strRep
+}
+
+func (s *Service) SendExportMail(ctx context.Context, user *User) error {
+	if os.Getenv("HOSTNAME") == "" {
+		return echo.NewHTTPError(http.StatusInternalServerError, "mails are disabled")
+	}
+	mailContent := createExportMail(user.Username)
+	if err := SendMail(ctx, user.Email, "transcendence@transcendence.com", "Data Export - ft_transcendence", mailContent); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) SendDeleteMail(ctx context.Context, user *User) error {
+	if os.Getenv("HOSTNAME") == "" {
+		return echo.NewHTTPError(http.StatusInternalServerError, "mails are disabled")
+	}
+	mailContent := createDeleteMail(user.Username)
+	if err := SendMail(ctx, user.Email, "transcendence@transcendence.com", "Delete Account - ft_transcendence", mailContent); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Service) SendForgotPasswordMail(ctx context.Context, user *User) error {
@@ -278,7 +318,10 @@ func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID, password 
 	if err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password)); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid password")
 	}
-
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
 	err = s.repo.DeleteUser(ctx, userID)
 	if err != nil {
 		return err
@@ -303,7 +346,7 @@ func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID, password 
 	if err != nil {
 		return err
 	}
-	return nil
+	return s.SendDeleteMail(ctx, user)
 }
 
 func (s *Service) UpdateProfile(ctx context.Context, userID uuid.UUID, email, username string) error {
@@ -345,6 +388,10 @@ func (s *Service) GetDataFromUser(ctx context.Context, userID uuid.UUID) (*DataE
 	}
 
 	friendMessages, err := s.repo.GetMessagesFromUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	err = s.SendExportMail(ctx, user)
 	if err != nil {
 		return nil, err
 	}
