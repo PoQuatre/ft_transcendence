@@ -2,7 +2,7 @@ import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
 import { createSignal, onSettled, For, Show } from 'solid-js';
 
-import { type TankKind, TankSprite } from '~/components/TankSprite';
+import { pivotShift, type TankKind, TankSprite } from '~/components/TankSprite';
 import { Badge, Button, Card, Kbd } from '~/components/ui';
 import { paths } from '~/router';
 
@@ -64,6 +64,8 @@ export default function Home() {
     },
   ];
   const [selectedColor, setSelectedColor] = createSignal(colorOptions[1]!);
+  // Aperçu seulement : en jeu, tout le monde démarre en BASIC.
+  const [previewTank, setPreviewTank] = createSignal<TankKind>('basic');
 
   // Référence visuelle Tank Radar
   let tankPivotRef: HTMLDivElement | undefined;
@@ -248,7 +250,10 @@ export default function Home() {
                 <div class="absolute inset-0 striped-pattern opacity-30 pointer-events-none z-20" />
 
                 {/* En-tête télémétrique */}
-                <div class="flex items-center justify-end z-10 font-mono text-[11px]">
+                <div class="flex items-center justify-between z-10 font-mono text-[11px]">
+                  <span class="text-text-muted tracking-wider uppercase">
+                    PREVIEW // {previewTank()}
+                  </span>
                   <span class="text-accent-primary font-bold tracking-wider">
                     AIM LOCK: MOUSE
                   </span>
@@ -267,14 +272,14 @@ export default function Home() {
                   >
                     {/* Rotation autour du centre de la coque, pas du dessin */}
                     <div
-                      class="w-32 tank-soft-halo pointer-events-none"
+                      class="w-32 h-32 tank-soft-halo pointer-events-none"
                       style={{
                         color: selectedColor().hex,
                         filter: `drop-shadow(0 0 12px ${selectedColor().glow})`,
-                        transform: 'translateX(14.6%)',
+                        transform: `translateX(${pivotShift(previewTank())})`,
                       }}
                     >
-                      <TankSprite kind="basic" class="w-full" />
+                      <TankSprite kind={previewTank()} class="w-full h-full" />
                     </div>
                   </div>
                 </div>
@@ -366,10 +371,10 @@ export default function Home() {
               {(kind) => (
                 <li
                   class={[
-                    'bg-surface-2 backdrop-blur-md border rounded-lg p-4 shadow-card-inner space-y-3',
-                    kind === 'basic'
+                    'relative bg-surface-2 backdrop-blur-md border rounded-lg p-4 shadow-card-inner space-y-3 transition-colors',
+                    previewTank() === kind
                       ? 'border-accent-primary ring-1 ring-focus-primary'
-                      : 'border-border-subtle/85',
+                      : 'border-border-subtle/85 hover:border-accent-primary/60',
                   ]}
                 >
                   <Badge variant={kind === 'basic' ? 'success' : 'default'}>
@@ -388,7 +393,15 @@ export default function Home() {
                     </div>
                   </div>
                   <h3 class="font-mono text-lg font-extrabold tracking-wider text-white uppercase">
-                    {kind}
+                    {/* Le bouton couvre toute la carte grâce à son ::after */}
+                    <button
+                      type="button"
+                      aria-pressed={previewTank() === kind ? 'true' : 'false'}
+                      onClick={() => setPreviewTank(kind)}
+                      class="uppercase cursor-pointer after:absolute after:inset-0"
+                    >
+                      {kind}
+                    </button>
                   </h3>
                 </li>
               )}
