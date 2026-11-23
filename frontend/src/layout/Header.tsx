@@ -81,12 +81,6 @@ export const Header: Component = () => {
           >
             LEADERBOARD
           </a>
-          <a
-            href="/#classes"
-            class="hover:text-accent-primary transition-colors no-underline"
-          >
-            CLASSES
-          </a>
         </nav>
 
         {/* =================================================================

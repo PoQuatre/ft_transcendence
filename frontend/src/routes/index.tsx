@@ -348,7 +348,7 @@ export default function Home() {
         {/* =================================================================
             3. TANK ROSTER : LE TANK DE DÉPART ET SES ÉVOLUTIONS
             ================================================================= */}
-        <section class="space-y-4 scroll-mt-36 sm:scroll-mt-24" id="classes">
+        <section class="space-y-4">
           <div class="border-b border-border-subtle/85 pb-3">
             <div class="flex items-center space-x-2">
               <span
@@ -503,8 +503,7 @@ export default function Home() {
           {/* CARTE DROITE : ARENA APEX (5 colonnes) */}
           <Card
             variant="default"
-            id="leaderboard"
-            class="lg:col-span-5 scroll-mt-36 sm:scroll-mt-24 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 shadow-card-inner flex flex-col justify-between"
+            class="lg:col-span-5 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 shadow-card-inner flex flex-col justify-between"
           >
             <div>
               <div class="flex items-center gap-2 font-mono text-xs font-bold text-accent-primary tracking-wider uppercase mb-2">
