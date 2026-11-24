@@ -80,7 +80,7 @@ services:
       backend-mailpit:
 
   mailpit:
-    image: docker.io/axllent/mailpit:v1.33.0
+    image: docker.io/axllent/mailpit:v1.34.0
     restart: unless-stopped
     ports:
       - "127.0.0.1:8025:8025"
