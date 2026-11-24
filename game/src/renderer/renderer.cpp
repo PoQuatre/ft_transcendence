@@ -28,6 +28,15 @@
 
 namespace {
 
+float display_scale()
+{
+#ifdef __EMSCRIPTEN__
+    return GetWindowScaleDPI().x;
+#else
+    return 1.0F;
+#endif
+}
+
 // CREDIT: raysan5
 // https://github.com/raylib-extras/examples-c/commit/1e38dd9f1ae84c3beafecf69a7002a9339d1b4e9#diff-820f8b79e6e180ac315cc1f221bc5e98b0cf240210b96e9b860bc94cd5d3ec84
 // Load SVG image, rasteraizing it at desired width and height
@@ -318,7 +327,10 @@ void Renderer::draw(simulation::Simulation &sim)
 
     EndShaderMode();
 
+    BeginMode2D(Camera2D { .offset = {}, .target = {}, .rotation = 0,
+        .zoom = display_scale() });
     DrawFPS(8, 8);
+    EndMode2D();
 
     EndDrawing();
 }
@@ -780,7 +792,7 @@ void Renderer::update_camera(simulation::Simulation &sim)
     camera_.offset
         = { .x = GetRenderWidth() / 2.F, .y = GetRenderHeight() / 2.F };
     camera_.rotation = 0;
-    camera_.zoom = camera_zoom;
+    camera_.zoom = camera_zoom * display_scale();
 
     glm::vec2 player_origin(player_transform.pos.x, player_transform.pos.y);
 
@@ -821,7 +833,10 @@ void Renderer::draw_ui(simulation::Simulation &sim)
 {
     BeginTextureMode(ui_target_);
     ClearBackground(Colors::colors[Colors::COLOR_BLACK]);
+    BeginMode2D(Camera2D { .offset = {}, .target = {}, .rotation = 0,
+        .zoom = display_scale() });
     draw_player_status(sim);
+    EndMode2D();
     EndTextureMode();
 }
 
@@ -834,8 +849,8 @@ void Renderer::draw_player_status(simulation::Simulation &sim)
         = registry->get<simulation::Health>(player);
     simulation::Tank &player_tank = registry->get<simulation::Tank>(player);
 
-    const uint32_t width = GetRenderWidth();
-    const uint32_t height = GetRenderHeight();
+    const uint32_t width = GetRenderWidth() / display_scale();
+    const uint32_t height = GetRenderHeight() / display_scale();
 
     const float bar_width = width * 0.35F;
     const float bar_height = height * 0.05F;
