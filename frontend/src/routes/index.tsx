@@ -1,10 +1,10 @@
 import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
-import { createSignal, onSettled, For } from 'solid-js';
+import { createSignal, onSettled, For, Show } from 'solid-js';
 
-import { ChassisVector } from '~/components/ChassisVectors';
-import { Badge, Button, Card, Kbd, Progress } from '~/components/ui';
-import { currentUser } from '~/lib/auth';
+import { pivotShift, type TankKind, TankSprite } from '~/components/TankSprite';
+import { Badge, Button, Card, Kbd } from '~/components/ui';
+import { paths } from '~/router';
 
 //champ de saisie
 const isEditableTarget = (target: EventTarget | null) =>
@@ -12,146 +12,84 @@ const isEditableTarget = (target: EventTarget | null) =>
   (target.isContentEditable ||
     ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
-// Call-sign d'invité : ANONYM_ + 4 hexadécimaux, généré une fois et conservé
-// dans localStorage pour survivre au rechargement.
-const GUEST_CALLSIGN_KEY = 'cybercore.guest-callsign';
-const loadGuestCallsign = () => {
-  try {
-    const saved = localStorage.getItem(GUEST_CALLSIGN_KEY);
-    if (saved) return saved;
-  } catch {
-    // Stockage indisponible (navigation privée, etc.) : on régénère.
-  }
-  const hex = Array.from(crypto.getRandomValues(new Uint8Array(2)), (byte) =>
-    byte.toString(16).padStart(2, '0'),
-  )
-    .join('')
-    .toUpperCase();
-  const generated = `ANONYM_${hex}`;
-  try {
-    localStorage.setItem(GUEST_CALLSIGN_KEY, generated);
-  } catch {
-    // Idem : le nom ne sera pas conservé entre deux visites.
-  }
-  return generated;
-};
+// Seul le FFA tourne côté serveur (lobby Quick Play) : les autres modes arrivent.
+const MODES = [
+  { label: 'FFA SOLO', sub: 'Solo Domination', icon: 'groups_3', live: true },
+  { label: 'SQUAD 4v4', sub: 'Team Combat', icon: 'shield', live: false },
+  { label: 'EXTRACTION', sub: 'Objective Hunt', icon: 'flag', live: false },
+  { label: 'OVERLOAD', sub: 'Shrinking Zone', icon: 'warning', live: false },
+];
+
+// Règles de backend/internal/game/simulation.
+const STATS = [
+  { label: 'PLAYERS', value: 'UP TO 8' },
+  { label: 'HULL', value: '100 HP' },
+  { label: 'DASH', value: 'EVERY 2 S' },
+];
+
+// Le jeu démarre en BASIC, les autres tanks sont ses évolutions.
+const ROSTER: TankKind[] = ['basic', 'twin', 'heavy', 'quad', 'drone'];
+
+// Contrôles du jeu (game/src/platform/raylib_platform.cpp).
+const CONTROLS = [
+  { action: 'THRUST / MOVE', key: 'W A S D', hint: 'Move in 8 directions' },
+  { action: 'AIM TURRET', key: 'MOUSE', hint: 'Turret follows the cursor' },
+  { action: 'DASH', key: 'SHIFT', hint: 'Short burst of speed, every 2 s' },
+];
 
 export default function Home() {
   const navigate = useNavigate();
-
-  // --- Signaux d'état ---
-  // Call-sign affiché : le username du compte connecté, sinon le nom d'invité.
-  // Tant que la session n'est pas vérifiée (SSR, getMe() en cours) : « … ».
-  const [guestCallsign, setGuestCallsign] = createSignal('');
-  const callsign = () => {
-    const user = currentUser();
-    if (user === undefined) return '…';
-    return user?.username ?? (guestCallsign() || '…');
-  };
-
-  const [selectedMode, setSelectedMode] = createSignal<
-    'ffa' | 'tdm' | 'ctf' | 'br'
-  >('ctf');
-  const [subMode, setSubMode] = createSignal<'casual' | 'ranked'>('ranked');
-  const [activeChassis, setActiveChassis] = createSignal<
-    'STRIKER' | 'PHANTOM' | 'OVERSEER'
-  >('STRIKER');
 
   // Palette de couleur du cœur
   const colorOptions = [
     {
       hex: '#00e5ff',
       glow: 'rgba(0, 229, 255, 0.75)',
-      ref: '#00E5FF',
       name: 'Electric Cyan',
     },
     {
       hex: '#ff50df',
       glow: 'rgba(255, 80, 223, 0.75)',
-      ref: '#FF50DF',
       name: 'Hot Pink',
     },
     {
       hex: '#12ee83',
       glow: 'rgba(18, 238, 131, 0.75)',
-      ref: '#12EE83',
       name: 'Neon Green',
     },
     {
       hex: '#ffbb24',
       glow: 'rgba(255, 187, 36, 0.75)',
-      ref: '#FFBB24',
       name: 'Electric Amber',
     },
   ];
   const [selectedColor, setSelectedColor] = createSignal(colorOptions[1]!);
-
-  const [deploying, setDeploying] = createSignal(false);
-  const [deployText, setDeployText] = createSignal('DEPLOY [ENTER]');
-
-  // Quêtes journalières réactives
-  const [claimedReward, setClaimedReward] = createSignal(false);
-
-  // Descriptions dynamiques des modes
-  const modeDetails = {
-    ffa: {
-      badge: 'FFA SOLO // CONTINUOUS APEX ARENA',
-      desc: 'Chaque tank pour soi. Assimilez les orbes, faites évoluer votre châssis et dominez le classement apex.',
-    },
-    tdm: {
-      badge: 'SQUAD 4v4 // TACTICAL NODE CONTROL',
-      desc: 'Coordonnez vos tirs en escouade. Contrôlez les nœuds régionaux et anéantissez les forces ennemies.',
-    },
-    ctf: {
-      badge: 'EXTRACTION / HIGH-DENSITY CORE HEIST',
-      desc: 'Infiltrez les secteurs hostiles, récupérez les cœurs singuliers haute densité et défendez les sanctuaires d’extraction.',
-    },
-    br: {
-      badge: 'OVERLOAD // SHRINKING PERIMETER ARENA',
-      desc: 'Trente blindés déployés. Collectez les composants rares avant que l’orage ionique ne referme le périmètre.',
-    },
-  };
+  // Aperçu seulement : en jeu, tout le monde démarre en BASIC.
+  const [previewTank, setPreviewTank] = createSignal<TankKind>('basic');
 
   // Référence visuelle Tank Radar
   let tankPivotRef: HTMLDivElement | undefined;
   let animId: number;
 
-  const handleDeploy = () => {
-    if (deploying()) return;
-    setDeploying(true);
-    setDeployText('CONNECTING TO ARENA...');
-
-    setTimeout(() => {
-      setDeployText('WARPING...');
-      setTimeout(() => {
-        navigate(
-          `/game?pilot=${encodeURIComponent(callsign())}&class=${activeChassis()}&color=${encodeURIComponent(selectedColor().hex)}`,
-        );
-      }, 700);
-    }, 800);
-  };
+  const quickPlay = () => navigate('/game');
 
   onSettled(() => {
-    setGuestCallsign(loadGuestCallsign());
-    //Raccourci Déploiement
+    //Raccourci Quick Play
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Enter') return;
       if (isEditableTarget(e.target)) return;
-      handleDeploy();
+      quickPlay();
     };
     window.addEventListener('keydown', onKeyDown);
     // Suivi dynamique de la visée tourelle vers la souris (60fps lerp)
     let currentAngle = 0;
     let targetAngle = 0;
-    const SPRITE_HEADING_OFFSET = Math.PI / 2;
     const onMouseMove = (e: MouseEvent) => {
       if (!tankPivotRef) return;
       const rect = tankPivotRef.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
-      targetAngle =
-        Math.atan2(e.clientY - centerY, e.clientX - centerX) +
-        SPRITE_HEADING_OFFSET;
+      targetAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
     };
     window.addEventListener('mousemove', onMouseMove);
     const updateAim = () => {
@@ -207,211 +145,115 @@ export default function Home() {
             <span class="text-accent-primary neon-text-cyan">ARENA</span>
           </h1>
           <p class="font-mono text-text-muted text-xs md:text-sm max-w-3xl pt-1">
-            High-density real-time tactical geometry. Neutralize hostiles,
-            assimilate radiant cores, and mutate combat chassis along live
-            evolution trees.
+            Up to 8 tanks share one arena: shoot drifting shapes and rival
+            pilots in real time.
           </p>
         </section>
 
         {/* =================================================================
-            2. SECTION COMBAT DASHBOARD : MODES & DAILY CHALLENGES (8 cols + 4 cols)
+            2. QUICK PLAY : SEUL MODE JOUABLE POUR L'INSTANT
             ================================================================= */}
-        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* CARTE GAUCHE : SÉLECTEUR DE MODE & RADAR (8 colonnes) */}
+        <section>
           <Card
             variant="default"
-            class="lg:col-span-8 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 sm:p-6 shadow-card-inner flex flex-col justify-between"
+            class="bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 sm:p-6 shadow-card-inner"
           >
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-              {/* Colonne commandes modes (6 cols internes) */}
-              <div class="md:col-span-6 space-y-6 flex flex-col justify-between">
-                <div>
-                  {/* Protocole Pilote */}
-                  <div class="flex items-center justify-between font-mono text-[11px] mb-2">
-                    <div class="flex items-center gap-2 text-text-muted">
-                      <span class="material-symbols-outlined text-xs text-accent-primary">
-                        badge
-                      </span>
-                      <span class="font-bold tracking-wider uppercase">
-                        OPERATOR PILOT PROTOCOL
-                      </span>
-                    </div>
-                    <div class="flex items-center gap-2 text-success-foreground font-bold">
-                      <span class="w-1.5 h-1.5 rounded-pill bg-success-foreground shadow-glow-green-xs" />
-                      <span>12,482 PILOTS</span>
-                    </div>
-                  </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="space-y-4">
+                <div class="font-mono text-xs font-bold text-accent-primary tracking-wider flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-accent-primary shadow-glow-cyan-xs" />
+                  <span>QUICK PLAY // FREE-FOR-ALL ARENA</span>
+                </div>
+                <p class="text-xs text-text-secondary leading-relaxed font-mono">
+                  Join a running arena. Each shot deals 25 damage, so 4 hits
+                  destroy a tank, which respawns at full health. Squares and
+                  circles drift across the map and come back 10 s after being
+                  destroyed.
+                </p>
+                <dl class="grid grid-cols-3 gap-3 font-mono">
+                  <For each={STATS}>
+                    {(stat) => (
+                      <div class="rounded-md border border-border-subtle/85 bg-background px-3 py-2">
+                        <dt class="text-[10px] text-text-muted">
+                          {stat.label}
+                        </dt>
+                        <dd class="mt-1 text-xs font-bold text-white">
+                          {stat.value}
+                        </dd>
+                      </div>
+                    )}
+                  </For>
+                </dl>
 
-                  {/* Call-sign (lecture seule) */}
-                  <div class="flex items-center px-4 py-3 rounded-md bg-background border border-border-subtle/85 font-mono text-xs">
-                    <div class="flex items-center space-x-2 text-white">
-                      <span class="text-accent-primary font-bold">[</span>
-                      <span class="font-bold tracking-widest text-accent-primary">
-                        {callsign()}
-                      </span>
-                      <span class="text-accent-primary font-bold">]</span>
-                    </div>
-                  </div>
-
-                  {/* Classe Active */}
-                  <div class="mt-3 px-3 py-2 rounded-md bg-surface-1 border border-border-subtle/85 flex items-center justify-between font-mono text-xs">
-                    <div class="flex items-center gap-2">
-                      <span class="material-symbols-outlined text-sm text-accent-primary">
-                        view_in_ar
-                      </span>
-                      <span class="text-text-muted text-[11px]">
-                        CHASSIS CLASS:
-                      </span>
-                    </div>
-                    <span class="text-accent-primary font-bold tracking-wider">
-                      {activeChassis()} Mk.IV
-                    </span>
-                  </div>
-
-                  {/* En-tête des Modes */}
-                  <div class="mt-4 flex items-center justify-between">
-                    <h2 class="text-xs font-mono font-bold text-text-secondary uppercase tracking-widest flex items-center gap-2">
-                      <span class="material-symbols-outlined text-sm text-accent-primary">
-                        tune
-                      </span>
-                      SELECT SIMULATION MODE:
-                    </h2>
-                  </div>
-
-                  {/* Grille 2x2 des Modes */}
-                  <div class="grid grid-cols-2 gap-3 mt-3">
-                    <For
-                      each={[
-                        {
-                          id: 'ffa' as const,
-                          label: 'FFA SOLO',
-                          sub: 'Solo Domination',
-                          icon: 'groups_3',
-                        },
-                        {
-                          id: 'tdm' as const,
-                          label: 'SQUAD 4v4',
-                          sub: 'Team Combat',
-                          icon: 'shield',
-                        },
-                        {
-                          id: 'ctf' as const,
-                          label: 'EXTRACTION',
-                          sub: 'Objective Hunt',
-                          icon: 'flag',
-                        },
-                        {
-                          id: 'br' as const,
-                          label: 'OVERLOAD',
-                          sub: 'Shrinking Zone',
-                          icon: 'warning',
-                        },
-                      ]}
-                    >
-                      {(mode) => {
-                        const isActive = () => selectedMode() === mode.id;
-                        return (
-                          <button
-                            type="button"
-                            onClick={() => setSelectedMode(mode.id)}
+                <div class="space-y-2">
+                  <h2 class="font-mono text-[11px] font-bold tracking-widest text-text-muted">
+                    GAME MODES
+                  </h2>
+                  <ul class="grid grid-cols-2 gap-3">
+                    <For each={MODES}>
+                      {(mode) => (
+                        <li
+                          class={[
+                            'relative overflow-hidden rounded-md border px-3 py-3 font-mono',
+                            mode.live
+                              ? 'border-accent-primary bg-accent-primary/15 shadow-glow-cyan-md'
+                              : 'border-border-subtle/85 bg-surface-2',
+                          ]}
+                        >
+                          <div
                             class={[
-                              'group text-left px-3 py-3 rounded-md border transition-all relative overflow-hidden cursor-pointer',
-                              {
-                                'border-accent-primary bg-accent-primary/15 shadow-glow-cyan-md text-white':
-                                  isActive(),
-                                'border-border-subtle/85 bg-surface-2 text-text-secondary hover:text-white hover:border-accent-primary/60':
-                                  !isActive(),
-                              },
+                              'flex items-center justify-between',
+                              { 'opacity-25': !mode.live },
                             ]}
                           >
-                            <div class="flex items-center justify-between">
-                              <span
-                                class={[
-                                  'text-xs font-mono font-bold tracking-wider',
-                                  {
-                                    'text-accent-primary': isActive(),
-                                    'group-hover:text-accent-primary':
-                                      !isActive(),
-                                  },
-                                ]}
-                              >
-                                {mode.label}
+                            <span
+                              class={[
+                                'text-xs font-bold tracking-wider',
+                                mode.live
+                                  ? 'text-accent-primary'
+                                  : 'text-text-secondary',
+                              ]}
+                            >
+                              {mode.label}
+                            </span>
+                            <span
+                              class="material-symbols-outlined text-xs text-text-muted"
+                              aria-hidden="true"
+                            >
+                              {mode.icon}
+                            </span>
+                          </div>
+                          <div
+                            class={[
+                              'text-[10px] text-text-muted mt-1',
+                              { 'opacity-25': !mode.live },
+                            ]}
+                          >
+                            {mode.sub}
+                          </div>
+                          <Show when={!mode.live}>
+                            <span class="absolute inset-0 flex items-center justify-center bg-background/70">
+                              <span class="rounded-sm border border-accent-secondary/60 bg-accent-secondary-subtle px-2 py-0.5 text-[10px] font-bold tracking-widest text-accent-secondary">
+                                COMING SOON
                               </span>
-                              <span
-                                class={[
-                                  'material-symbols-outlined text-xs',
-                                  {
-                                    'text-accent-primary': isActive(),
-                                    'text-text-muted group-hover:text-accent-primary':
-                                      !isActive(),
-                                  },
-                                ]}
-                              >
-                                {mode.icon}
-                              </span>
-                            </div>
-                            <div class="text-[10px] text-text-muted font-mono mt-1">
-                              {mode.sub}
-                            </div>
-                          </button>
-                        );
-                      }}
+                            </span>
+                          </Show>
+                        </li>
+                      )}
                     </For>
-                  </div>
-
-                  {/* Commutateur Casual vs Ranked */}
-                  <div class="mt-4 bg-surface-1 p-1 rounded-md border border-border-subtle/85 flex items-center">
-                    <button
-                      type="button"
-                      onClick={() => setSubMode('casual')}
-                      class={[
-                        'flex-1 py-2 text-xs font-mono font-bold rounded-sm text-center transition-all cursor-pointer',
-                        {
-                          'text-accent-primary bg-accent-primary-subtle/60 border border-accent-primary/60 shadow-glow-cyan-sm':
-                            subMode() === 'casual',
-                          'text-text-muted hover:text-white':
-                            subMode() !== 'casual',
-                        },
-                      ]}
-                    >
-                      [ CASUAL SIM ]
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSubMode('ranked')}
-                      class={[
-                        'flex-1 py-2 text-xs font-mono font-bold rounded-sm text-center transition-all cursor-pointer',
-                        {
-                          'text-accent-primary bg-accent-primary-subtle/60 border border-accent-primary/60 shadow-glow-cyan-sm':
-                            subMode() === 'ranked',
-                          'text-text-muted hover:text-white':
-                            subMode() !== 'ranked',
-                        },
-                      ]}
-                    >
-                      [ RANKED ARENA ]
-                    </button>
-                  </div>
-                </div>
-
-                {/* Description du Mode */}
-                <div class="space-y-2 pt-3 border-t border-border-subtle/85">
-                  <div class="font-mono text-xs font-bold text-accent-primary tracking-wider flex items-center gap-2">
-                    <span class="w-1.5 h-1.5 bg-accent-primary shadow-glow-cyan-xs" />
-                    <span>{modeDetails[selectedMode()].badge}</span>
-                  </div>
-                  <p class="text-xs text-text-secondary leading-relaxed font-mono">
-                    {modeDetails[selectedMode()].desc}
-                  </p>
+                  </ul>
                 </div>
               </div>
 
-              {/* Colonne droite HUD Radar (6 cols internes) */}
-              <div class="md:col-span-6 flex flex-col justify-between bg-surface-2 rounded-lg border border-border-subtle/85 p-4 relative overflow-hidden">
+              {/* Aperçu du tank : la tourelle suit la souris */}
+              <div class="flex flex-col justify-between bg-surface-2 rounded-lg border border-border-subtle/85 p-4 relative overflow-hidden">
                 <div class="absolute inset-0 striped-pattern opacity-30 pointer-events-none z-20" />
 
                 {/* En-tête télémétrique */}
-                <div class="flex items-center justify-end z-10 font-mono text-[11px]">
+                <div class="flex items-center justify-between z-10 font-mono text-[11px]">
+                  <span class="text-text-muted tracking-wider uppercase">
+                    PREVIEW // {previewTank()}
+                  </span>
                   <span class="text-accent-primary font-bold tracking-wider">
                     AIM LOCK: MOUSE
                   </span>
@@ -428,49 +270,17 @@ export default function Home() {
                     ref={(el) => (tankPivotRef = el)}
                     class="relative z-10 w-36 h-36 flex items-center justify-center cursor-crosshair will-change-transform"
                   >
-                    <ChassisVector
-                      type={activeChassis()}
-                      color={selectedColor().hex}
-                      glow={selectedColor().glow}
+                    {/* Rotation autour du centre de la coque, pas du dessin */}
+                    <div
                       class="w-32 h-32 tank-soft-halo pointer-events-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Barres Télémétriques */}
-                <div class="z-10 pt-1 font-mono text-[10px] space-y-1">
-                  <div class="flex items-center justify-between text-text-muted">
-                    <span>
-                      VELOCITY <strong class="text-white ml-1">85%</strong>
-                    </span>
-                    <span>
-                      DAMAGE{' '}
-                      <strong class="text-accent-secondary ml-1">92%</strong>
-                    </span>
-                    <span>
-                      BARRIER{' '}
-                      <strong class="text-success-foreground ml-1">74%</strong>
-                    </span>
-                  </div>
-                  <div class="w-full bg-surface-1 h-1.5 rounded-pill overflow-hidden flex gap-1">
-                    <div
-                      class="bg-accent-primary h-full rounded-l-sm transition-all duration-300"
-                      style={{ width: '45%' }}
-                    />
-                    <div
-                      class="bg-accent-secondary h-full transition-all duration-300"
-                      style={{ width: '35%' }}
-                    />
-                    <div
-                      class="bg-success-foreground h-full rounded-r-sm transition-all duration-300"
-                      style={{ width: '20%' }}
-                    />
-                  </div>
-                  <div class="flex items-center justify-between text-[10px] text-text-muted pt-1">
-                    <span>SHIELDS: 100%</span>
-                    <span class="tracking-widest">
-                      CORE REF: {selectedColor().ref}
-                    </span>
+                      style={{
+                        color: selectedColor().hex,
+                        filter: `drop-shadow(0 0 12px ${selectedColor().glow})`,
+                        transform: `translateX(${pivotShift(previewTank())})`,
+                      }}
+                    >
+                      <TankSprite kind={previewTank()} class="w-full h-full" />
+                    </div>
                   </div>
                 </div>
 
@@ -517,241 +327,93 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Bouton DEPLOY CTA */}
-            <div class="mt-6 pt-6 border-t border-border-subtle/85 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="mt-6 pt-6 border-t border-border-subtle/85">
               <Button
                 variant="default"
-                onClick={handleDeploy}
-                disabled={deploying()}
+                onClick={quickPlay}
                 class="w-full sm:w-80 py-4 px-6 rounded-md bg-accent-primary hover:bg-accent-primary-hover text-accent-primary-on font-extrabold text-sm md:text-base tracking-wider font-mono uppercase shadow-glow-cyan hover:shadow-glow-cyan-lg transform active:scale-95 transition-all flex items-center justify-center gap-3 border border-accent-primary-hover"
               >
-                <span class="material-symbols-outlined font-extrabold text-lg">
+                <span
+                  class="material-symbols-outlined font-extrabold text-lg"
+                  aria-hidden="true"
+                >
                   bolt
                 </span>
-                <span class="tracking-widest">{deployText()}</span>
+                <span class="tracking-widest">QUICK PLAY [ENTER]</span>
               </Button>
-            </div>
-          </Card>
-
-          {/* CARTE DROITE : DAILY CHALLENGES (4 colonnes) */}
-          <Card
-            variant="default"
-            class="lg:col-span-4 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 sm:p-6 shadow-card-inner flex flex-col justify-between"
-          >
-            <div>
-              {/* En-tête Défis */}
-              <div class="flex items-center justify-between border-b border-border-subtle/85 pb-3">
-                <div>
-                  <div class="flex items-center space-x-2">
-                    <span class="material-symbols-outlined text-sm text-accent-secondary">
-                      flag
-                    </span>
-                    <span class="font-mono text-xs font-bold text-accent-secondary tracking-wider uppercase">
-                      DAILY CHALLENGES
-                    </span>
-                  </div>
-                  <h2 class="text-xl font-bold text-white tracking-wide mt-1">
-                    Make every match count
-                  </h2>
-                </div>
-                <Badge variant="success">+1,500 CREDITS</Badge>
-              </div>
-
-              {/* Liste des Quêtes */}
-              <div class="mt-4 space-y-3">
-                {/* Quête 1 */}
-                <div class="bg-surface-1 border border-border-subtle/85 rounded-md p-3 space-y-2">
-                  <div class="flex items-center justify-between text-xs font-mono">
-                    <span class="text-text-primary">
-                      First strike: Destroy 5 predator tanks in FFA
-                    </span>
-                    <span class="text-accent-primary font-bold">[ 3 / 5 ]</span>
-                  </div>
-                  <Progress
-                    value={60}
-                    color="cyan"
-                    class="h-1.5 shadow-glow-cyan-xs"
-                  />
-                </div>
-
-                {/* Quête 2 (Accomplie avec bouton CLAIM) */}
-                <div class="bg-surface-1 border border-border-subtle/85 rounded-md p-3 space-y-2">
-                  <div class="flex items-center justify-between text-xs font-mono">
-                    <span class="text-text-primary">
-                      Core harvester: Absorb 50 radiant pentagons
-                    </span>
-                    <span class="text-success-foreground font-bold">
-                      [ 50 / 50 ]
-                    </span>
-                  </div>
-                  <div class="flex items-center justify-between pt-1 gap-3">
-                    <div class="w-3/5">
-                      <Progress
-                        value={100}
-                        color="lime"
-                        class="h-1.5 shadow-glow-green-xs"
-                      />
-                    </div>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      disabled={claimedReward()}
-                      onClick={() => setClaimedReward(true)}
-                      class="px-3 py-1 text-[10px] font-mono font-bold bg-success-foreground hover:bg-success-foreground/80 text-accent-primary-on rounded-sm shadow-glow-green-sm transition-colors uppercase tracking-wider flex items-center gap-1 shrink-0"
-                    >
-                      <span class="material-symbols-outlined text-[11px]">
-                        redeem
-                      </span>
-                      {claimedReward() ? 'CLAIMED' : 'CLAIM REWARD'}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Quête 3 */}
-                <div class="bg-surface-1 border border-border-subtle/85 rounded-md p-3 space-y-2">
-                  <div class="flex items-center justify-between text-xs font-mono">
-                    <span class="text-text-primary">
-                      Apex predator: Reach top 3 on leaderboard
-                    </span>
-                    <span class="text-accent-secondary font-bold">
-                      +250 CREDITS
-                    </span>
-                  </div>
-                  <Progress
-                    value={25}
-                    color="pink"
-                    class="h-1.5 shadow-glow-magenta-xs"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Pied Quêtes */}
-            <div class="pt-3 mt-3 border-t border-border-subtle/85 text-[11px] font-mono text-text-muted flex items-center justify-between">
-              <span>RESETS IN: 04H 21M</span>
-              <span class="text-accent-primary font-bold tracking-wider">
-                [ TIER 4 BONUS ACTIVE ]
-              </span>
             </div>
           </Card>
         </section>
 
         {/* =================================================================
-            3. SECTION COMBAT EVOLUTION (3 Châssis)
+            3. TANK ROSTER : LE TANK DE DÉPART ET SES ÉVOLUTIONS
             ================================================================= */}
-        <section class="space-y-4 scroll-mt-36 sm:scroll-mt-24" id="classes">
-          <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-border-subtle/85 pb-3">
-            <div>
-              <div class="flex items-center space-x-2">
-                <span class="material-symbols-outlined text-sm text-accent-primary">
-                  account_tree
-                </span>
-                <span class="font-mono text-xs font-bold tracking-widest text-accent-primary uppercase">
-                  CHASSIS ARCHITECTURE
-                </span>
-              </div>
-              <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white uppercase mt-1">
-                VIEW YOUR COMBAT EVOLUTION
-              </h2>
+        <section class="space-y-4">
+          <div class="border-b border-border-subtle/85 pb-3">
+            <div class="flex items-center space-x-2">
+              <span
+                class="material-symbols-outlined text-sm text-accent-primary"
+                aria-hidden="true"
+              >
+                account_tree
+              </span>
+              <span class="font-mono text-xs font-bold tracking-widest text-accent-primary uppercase">
+                TANK ROSTER
+              </span>
             </div>
+            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white uppercase mt-1">
+              START AS A BASIC TANK, EVOLVE OVER TIME
+            </h2>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <For
-              each={[
-                {
-                  id: 'STRIKER' as const,
-                  badge: 'ASSAULT // MK.IV',
-                  icon: 'bolt',
-                  subtitle: 'TWIN CANNON',
-                  desc: 'High-velocity twin kinetic cannons configured for relentless strafing runs and sustained target lockdown.',
-                },
-                {
-                  id: 'PHANTOM' as const,
-                  badge: 'STEALTH // INFILTRATOR',
-                  icon: 'visibility_off',
-                  subtitle: 'PRECISION SPIKE',
-                  desc: 'Optical camouflage active cloaking with sudden hyper-damage plasma spikes from behind enemy blind spots.',
-                },
-                {
-                  id: 'OVERSEER' as const,
-                  badge: 'DRONE SWARM // LOGIC',
-                  icon: 'hub',
-                  subtitle: 'DRONE CONTROL',
-                  desc: 'Deploys self-guided micro-drone triangles that harass targets, protect flank angles, and breach enemy shields.',
-                },
-              ]}
-            >
-              {(chassis) => {
-                const isSelected = () => activeChassis() === chassis.id;
-                return (
-                  <Card
-                    variant="interactive"
-                    onClick={() => setActiveChassis(chassis.id)}
-                    class={[
-                      'bg-surface-2 backdrop-blur-md border rounded-lg p-6 shadow-card-inner flex flex-col justify-between relative overflow-hidden group transition-all cursor-pointer',
-                      {
-                        'border-accent-primary ring-1 ring-focus-primary':
-                          isSelected(),
-                        'border-border-subtle/85 hover:border-accent-primary/60':
-                          !isSelected(),
-                      },
-                    ]}
-                  >
-                    <div class="space-y-4">
-                      {/* Badge Haut */}
-                      <div class="flex items-center justify-between font-mono text-[11px]">
-                        <Badge variant="default" class="shadow-glow-cyan-sm">
-                          {chassis.badge}
-                        </Badge>
-                        <span class="material-symbols-outlined text-accent-primary text-sm">
-                          {chassis.icon}
-                        </span>
-                      </div>
-
-                      {/* Baie d'illustration Vectorielle */}
-                      <div class="relative w-full aspect-[4/3] rounded-md bg-surface-1 border border-border-subtle/85 group-hover:border-accent-primary/40 flex items-center justify-center overflow-hidden transition-colors">
-                        <div class="absolute inset-0 tactical-grid opacity-50 pointer-events-none" />
-                        <div class="absolute inset-4 rounded-pill border border-accent-primary/20 pointer-events-none" />
-                        <div class="absolute inset-12 rounded-pill border border-accent-primary/30 border-dashed pointer-events-none" />
-
-                        <div class="relative z-10 w-28 h-28 flex items-center justify-center">
-                          <ChassisVector
-                            type={chassis.id}
-                            color={selectedColor().hex}
-                            glow={selectedColor().glow}
-                            class="w-24 h-24 group-hover:scale-110 transition-transform duration-300"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Spécifications & Description */}
-                      <div>
-                        <div class="flex items-baseline justify-between">
-                          <h3 class="text-xl font-extrabold text-white tracking-wider uppercase font-mono group-hover:text-accent-primary transition-colors">
-                            {chassis.id}
-                          </h3>
-                          <span class="text-[11px] font-mono text-accent-primary uppercase font-bold">
-                            {chassis.subtitle}
-                          </span>
-                        </div>
-                        <p class="text-xs text-text-secondary font-mono mt-2 leading-relaxed">
-                          {chassis.desc}
-                        </p>
-                      </div>
+          <ul class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <For each={ROSTER}>
+              {(kind) => (
+                <li
+                  class={[
+                    'relative bg-surface-2 backdrop-blur-md border rounded-lg p-4 shadow-card-inner space-y-3 transition-colors',
+                    previewTank() === kind
+                      ? 'border-accent-primary ring-1 ring-focus-primary'
+                      : 'border-border-subtle/85 hover:border-accent-primary/60',
+                  ]}
+                >
+                  <Badge variant={kind === 'basic' ? 'success' : 'default'}>
+                    {kind === 'basic' ? 'STARTING TANK' : 'EVOLUTION'}
+                  </Badge>
+                  <div class="relative aspect-square rounded-md bg-surface-1 border border-border-subtle/85 flex items-center justify-center overflow-hidden">
+                    <div class="absolute inset-0 tactical-grid opacity-50 pointer-events-none" />
+                    <div
+                      class="relative w-3/5 h-3/5"
+                      style={{
+                        color: selectedColor().hex,
+                        filter: `drop-shadow(0 0 8px ${selectedColor().glow})`,
+                      }}
+                    >
+                      <TankSprite kind={kind} class="w-full h-full" />
                     </div>
-                  </Card>
-                );
-              }}
+                  </div>
+                  <h3 class="font-mono text-lg font-extrabold tracking-wider text-white uppercase">
+                    {/* Le bouton couvre toute la carte grâce à son ::after */}
+                    <button
+                      type="button"
+                      aria-pressed={previewTank() === kind ? 'true' : 'false'}
+                      onClick={() => setPreviewTank(kind)}
+                      class="uppercase cursor-pointer after:absolute after:inset-0"
+                    >
+                      {kind}
+                    </button>
+                  </h3>
+                </li>
+              )}
             </For>
-          </div>
+          </ul>
         </section>
 
         {/* =================================================================
             4. SECTION INFÉRIEURE : KEY MAP & ARENA APEX (7 cols + 5 cols)
             ================================================================= */}
         <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* CARTE GAUCHE : CONTRÔLES TACTIQUES (7 colonnes) */}
+          {/* CARTE GAUCHE : CONTRÔLES (7 colonnes) */}
           <Card
             variant="default"
             class="lg:col-span-7 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 sm:p-6 shadow-card-inner space-y-4"
@@ -759,7 +421,10 @@ export default function Home() {
             <div class="flex items-center justify-between border-b border-border-subtle/85 pb-3">
               <div>
                 <div class="flex items-center space-x-2">
-                  <span class="material-symbols-outlined text-sm text-accent-primary">
+                  <span
+                    class="material-symbols-outlined text-sm text-accent-primary"
+                    aria-hidden="true"
+                  >
                     keyboard
                   </span>
                   <span class="font-mono text-xs font-bold text-accent-primary tracking-wider uppercase">
@@ -767,7 +432,7 @@ export default function Home() {
                   </span>
                 </div>
                 <h2 class="text-xl font-bold text-white tracking-wide mt-1">
-                  Move. Aim. Evolve.
+                  Move. Aim. Fire.
                 </h2>
               </div>
               <div class="font-mono text-[10px] text-text-muted">
@@ -775,67 +440,30 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Grille des raccourcis Kbd */}
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 font-mono">
-              {/* 1. THRUST */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors flex flex-col justify-between">
-                <div class="flex items-center justify-between gap-1 w-full">
-                  <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
-                    THRUST / MOVE
-                  </span>
-                  <Kbd
-                    variant="glow"
-                    size="sm"
-                    class="shrink-0 whitespace-nowrap"
-                  >
-                    [ W A S D ]
-                  </Kbd>
-                </div>
-                <div class="text-[11px] text-text-muted mt-2 font-mono leading-relaxed">
-                  Multi-directional thrusters
-                </div>
-              </div>
+              <For each={CONTROLS}>
+                {(control) => (
+                  <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors flex flex-col justify-between">
+                    <div class="flex items-center justify-between gap-1 w-full">
+                      <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
+                        {control.action}
+                      </span>
+                      <Kbd
+                        variant="glow"
+                        size="sm"
+                        class="shrink-0 whitespace-nowrap"
+                      >
+                        [ {control.key} ]
+                      </Kbd>
+                    </div>
+                    <div class="text-[11px] text-text-muted mt-2 font-mono leading-relaxed">
+                      {control.hint}
+                    </div>
+                  </div>
+                )}
+              </For>
 
-              {/* 2. AIM TURRET */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors flex flex-col justify-between">
-                <div class="flex items-center justify-between gap-1 w-full">
-                  <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
-                    AIM TURRET
-                  </span>
-                  <Kbd
-                    variant="glow"
-                    size="sm"
-                    class="shrink-0 whitespace-nowrap"
-                  >
-                    [ MOUSE ]
-                  </Kbd>
-                </div>
-                <div class="text-[11px] text-text-muted mt-2 font-mono leading-relaxed">
-                  Turret lock & track
-                </div>
-              </div>
-
-              {/* 3. UPGRADE HUD */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors flex flex-col justify-between">
-                <div class="flex items-center justify-between gap-1 w-full">
-                  <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
-                    UPGRADE HUD
-                  </span>
-                  <Kbd
-                    variant="glow"
-                    size="sm"
-                    class="shrink-0 whitespace-nowrap"
-                  >
-                    [ TAB / ESC ]
-                  </Kbd>
-                </div>
-                <div class="text-[11px] text-text-muted mt-2 font-mono leading-relaxed">
-                  Chassis tree matrix
-                </div>
-              </div>
-
-              {/* 4. PRIMARY FIRE (spans 2 cols on md) */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors md:col-span-2 flex flex-col justify-between">
+              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors flex flex-col justify-between md:col-span-2">
                 <div class="flex items-center justify-between gap-2 w-full">
                   <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide">
                     PRIMARY FIRE
@@ -845,182 +473,75 @@ export default function Home() {
                     size="sm"
                     class="shrink-0 whitespace-nowrap"
                   >
-                    [ L-CLICK / SPACE ]
+                    [ L-CLICK ]
                   </Kbd>
                 </div>
                 <div class="mt-3">
                   <Badge variant="success" class="shadow-glow-green-sm">
-                    AUTO-FIRE READY
+                    HOLD TO FIRE
                   </Badge>
                 </div>
                 <div class="text-[11px] text-text-muted mt-2 font-mono leading-relaxed">
-                  Primary cannon barrage & projectile acceleration burst
-                </div>
-              </div>
-
-              {/* 5. STAT MATRIX */}
-              <div class="bg-surface-1 border border-border-subtle/85 hover:border-accent-primary/50 rounded-md p-3 sm:p-4 transition-colors flex flex-col justify-between">
-                <div class="flex items-center justify-between gap-1 w-full">
-                  <span class="text-[11px] font-bold text-text-secondary font-mono tracking-wide truncate">
-                    STAT MATRIX
-                  </span>
-                  <Kbd
-                    variant="glow"
-                    size="sm"
-                    class="shrink-0 whitespace-nowrap"
-                  >
-                    [ 1 - 6 ]
-                  </Kbd>
-                </div>
-                <div class="text-[11px] text-text-muted mt-2 font-mono leading-relaxed">
-                  Stat allocation points
+                  3 shots per second, 25 damage each
                 </div>
               </div>
             </div>
-
-            {/* Détection Manette */}
-            <div class="pt-2 text-[11px] font-mono text-text-muted flex items-center gap-2">
-              <span class="w-2 h-2 rounded-pill bg-accent-primary shadow-glow-cyan animate-pulse" />
-              <span>CONTROLLER: DETECTED (DUAL ANALOG OVERDRIVE ACTIVE)</span>
+            <div class="pt-4 border-t border-border-subtle/70 flex items-center justify-between font-mono text-xs">
+              <span class="text-text-muted">DEFAULT LAYOUT</span>
+              <a
+                href={`${paths.settings()}?tab=combat`}
+                class="inline-flex items-center gap-2 font-bold text-accent-primary hover:text-white transition-colors group no-underline"
+              >
+                <span>REMAP KEYS</span>
+                <span class="transform group-hover:translate-x-1 transition-transform">
+                  →
+                </span>
+              </a>
             </div>
           </Card>
 
-          {/* CARTE DROITE : ARENA APEX LEADERBOARD (5 colonnes) */}
+          {/* CARTE DROITE : ARENA APEX (5 colonnes) */}
           <Card
             variant="default"
-            id="leaderboard"
-            class="lg:col-span-5 scroll-mt-36 sm:scroll-mt-24 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 shadow-card-inner flex flex-col justify-between"
+            class="lg:col-span-5 bg-surface-1/90 backdrop-blur-md border-border-subtle/85 rounded-lg p-6 shadow-card-inner flex flex-col justify-between"
           >
             <div>
-              {/* En-tête Apex */}
-              <div class="flex items-center justify-between font-mono text-xs mb-2">
-                <div class="flex items-center gap-2 font-bold text-accent-primary tracking-wider uppercase">
-                  <span class="material-symbols-outlined text-sm">trophy</span>
-                  <span>ARENA APEX</span>
-                </div>
-                <Badge variant="danger" class="animate-pulse">
-                  <span class="w-1.5 h-1.5 rounded-pill bg-error-foreground mr-1" />
-                  LIVE TELEMETRY
-                </Badge>
+              <div class="flex items-center gap-2 font-mono text-xs font-bold text-accent-primary tracking-wider uppercase mb-2">
+                <span
+                  class="material-symbols-outlined text-sm"
+                  aria-hidden="true"
+                >
+                  trophy
+                </span>
+                <span>ARENA APEX</span>
               </div>
-
-              {/* Sous-titre */}
               <div class="flex items-center justify-between border-b border-border-subtle/85 pb-3">
                 <h2 class="text-lg font-bold text-white tracking-wide font-sans">
-                  Ranked Free-for-all
+                  Quick Play · Arena
                 </h2>
-                <span class="font-mono text-[11px] text-text-muted">
-                  GLOBAL TOP 10
-                </span>
+                <span class="font-mono text-[10px] text-text-muted">TOP 5</span>
               </div>
 
-              {/* Liste Top 5 */}
-              <div class="mt-4 space-y-2 font-mono text-xs">
-                {/* 01 */}
-                <div class="flex items-center justify-between px-3 py-3 rounded-md bg-surface-2 border border-accent-primary/50 text-white shadow-glow-cyan-sm">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-accent-primary font-extrabold px-1 bg-accent-primary-subtle/80 rounded-sm border border-accent-primary/40">
-                      01
-                    </span>
-                    <span class="material-symbols-outlined text-xs text-accent-primary">
-                      verified
-                    </span>
-                    <span class="font-bold tracking-wider">NEONVOID</span>
-                    <span class="text-[10px] text-text-muted font-normal">
-                      PHANTOM
-                    </span>
-                  </div>
-                  <span class="text-accent-primary font-bold tracking-wider">
-                    248,475
-                  </span>
-                </div>
-
-                {/* 02 */}
-                <div class="flex items-center justify-between px-3 py-3 rounded-md bg-surface-2 border border-accent-secondary/40 text-text-primary shadow-glow-magenta-sm">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-accent-secondary font-extrabold px-1 bg-accent-secondary-subtle/80 rounded-sm border border-accent-secondary/40">
-                      02
-                    </span>
-                    <span class="material-symbols-outlined text-xs text-accent-secondary">
-                      target
-                    </span>
-                    <span class="font-bold tracking-wider">V3X_PILOT</span>
-                    <span class="text-[10px] text-text-muted font-normal">
-                      STRIKER
-                    </span>
-                  </div>
-                  <span class="text-accent-secondary font-bold tracking-wider">
-                    221,840
-                  </span>
-                </div>
-
-                {/* 03 */}
-                <div class="flex items-center justify-between px-3 py-3 rounded-md bg-surface-2 border border-accent-secondary-hover/40 text-text-secondary">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-accent-secondary-hover font-extrabold px-1 bg-accent-secondary-subtle/80 rounded-sm border border-accent-secondary-hover/40">
-                      03
-                    </span>
-                    <span class="material-symbols-outlined text-xs text-accent-secondary-hover">
-                      military_tech
-                    </span>
-                    <span class="tracking-wider">KAIROS</span>
-                    <span class="text-[10px] text-text-muted font-normal">
-                      OVERSEER
-                    </span>
-                  </div>
-                  <span class="font-bold text-text-primary tracking-wider">
-                    198,248
-                  </span>
-                </div>
-
-                {/* 04 */}
-                <div class="flex items-center justify-between px-3 py-2 rounded-md bg-surface-1 border border-border-subtle/85 text-text-muted">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-text-muted font-bold">04</span>
-                    <span class="tracking-wide text-text-secondary">
-                      NULLBYTE
-                    </span>
-                    <span class="text-[10px] text-text-muted">TITAN</span>
-                  </div>
-                  <span class="text-text-secondary">183,991</span>
-                </div>
-
-                {/* 05 */}
-                <div class="flex items-center justify-between px-3 py-2 rounded-md bg-surface-1 border border-border-subtle/85 text-text-muted">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-text-muted font-bold">05</span>
-                    <span class="tracking-wide text-text-secondary">
-                      SYNTAX_ERR
-                    </span>
-                    <span class="text-[10px] text-text-muted">REAPER</span>
-                  </div>
-                  <span class="text-text-secondary">162,483</span>
-                </div>
-
-                {/* Ligne Joueur Actuel (#142) */}
-                <div class="mt-3 flex items-center justify-between px-3 py-3 rounded-md bg-gradient-to-r from-accent-secondary-subtle/40 via-surface-2 to-accent-primary-subtle/40 border border-accent-secondary shadow-glow-magenta text-white">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-accent-secondary font-extrabold tracking-wider">
-                      #142
-                    </span>
-                    <span class="font-bold tracking-wider text-text-primary">
-                      YOU [{callsign()}]
-                    </span>
-                  </div>
-                  <span class="text-accent-secondary font-extrabold tracking-wider">
-                    124,179
-                  </span>
-                </div>
+              <div class="mt-4 flex flex-col items-center gap-2 rounded-md border border-dashed border-border-subtle/85 px-4 py-10 text-center font-mono">
+                <span
+                  class="material-symbols-outlined text-2xl text-text-muted"
+                  aria-hidden="true"
+                >
+                  leaderboard
+                </span>
+                <p class="text-xs font-bold tracking-widest text-text-secondary">
+                  NO RANKING YET
+                </p>
+                <p class="text-[11px] text-text-muted">
+                  Scores are not tracked in the arena yet.
+                </p>
               </div>
             </div>
 
-            {/* Pied de Carte Leaderboard */}
             <div class="pt-4 mt-4 border-t border-border-subtle/70 flex items-center justify-between font-mono text-xs">
-              <span class="text-text-muted">
-                YOUR ARENA RANK: <strong class="text-white">#142</strong>
-              </span>
+              <span class="text-text-muted">RANKING COMING SOON</span>
               <a
-                href="#leaderboard"
+                href={paths.leaderboard()}
                 class="inline-flex items-center gap-2 font-bold text-accent-primary hover:text-white transition-colors group no-underline"
               >
                 <span>FULL RANKINGS</span>

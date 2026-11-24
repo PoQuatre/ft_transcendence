@@ -3,11 +3,9 @@ import { useNavigate, useSearchParams } from '@solidjs/router';
 import { createSignal } from 'solid-js';
 
 import { AuthCard } from '~/components/auth/AuthCard';
+import { FIELD_LABEL } from '~/components/settings/form';
 import { Button, Input, Kbd, PasswordInput } from '~/components/ui';
 import { type AuthResult, login } from '~/lib/auth';
-
-const LABEL =
-  'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-text-secondary';
 
 // Affiché au retour de /reset-password (?reset=done).
 const RESET_DONE = {
@@ -68,7 +66,7 @@ export default function Login() {
           }}
         >
           <label class="block" for="email">
-            <span class={LABEL}>
+            <span class={FIELD_LABEL}>
               EMAIL DU PILOTE
               <span class="text-[10px] text-accent-primary font-mono font-bold tracking-wider">
                 [ PAS DE CALL-SIGN ]
@@ -92,7 +90,7 @@ export default function Login() {
           </label>
 
           <label class="block" for="password">
-            <span class={LABEL}>
+            <span class={FIELD_LABEL}>
               PASSWORD
               <Kbd variant="outline" size="sm">
                 ENTER

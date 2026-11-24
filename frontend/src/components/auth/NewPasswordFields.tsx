@@ -1,11 +1,9 @@
 import { type Component, createSignal, For, Show } from 'solid-js';
 
+import { FIELD_LABEL } from '~/components/settings/form';
 import { PasswordInput, Progress } from '~/components/ui';
 import { PASSWORD_RULES } from '~/lib/auth';
 import { cn } from '~/lib/utils';
-
-const LABEL =
-  'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-text-secondary';
 
 // État des champs nouveau mot de passe + confirmation, créé par le formulaire
 // parent qui garde la main sur l'envoi : reveal() à chaque tentative,
@@ -74,7 +72,7 @@ export const NewPasswordFields: Component<NewPasswordFieldsProps> = (props) => {
   return (
     <>
       <label class="block" for={props.id}>
-        <span class={LABEL}>
+        <span class={FIELD_LABEL}>
           {props.label}
           <Show when={state().showRules()}>
             <span class="font-label-data text-label-data text-text-muted">
@@ -120,7 +118,7 @@ export const NewPasswordFields: Component<NewPasswordFieldsProps> = (props) => {
       </Show>
 
       <label class="block" for={props.confirmId}>
-        <span class={LABEL}>{props.confirmLabel}</span>
+        <span class={FIELD_LABEL}>{props.confirmLabel}</span>
         {/* Pas de name : le champ ne part jamais au backend. */}
         <PasswordInput
           ref={(el) => state().setConfirmInput(el)}

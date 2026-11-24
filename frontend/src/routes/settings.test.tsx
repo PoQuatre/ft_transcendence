@@ -2,7 +2,10 @@ import { cleanup, fireEvent, render, waitFor } from '@solidjs/testing-library';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 const navigate = vi.fn<(to: string, options?: object) => void>();
-vi.mock('@solidjs/router', () => ({ useNavigate: () => navigate }));
+vi.mock('@solidjs/router', () => ({
+  useNavigate: () => navigate,
+  useSearchParams: () => [{}, vi.fn<() => void>()],
+}));
 vi.mock('~/router', () => ({ paths: { login: () => '/login' } }));
 
 import { setCurrentUser } from '~/lib/auth';

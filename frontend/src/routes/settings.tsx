@@ -1,5 +1,5 @@
 import { Title } from '@solidjs/meta';
-import { useNavigate } from '@solidjs/router';
+import { useNavigate, useSearchParams } from '@solidjs/router';
 import { createEffect, Show } from 'solid-js';
 
 import { ControlsForm } from '~/components/settings/ControlsForm';
@@ -24,6 +24,8 @@ import { paths } from '~/router';
 // touches du jeu (COMBAT).
 export default function Settings() {
   const navigate = useNavigate();
+  // ?tab=combat ouvre directement les touches (lien du lobby).
+  const [search] = useSearchParams<{ tab: string }>();
 
   // currentUser() vaut undefined tant que la session n'est pas vérifiée (SSR,
   // getMe() du Header en cours) : on attend. null = vérifiée, personne n'est
@@ -71,7 +73,12 @@ export default function Settings() {
                     Paramètres du compte et touches du jeu.
                   </p>
 
-                  <Tabs defaultValue="operator" class="mt-space-lg">
+                  <Tabs
+                    defaultValue={
+                      search.tab === 'combat' ? 'combat' : 'operator'
+                    }
+                    class="mt-space-lg"
+                  >
                     <TabsList class="w-full">
                       <TabsTrigger value="operator" class="flex-1">
                         OPERATOR

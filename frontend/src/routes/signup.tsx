@@ -7,11 +7,9 @@ import {
   createNewPassword,
   NewPasswordFields,
 } from '~/components/auth/NewPasswordFields';
+import { FIELD_LABEL } from '~/components/settings/form';
 import { Button, Input } from '~/components/ui';
 import { type AuthResult, signup, USERNAME_PATTERN } from '~/lib/auth';
-
-const LABEL =
-  'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-text-secondary';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -53,7 +51,7 @@ export default function Signup() {
           }}
         >
           <label class="block" for="username">
-            <span class={LABEL}>
+            <span class={FIELD_LABEL}>
               CALL-SIGN
               <span class="font-label-data text-label-data text-text-muted">
                 3-30 · a-z A-Z 0-9 _
@@ -72,7 +70,7 @@ export default function Signup() {
           </label>
 
           <label class="block" for="email">
-            <span class={LABEL}>EMAIL</span>
+            <span class={FIELD_LABEL}>EMAIL</span>
             <Input
               id="email"
               name="email"

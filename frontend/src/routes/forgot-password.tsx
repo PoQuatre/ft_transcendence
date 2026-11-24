@@ -2,11 +2,9 @@ import { Title } from '@solidjs/meta';
 import { createSignal } from 'solid-js';
 
 import { AuthCard } from '~/components/auth/AuthCard';
+import { FIELD_LABEL } from '~/components/settings/form';
 import { Button, Input } from '~/components/ui';
 import { type AuthResult, requestPasswordReset } from '~/lib/auth';
-
-const LABEL =
-  'mb-space-xs flex items-center justify-between font-label-mono-caps text-label-mono-caps text-text-secondary';
 
 // Même texte que le compte existe ou non : la page ne révèle pas quels
 // emails sont inscrits. Un email non vérifié ne reçoit pas de lien.
@@ -64,7 +62,7 @@ export default function ForgotPassword() {
           }}
         >
           <label class="block" for="email">
-            <span class={LABEL}>EMAIL</span>
+            <span class={FIELD_LABEL}>EMAIL</span>
             <Input
               id="email"
               name="email"
