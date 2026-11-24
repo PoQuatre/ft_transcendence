@@ -327,8 +327,12 @@ void Renderer::draw(simulation::Simulation &sim)
 
     EndShaderMode();
 
-    BeginMode2D(Camera2D { .offset = {}, .target = {}, .rotation = 0,
-        .zoom = display_scale() });
+    BeginMode2D(Camera2D {
+        .offset = { },
+        .target = { },
+        .rotation = 0,
+        .zoom = display_scale(),
+    });
     DrawFPS(8, 8);
     EndMode2D();
 
@@ -833,8 +837,12 @@ void Renderer::draw_ui(simulation::Simulation &sim)
 {
     BeginTextureMode(ui_target_);
     ClearBackground(Colors::colors[Colors::COLOR_BLACK]);
-    BeginMode2D(Camera2D { .offset = {}, .target = {}, .rotation = 0,
-        .zoom = display_scale() });
+    BeginMode2D(Camera2D {
+        .offset = { },
+        .target = { },
+        .rotation = 0,
+        .zoom = display_scale(),
+    });
     draw_player_status(sim);
     EndMode2D();
     EndTextureMode();
