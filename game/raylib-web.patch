@@ -1,0 +1,44 @@
+--- a/src/rcore.c
++++ b/src/rcore.c
+@@ -523,7 +523,7 @@
+ #elif defined(PLATFORM_DESKTOP_WIN32)
+     #include "platforms/rcore_desktop_win32.c"
+ #elif defined(PLATFORM_WEB)
+-    #include "platforms/rcore_web.c"
++    #include "platforms/rcore_web_emscripten.c"
+ #elif defined(PLATFORM_DRM)
+     #include "platforms/rcore_drm.c"
+ #elif defined(PLATFORM_ANDROID)
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -76,7 +76,7 @@
+ endif()
+ 
+ if (${PLATFORM} MATCHES "Web")
+-    target_link_options(raylib PUBLIC "-sUSE_GLFW=3" -sEXPORTED_RUNTIME_METHODS=ccall)
++    target_link_options(raylib PUBLIC -sEXPORTED_RUNTIME_METHODS=ccall)
+     if(${GRAPHICS} MATCHES "GRAPHICS_API_OPENGL_ES3")
+         target_link_options(raylib PUBLIC "-sMIN_WEBGL_VERSION=2")
+         target_link_options(raylib PUBLIC "-sMAX_WEBGL_VERSION=2")
+--- a/src/platforms/rcore_web_emscripten.c
++++ b/src/platforms/rcore_web_emscripten.c
+@@ -751,6 +751,11 @@
+ // Set window dimensions
+ void SetWindowSize(int width, int height)
+ {
++    CORE.Window.screen.width = width;
++    CORE.Window.screen.height = height;
++    CORE.Window.render.width = width*emscripten_get_device_pixel_ratio();
++    CORE.Window.render.height = height*emscripten_get_device_pixel_ratio();
++    CORE.Window.resizedLastFrame = true;
+     // When resizing the canvas, several elements must be considered:
+     // - CSS canvas size: Web layout size, logical pixels
+     // - Canvas contained framebuffer resolution
+@@ -1397,7 +1402,6 @@
+     //----------------------------------------------------------------------------
+     // Setup window/canvas events callbacks
+     emscripten_set_fullscreenchange_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, 1, EmscriptenFullscreenChangeCallback);
+-    emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, 1, EmscriptenResizeCallback);
+     emscripten_set_blur_callback(platform.canvasId, NULL, 1, EmscriptenFocusCallback);
+     emscripten_set_focus_callback(platform.canvasId, NULL, 1, EmscriptenFocusCallback);
+     emscripten_set_visibilitychange_callback(NULL, 1, EmscriptenVisibilityChangeCallback);

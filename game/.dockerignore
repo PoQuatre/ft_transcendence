@@ -4,3 +4,4 @@
 !CMakeLists.txt
 !CMakePresets.json
 !dev.sh
+!raylib-web.patch

@@ -81,6 +81,7 @@ function GameView(props: { buildId: string }) {
     <canvas
       id={canvasId}
       ref={(canvas) => attachCanvas(canvas)}
+      tabindex={0}
       class="h-full! w-full!"
     />
   );

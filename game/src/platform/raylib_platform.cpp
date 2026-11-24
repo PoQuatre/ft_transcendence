@@ -6,7 +6,7 @@
 /*   By: mle-flem <mle-flem@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/20 00:00:00 by mle-flem          #+#    #+#             */
-/*   Updated: 2026/11/18 05:56:51 by uanglade         ###   ########.fr       */
+/*   Updated: 2026/11/24 17:18:26 by mle-flem         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,41 +44,20 @@ EM_JS(void, stop_observing_canvas_size, (), {
 });
 
 EM_JS(void, remove_emscripten_event_handlers, (), {
+    JSEvents.removeAllHandlersOnTarget(Module.canvas);
     JSEvents.removeAllHandlersOnTarget(window);
     JSEvents.removeAllHandlersOnTarget(document);
-});
-
-EM_JS(void, capture_browser_pointerlock_handler, (), {
-    const addEventListener = document.addEventListener;
-    const handlers = [];
-    Module.gameBrowserPointerlockHandlers = handlers;
-    document.addEventListener = function(type, listener, options) {
-        if (type === 'pointerlockchange')
-            handlers.push([listener, options]);
-        return addEventListener.call(this, type, listener, options);
-    };
-    Module.restoreGameDocumentAddEventListener = () => {
-        document.addEventListener = addEventListener;
-        delete Module.restoreGameDocumentAddEventListener;
-    };
-});
-
-EM_JS(void, release_browser_pointerlock_handler, (), {
-    Module.restoreGameDocumentAddEventListener?.();
-    for (const [listener, options] of Module.gameBrowserPointerlockHandlers ?? [])
-        document.removeEventListener('pointerlockchange', listener, options);
-    delete Module.gameBrowserPointerlockHandlers;
-});
-
-EM_JS(void, restore_browser_pointerlock_capture, (), {
-    Module.restoreGameDocumentAddEventListener?.();
 });
 // clang-format on
 
 extern "C" EMSCRIPTEN_KEEPALIVE void game_resize_window(int width, int height)
 {
-    if (GetScreenWidth() != width || GetScreenHeight() != height)
+    const auto dpi = GetWindowScaleDPI();
+    if (GetScreenWidth() != width || GetScreenHeight() != height
+        || GetRenderWidth() != static_cast<int>(width * dpi.x)
+        || GetRenderHeight() != static_cast<int>(height * dpi.y))
         SetWindowSize(width, height);
+    SetMouseScale(dpi.x, dpi.y);
 }
 #endif
 
@@ -96,12 +75,8 @@ Platform::~Platform()
 #ifdef __EMSCRIPTEN__
     if (initialized_) {
         stop_observing_canvas_size();
-        release_browser_pointerlock_handler();
-        const auto context = emscripten_webgl_get_current_context();
         CloseWindow();
         remove_emscripten_event_handlers();
-        if (context)
-            emscripten_webgl_destroy_context(context);
     }
 #else
     if (initialized_)
@@ -113,18 +88,8 @@ bool Platform::initialize()
 {
     SetConfigFlags(
         FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT);
-#ifdef __EMSCRIPTEN__
-    // tracks Browser.init's undocumented pointer-lock handler
-    capture_browser_pointerlock_handler();
-#endif
     InitWindow(window_width, window_height, "ft_transcendence");
-#ifdef __EMSCRIPTEN__
-    restore_browser_pointerlock_capture();
-#endif
     if (!IsWindowReady()) {
-#ifdef __EMSCRIPTEN__
-        release_browser_pointerlock_handler();
-#endif
         spdlog::error("Window creation failed");
         return false;
     }
