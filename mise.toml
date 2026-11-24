@@ -2,14 +2,14 @@
 lockfile = true
 
 [tools]
-"vfox:jdx/vfox-emsdk" = "6.0.9"
-cmake = "4.4.3"
-go = "1.27.0"
-golangci-lint = "2.13.2"
-node = "26.8.1"
-pnpm = "11.25.0"
+"vfox:jdx/vfox-emsdk" = "7.0.1"
+cmake = "4.5.1"
+go = "1.27.4"
+golangci-lint = "2.15.0"
+node = "26.13.1"
+pnpm = "12.23.0"
 mkcert = "1.4.4"
-"pypi:sqlfluff" = "4.3.0"
+"pypi:sqlfluff" = "4.5.0"
 swag = "1.16.6"
 flatc = "25.12.19"
 
