@@ -8,7 +8,6 @@ import {
   Button,
   Card,
   Input,
-  Progress,
   Select,
   TableBody,
   TableCell,
@@ -29,144 +28,80 @@ const COLUMN_HEADING_CLASS =
 const SORT_BUTTON_CLASS =
   'cursor-pointer bg-transparent border-0 font-bold h-auto min-h-11 rounded-sm p-0 font-label-data text-label-data text-inherit md:min-h-8 pointer-coarse:min-h-11';
 
-type Pilot = {
+// XP earned per action, following the diep-style progression.
+export const XP_PER_KILL = 5;
+export const XP_PER_SHAPE = 1;
+
+type PilotStats = {
   name: string;
   kills: number;
-  kd: number;
-  change: number;
-  rate: number;
-  wins: number;
-  delta: number;
-  elo: number;
+  shapes: number;
 };
 
-const pilots: readonly Pilot[] = [
-  {
-    name: 'NEOVIM',
-    kills: 4268,
-    kd: 5.82,
-    change: 2,
-    rate: 72.8,
-    wins: 882,
-    delta: 148,
-    elo: 3850,
-  },
-  {
-    name: 'V3X_PILOT',
-    kills: 3981,
-    kd: 3.54,
-    change: 1,
-    rate: 70.4,
-    wins: 543,
-    delta: 32,
-    elo: 2725,
-  },
-  {
-    name: 'KAIROS',
-    kills: 3754,
-    kd: 3.31,
-    change: 0,
-    rate: 68.9,
-    wins: 509,
-    delta: 21,
-    elo: 2610,
-  },
-  {
-    name: 'NULLBYTE',
-    kills: 3412,
-    kd: 3.05,
-    change: -1,
-    rate: 67.1,
-    wins: 472,
-    delta: -14,
-    elo: 2490,
-  },
-  {
-    name: 'ION_RIDER',
-    kills: 3098,
-    kd: 2.84,
-    change: 1,
-    rate: 64.5,
-    wins: 431,
-    delta: 16,
-    elo: 2375,
-  },
-  {
-    name: 'CHROMA',
-    kills: 2856,
-    kd: 2.62,
-    change: -2,
-    rate: 62.3,
-    wins: 398,
-    delta: -20,
-    elo: 2260,
-  },
-  {
-    name: 'GHOSTWIRE',
-    kills: 2604,
-    kd: 3.41,
-    change: 0,
-    rate: 60.1,
-    wins: 362,
-    delta: 5,
-    elo: 2145,
-  },
-  {
-    name: 'VSCODE',
-    kills: 2317,
-    kd: 1.18,
-    change: 2,
-    rate: 57.8,
-    wins: 327,
-    delta: 24,
-    elo: 230,
-  },
+type Pilot = PilotStats & { xp: number };
+
+export const pilotXp = (pilot: Pick<PilotStats, 'kills' | 'shapes'>) =>
+  pilot.kills * XP_PER_KILL + pilot.shapes * XP_PER_SHAPE;
+
+const pilotStats: readonly PilotStats[] = [
+  { name: 'NEOVIM', kills: 4268, shapes: 18420 },
+  { name: 'V3X_PILOT', kills: 3981, shapes: 15230 },
+  { name: 'KAIROS', kills: 3754, shapes: 16980 },
+  { name: 'NULLBYTE', kills: 3412, shapes: 12750 },
+  { name: 'ION_RIDER', kills: 3098, shapes: 14110 },
+  { name: 'CHROMA', kills: 2856, shapes: 11340 },
+  { name: 'GHOSTWIRE', kills: 2604, shapes: 13870 },
+  { name: 'VSCODE', kills: 2317, shapes: 9560 },
 ];
+
+const pilots: readonly Pilot[] = pilotStats.map(({ name, kills, shapes }) => ({
+  name,
+  kills,
+  shapes,
+  xp: pilotXp({ kills, shapes }),
+}));
 
 const pilotTelemetry = {
   name: 'V3X_PILOT',
-  position: 2,
-  elo: 2725,
-  best: 2780,
+  position: 3,
+  xp: 35135,
+  best: 1240,
   matches: 771,
-  delta: 32,
+  delta: 186,
   gain: 1,
-  remaining: 75,
-  progress: 81.25,
 };
 
 const metrics = [
-  { key: 'elo', label: 'ELO RATING' },
+  { key: 'xp', label: 'XP' },
   { key: 'kills', label: 'KILLS' },
-  { key: 'kd', label: 'K/D RATIO' },
-  { key: 'rate', label: 'WIN RATE' },
-  { key: 'wins', label: 'WINS' },
+  { key: 'shapes', label: 'SHAPES DESTROYED' },
 ] as const;
 type Metric = (typeof metrics)[number]['key'];
+// Not tracked by the game server yet.
+const upcomingMetrics = ['K/D RATIO', 'WIN RATE', 'WINS'];
 const modes = [
-  { key: 'ffa', label: 'FREE-FOR-ALL', short: 'FFA SOLO' },
-  { key: 'squad', label: 'SQUAD 4V4', short: 'SQUAD 4V4' },
-  { key: 'ctf', label: 'CTF', short: 'CAPTURE THE FLAG' },
-  { key: 'overload', label: 'OVERLOAD', short: 'OVERLOAD' },
+  { key: 'ffa', label: 'FREE-FOR-ALL', short: 'FFA SOLO', available: true },
+  { key: 'squad', label: 'SQUAD 4V4', short: 'SQUAD 4V4', available: false },
+  { key: 'ctf', label: 'CTF', short: 'CAPTURE THE FLAG', available: false },
+  { key: 'overload', label: 'OVERLOAD', short: 'OVERLOAD', available: false },
 ] as const;
 const periods = [
-  { key: 'all', label: 'ALL TIME' },
-  { key: 'season', label: 'THIS SEASON' },
-  { key: 'month', label: 'THIS MONTH' },
-  { key: 'week', label: 'THIS WEEK' },
+  { key: 'all', label: 'ALL TIME', available: true },
+  { key: 'season', label: 'THIS SEASON', available: false },
+  { key: 'month', label: 'THIS MONTH', available: false },
+  { key: 'week', label: 'THIS WEEK', available: false },
 ] as const;
 
 const columns: readonly { label: string; metric?: Metric }[] = [
   { label: 'RANK' },
   { label: 'CALLSIGN' },
+  { label: 'XP', metric: 'xp' },
   { label: 'KILLS', metric: 'kills' },
-  { label: 'K/D', metric: 'kd' },
-  { label: 'Δ RANK' },
-  { label: 'WIN RATE', metric: 'rate' },
-  { label: 'WINS', metric: 'wins' },
-  { label: 'Δ ELO' },
-  { label: 'ELO', metric: 'elo' },
+  { label: 'SHAPES DESTROYED', metric: 'shapes' },
 ];
+
+const SOON_BADGE_CLASS =
+  'rounded-pill border border-current px-1.5 py-0 text-[0.625rem] leading-4 tracking-widest';
 
 const number = (value: number) => value.toLocaleString('en-US');
 
@@ -176,8 +111,8 @@ function comparePilotNames(a: Pilot, b: Pilot) {
 
 function createLeaderboard() {
   const [search, setSearch] = createSignal('');
-  const [metric, setMetric] = createSignal<Metric>('elo');
-  const [mode, setMode] = createSignal('ffa');
+  const [metric, setMetric] = createSignal<Metric>('xp');
+  const [mode, setMode] = createSignal<(typeof modes)[number]['key']>('ffa');
   const [period, setPeriod] = createSignal('all');
   const [descending, setDescending] = createSignal(true);
   const [page, setPage] = createSignal(1);
@@ -191,7 +126,7 @@ function createLeaderboard() {
   const data = createMemo(() => pilots);
   const leaders = createMemo(() =>
     data()
-      .toSorted((a, b) => b.elo - a.elo || comparePilotNames(a, b))
+      .toSorted((a, b) => b.xp - a.xp || comparePilotNames(a, b))
       .slice(0, 3),
   );
   const podium = createMemo(() => {
@@ -322,6 +257,7 @@ function RankingFilters(props: { state: LeaderboardState }) {
                     'arena-mode-button min-w-0 flex-1 whitespace-nowrap',
                     props.state.mode() === item.key && ACTIVE_FILTER_CLASS,
                   )}
+                  disabled={!item.available}
                   aria-pressed={
                     props.state.mode() === item.key ? 'true' : 'false'
                   }
@@ -331,6 +267,9 @@ function RankingFilters(props: { state: LeaderboardState }) {
                   }}
                 >
                   {item.label}
+                  <Show when={!item.available}>
+                    <span class={SOON_BADGE_CLASS}>SOON</span>
+                  </Show>
                 </Button>
               )}
             </For>
@@ -346,7 +285,8 @@ function RankingFilters(props: { state: LeaderboardState }) {
             aria-label="Ranking period"
             options={periods.map((item) => ({
               value: item.key,
-              label: item.label,
+              label: item.available ? item.label : `${item.label} · SOON`,
+              disabled: !item.available,
             }))}
             value={props.state.period()}
             onChange={(value) => {
@@ -424,6 +364,19 @@ function RankingFilters(props: { state: LeaderboardState }) {
               </Button>
             )}
           </For>
+          <For each={upcomingMetrics}>
+            {(label) => (
+              <Button
+                variant="filter"
+                size="sm"
+                class="flex-[1_0_28%] md:flex-1 xl:w-[15%] xl:max-w-[184px] xl:flex-none"
+                disabled
+              >
+                {label}
+                <span class={SOON_BADGE_CLASS}>SOON</span>
+              </Button>
+            )}
+          </For>
         </div>
       </Card>
     </>
@@ -485,38 +438,30 @@ function PodiumCard(props: { pilot: Pilot; place: number }) {
           {props.pilot.name}
         </h3>
         <div class="mt-3 font-label-data">
-          <p class="text-label-data tracking-widest text-text-muted">
-            ELO RATING
-          </p>
+          <p class="text-label-data tracking-widest text-text-muted">XP</p>
           <p class="font-stat-counter text-stat-counter font-bold tabular-nums">
-            {number(props.pilot.elo)}
+            {number(props.pilot.xp)}
           </p>
         </div>
         <div class="mt-auto pt-5 w-full font-label-data">
           <div class="grid grid-cols-2 gap-2 border-t border-border-subtle pt-3">
             <div>
               <p class="text-label-data tracking-widest text-text-muted">
-                WINS
+                KILLS
               </p>
               <p class="mt-1 text-sm font-bold tabular-nums text-text-primary">
-                {number(props.pilot.wins)}
+                {number(props.pilot.kills)}
               </p>
             </div>
             <div>
               <p class="text-label-data tracking-widest text-text-muted">
-                WIN RATE
+                SHAPES
               </p>
               <p class="mt-1 text-sm font-bold tabular-nums text-text-primary">
-                {props.pilot.rate}%
+                {number(props.pilot.shapes)}
               </p>
             </div>
           </div>
-          <Progress
-            value={props.pilot.rate}
-            color={place() === 3 ? 'amber' : 'cyan'}
-            class="mt-space-sm rounded-pill bg-border-subtle [&>div]:h-full [&>div]:bg-current"
-            aria-hidden="true"
-          />
         </div>
       </Card>
     </article>
@@ -552,7 +497,7 @@ function LeaderboardOverview(props: { state: LeaderboardState }) {
             </h2>
           </div>
           <small class="max-w-20 text-right text-label-data md:max-w-none">
-            HIGHEST ELO RATINGS
+            HIGHEST XP
           </small>
         </div>
         <div
@@ -658,22 +603,18 @@ function PilotStandings(props: { state: LeaderboardState }) {
         "
         aria-label="Pilot standings, scroll horizontally for all statistics"
       >
-        <table class="arena-standings-table w-full min-w-[850px] table-fixed border-separate border-spacing-y-2 whitespace-nowrap text-left font-label-data text-label-data">
+        <table class="arena-standings-table w-full min-w-[600px] table-fixed border-separate border-spacing-y-2 whitespace-nowrap text-left font-label-data text-label-data">
           <caption class="sr-only">
             {props.state.selectedMode().label} standings ·{' '}
-            {props.state.selectedPeriod().label}. Fixed mockup data, shared
-            across all modes and periods.
+            {props.state.selectedPeriod().label}. XP is {XP_PER_KILL} per kill
+            and {XP_PER_SHAPE} per shape destroyed.
           </caption>
           <colgroup>
-            <col class="w-[8%]" />
+            <col class="w-[10%]" />
+            <col class="w-[30%]" />
             <col class="w-[20%]" />
-            <col class="w-[10%]" />
-            <col class="w-[9%]" />
-            <col class="w-[9%]" />
-            <col class="w-[12%]" />
-            <col class="w-[9%]" />
-            <col class="w-[10%]" />
-            <col class="w-[13%]" />
+            <col class="w-[20%]" />
+            <col class="w-[20%]" />
           </colgroup>
           <thead>
             <tr>
@@ -752,25 +693,11 @@ function PilotStandings(props: { state: LeaderboardState }) {
                   >
                     {pilot.name}
                   </TableHead>
+                  <TableCell class="text-accent-primary">
+                    {number(pilot.xp)}
+                  </TableCell>
                   <TableCell>{number(pilot.kills)}</TableCell>
-                  <TableCell>{pilot.kd.toFixed(2)}</TableCell>
-                  <TableCell
-                    class={{
-                      'text-success-foreground!': pilot.change > 0,
-                      'text-error-foreground!': pilot.change < 0,
-                    }}
-                  >
-                    {pilot.change === 0
-                      ? '—'
-                      : `${pilot.change > 0 ? '↑' : '↓'} ${Math.abs(pilot.change)}`}
-                  </TableCell>
-                  <TableCell>{pilot.rate.toFixed(1)}%</TableCell>
-                  <TableCell>{pilot.wins}</TableCell>
-                  <TableCell class={{ 'arena-cyan': pilot.delta > 0 }}>
-                    {pilot.delta > 0 ? '+' : ''}
-                    {pilot.delta}
-                  </TableCell>
-                  <TableCell>{number(pilot.elo)}</TableCell>
+                  <TableCell>{number(pilot.shapes)}</TableCell>
                 </TableRow>
               )}
             </For>
