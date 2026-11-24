@@ -1,22 +1,22 @@
-import { For } from 'solid-js';
+import { createMemo } from 'solid-js';
 
-import { Avatar, Badge, Card, Progress } from '~/components/ui';
+import { Avatar, Badge, Card, SegmentedProgress } from '~/components/ui';
+import { levelProgress } from '~/lib/level';
 
 export type PilotTelemetryData = {
   name: string;
   position: number;
-  elo: number;
+  xp: number;
   best: number;
   matches: number;
   delta: number;
   gain: number;
-  remaining: number;
-  progress: number;
 };
 
 const number = (value: number) => value.toLocaleString('en-US');
 
 export function PilotTelemetry(props: { telemetry: PilotTelemetryData }) {
+  const level = createMemo(() => levelProgress(props.telemetry.xp));
   return (
     <Card
       class="arena-panel arena-telemetry relative min-w-0 flex flex-col items-center rounded-lg border border-accent-primary/40 bg-surface-1 p-6 text-center shadow-sm transition-shadow duration-200 hover:shadow-glow-cyan-soft"
@@ -43,14 +43,14 @@ export function PilotTelemetry(props: { telemetry: PilotTelemetryData }) {
         variant="secondary"
         class="mt-2 rounded-pill border border-accent-secondary/40 bg-accent-secondary-subtle px-3 py-1 font-label-data text-label-data font-bold tracking-widest text-accent-secondary"
       >
-        ◇ ELITE DIVISION
+        ◇ LEVEL {level().level}
       </Badge>
       <div class="mt-5 font-label-data">
         <p class="text-label-data tracking-widest text-text-muted">
-          CURRENT ELO
+          CURRENT XP
         </p>
         <p class="text-5xl font-bold tabular-nums tracking-tight text-accent-primary neon-text-cyan">
-          {number(props.telemetry.elo)}
+          {number(props.telemetry.xp)}
         </p>
         <p
           class={[
@@ -62,7 +62,7 @@ export function PilotTelemetry(props: { telemetry: PilotTelemetryData }) {
           ]}
         >
           {props.telemetry.delta >= 0 ? '↑ +' : '↓ '}
-          {props.telemetry.delta} ELO
+          {number(props.telemetry.delta)} XP
           <span class="text-text-muted">
             {' '}
             · {props.telemetry.gain >= 0 ? '+' : ''}
@@ -87,7 +87,7 @@ export function PilotTelemetry(props: { telemetry: PilotTelemetryData }) {
         </div>
         <div>
           <dt class="text-label-data tracking-wider text-text-muted">
-            BEST ELO
+            BEST MATCH
           </dt>
           <dd class="mt-1 text-sm font-bold tabular-nums text-text-primary">
             {number(props.telemetry.best)}
@@ -97,34 +97,26 @@ export function PilotTelemetry(props: { telemetry: PilotTelemetryData }) {
       <div class="arena-division mt-auto w-full rounded-md border border-accent-primary/30 bg-accent-primary-subtle/40 p-3 text-left font-label-data">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2 text-label-data">
           <span class="font-bold tracking-widest text-accent-primary">
-            DIVISION PROGRESS
+            LEVEL PROGRESS
           </span>
           <span class="text-text-secondary">
-            {props.telemetry.remaining} ELO TO APEX
+            {number(level().remaining)} XP TO LEVEL {level().next}
           </span>
         </div>
-        <progress
-          class="sr-only"
-          max={100}
-          value={props.telemetry.progress}
-          aria-label="Progress from Elite to Apex"
-          aria-valuetext={`${props.telemetry.progress}% — ${props.telemetry.remaining} ELO to Apex`}
+        <SegmentedProgress
+          value={level().current}
+          max={level().span}
+          color="pink"
+          striped
+          label={`Progress from level ${level().level} to level ${level().next}`}
+          valueText={`${number(level().current)} / ${number(level().span)} XP — ${number(level().remaining)} XP to level ${level().next}`}
         />
-        <div class="grid grid-cols-20 gap-1" aria-hidden="true">
-          <For each={Array.from({ length: 20 }, (_, index) => index)}>
-            {(index) => (
-              <Progress
-                value={props.telemetry.progress - index * 5}
-                max={5}
-                color="pink"
-                class="h-3 min-w-0 rounded-sm bg-border-subtle [&>div]:h-full [&>div]:striped-pattern"
-              />
-            )}
-          </For>
-        </div>
         <div class="mt-2 flex items-center justify-between text-label-data font-bold tracking-widest">
-          <span class="text-accent-secondary">◇ ELITE</span>
-          <span class="text-accent-primary">APEX ◇</span>
+          <span class="text-accent-secondary">◇ LVL {level().level}</span>
+          <span class="text-text-muted">
+            {number(level().current)} / {number(level().span)} XP
+          </span>
+          <span class="text-accent-primary">LVL {level().next} ◇</span>
         </div>
       </div>
     </Card>

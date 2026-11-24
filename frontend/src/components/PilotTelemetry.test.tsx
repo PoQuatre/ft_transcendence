@@ -11,13 +11,11 @@ test('displays the supplied pilot telemetry and accessible progress', () => {
       telemetry={{
         name: 'TEST_PILOT',
         position: 3,
-        elo: 2100,
-        best: 2200,
+        xp: 2100,
+        best: 220,
         matches: 120,
         delta: -10,
         gain: -1,
-        remaining: 100,
-        progress: 75,
       }}
     />
   ));
@@ -25,7 +23,10 @@ test('displays the supplied pilot telemetry and accessible progress', () => {
   expect(getByRole('heading', { name: 'TEST_PILOT' })).toBeInTheDocument();
   expect(getByText('2,100')).toBeInTheDocument();
   expect(getByText('#3')).toBeInTheDocument();
+  // 2,100 XP: level 5 starts at 1,600 XP and level 6 at 2,500 XP.
+  expect(getByText('◇ LEVEL 5')).toBeInTheDocument();
+  expect(getByText('400 XP TO LEVEL 6')).toBeInTheDocument();
   expect(
-    getByRole('progressbar', { name: 'Progress from Elite to Apex' }),
-  ).toHaveAttribute('value', '75');
+    getByRole('progressbar', { name: 'Progress from level 5 to level 6' }),
+  ).toHaveAttribute('aria-valuenow', '500');
 });

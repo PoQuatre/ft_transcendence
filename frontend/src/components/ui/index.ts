@@ -4,6 +4,10 @@ export { Card, cardVariants, type CardProps } from './Card';
 export { Input, type InputProps } from './Input';
 export { Select, type SelectProps, type SelectOption } from './Select';
 export { Progress, progressVariants, type ProgressProps } from './Progress';
+export {
+  SegmentedProgress,
+  type SegmentedProgressProps,
+} from './SegmentedProgress';
 export { Kbd, kbdVariants, type KbdProps } from './Kbd';
 export { Separator, type SeparatorProps } from './Separator';
 export { Avatar, type AvatarProps } from './Avatar';
