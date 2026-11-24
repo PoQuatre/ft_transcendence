@@ -17,21 +17,22 @@ const options = [
   { value: 'locked', label: 'Locked', disabled: true },
 ];
 
+function Example() {
+  const [value, setValue] = createSignal('solo');
+  return (
+    <form aria-label="Preferences">
+      <Select
+        aria-label="Mode"
+        name="mode"
+        value={value()}
+        options={options}
+        onChange={setValue}
+      />
+    </form>
+  );
+}
+
 test('supports keyboard selection and form submission', async () => {
-  function Example() {
-    const [value, setValue] = createSignal('solo');
-    return (
-      <form aria-label="Preferences">
-        <Select
-          aria-label="Mode"
-          name="mode"
-          value={value()}
-          options={options}
-          onChange={setValue}
-        />
-      </form>
-    );
-  }
   const { getByRole } = render(() => <Example />);
   const select = getByRole('combobox', { name: 'Mode' });
   fireEvent.keyDown(select, { key: 'ArrowDown' });

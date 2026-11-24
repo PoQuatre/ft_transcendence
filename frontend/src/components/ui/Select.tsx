@@ -152,18 +152,18 @@ export function Select(props: SelectProps) {
       }
     }
   }
+  const outside = (event: PointerEvent) => {
+    if (
+      open() &&
+      !trigger?.contains(event.target as Node) &&
+      !list?.contains(event.target as Node)
+    )
+      close();
+  };
+  const reposition = () => {
+    if (open()) updatePosition();
+  };
   onSettled(() => {
-    const outside = (event: PointerEvent) => {
-      if (
-        open() &&
-        !trigger?.contains(event.target as Node) &&
-        !list?.contains(event.target as Node)
-      )
-        close();
-    };
-    const reposition = () => {
-      if (open()) updatePosition();
-    };
     document.addEventListener('pointerdown', outside);
     window.addEventListener('resize', reposition);
     window.addEventListener('scroll', reposition, true);

@@ -73,13 +73,13 @@ export default function Home() {
 
   const quickPlay = () => navigate('/game');
 
+  //Raccourci Quick Play
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key !== 'Enter') return;
+    if (isEditableTarget(e.target)) return;
+    quickPlay();
+  };
   onSettled(() => {
-    //Raccourci Quick Play
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Enter') return;
-      if (isEditableTarget(e.target)) return;
-      quickPlay();
-    };
     window.addEventListener('keydown', onKeyDown);
     // Suivi dynamique de la visée tourelle vers la souris (60fps lerp)
     let currentAngle = 0;

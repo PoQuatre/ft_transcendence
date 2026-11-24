@@ -12,13 +12,13 @@ export type DialogProps = {
 };
 
 export const Dialog: Component<DialogProps> = (props) => {
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') props.onOpenChange(false);
+  };
   createEffect(
     () => props.open,
     (open) => {
       if (!open) return undefined;
-      const onKeyDown = (event: KeyboardEvent) => {
-        if (event.key === 'Escape') props.onOpenChange(false);
-      };
       document.addEventListener('keydown', onKeyDown);
       return () => document.removeEventListener('keydown', onKeyDown);
     },

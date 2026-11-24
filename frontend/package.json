@@ -13,32 +13,32 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@solidjs/meta": "^1.0.0-next.2",
-    "@solidjs/router": "^2.0.0-next.26",
-    "@solidjs/web": "^2.0.0-rc.9",
+    "@solidjs/meta": "^2.0.0",
+    "@solidjs/router": "^2.0.1",
+    "@solidjs/web": "^2.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "sirv": "^3.0.2",
-    "solid-js": "^2.0.0-rc.9",
-    "tailwind-merge": "^3.7.0"
+    "solid-js": "^2.0.3",
+    "tailwind-merge": "^3.7.1"
   },
   "devDependencies": {
-    "@solidjs/diagnostics": "^2.0.0-rc.9",
+    "@solidjs/diagnostics": "^2.0.3",
     "@solidjs/start-devtools": "github:solidjs/solid-start-devtools#341960b47ce45fb17526addc08c5e781983784f4",
-    "@solidjs/testing-library": "^1.0.0-beta.3",
-    "@solidjs/vite-plugin": "^3.0.0-next.44",
-    "@tailwindcss/vite": "^4.3.3",
-    "@testing-library/jest-dom": "^7.0.1",
-    "@types/node": "^26.6.2",
-    "eslint-plugin-solid": "~0.18.0",
-    "filesystem-routing": "0.3.1",
-    "jsdom": "^30.1.0",
-    "oxfmt": "^0.68.0",
-    "oxlint": "~1.83.0",
-    "oxlint-tsgolint": "^7.0.2002",
-    "tailwindcss": "^4.3.3",
+    "@solidjs/testing-library": "^1.0.0-rc.2",
+    "@solidjs/vite-plugin": "^3.0.1",
+    "@tailwindcss/vite": "^4.3.5",
+    "@testing-library/jest-dom": "^8.0.0",
+    "@types/node": "^26.6.6",
+    "eslint-plugin-solid": "~0.20.1",
+    "filesystem-routing": "0.5.0",
+    "jsdom": "^31.0.1",
+    "oxfmt": "^0.79.0",
+    "oxlint": "~1.94.0",
+    "oxlint-tsgolint": "^7.0.2008",
+    "tailwindcss": "^4.3.5",
     "typescript": "^7.0.2",
-    "vite": "^8.3.0",
-    "vitest": "^5.0.1"
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
   }
 }
