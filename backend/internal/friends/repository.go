@@ -15,9 +15,9 @@ var (
 	ErrSessionNotFound             = errors.New("session not found")
 	ErrFriendRequestAlreadyExists  = errors.New("request already exists")
 	ErrFriendRelationAlreadyExists = errors.New("already friends")
-
-	pageSize = 25
 )
+
+const pageSize = 25
 
 type Repository interface {
 	CreateFriendRelation(ctx context.Context, userID, friendID uuid.UUID) error
@@ -26,9 +26,9 @@ type Repository interface {
 	DeleteFriendRelation(ctx context.Context, senderID, receiverID uuid.UUID) error
 	AreFriend(ctx context.Context, userID, friendID uuid.UUID) (bool, error)
 
-	GetFriendsList(ctx context.Context, userID uuid.UUID, page int) (FriendRelationListResponse, error)
+	GetFriendsList(ctx context.Context, userID uuid.UUID, page int64) (FriendRelationListResponse, error)
 	GetFriendRequest(ctx context.Context, senderID, receiverID uuid.UUID) (FriendRequestResponse, error)
-	GetPendingFriendRequests(ctx context.Context, receiverID uuid.UUID, page int) (FriendRequestsListResponse, error)
+	GetPendingFriendRequests(ctx context.Context, receiverID uuid.UUID, page int64) (FriendRequestsListResponse, error)
 
 	CreateFriendMessage(ctx context.Context, userID, friendID uuid.UUID, message string) error
 	GetMessagesFrom(ctx context.Context, userID, friendID uuid.UUID) (MessagesListResponse, error)
@@ -128,7 +128,7 @@ func (r *bunRepository) GetFriendRequest(ctx context.Context, senderID, receiver
 	return req, nil
 }
 
-func (r *bunRepository) GetFriendsList(ctx context.Context, userID uuid.UUID, page int) (FriendRelationListResponse, error) {
+func (r *bunRepository) GetFriendsList(ctx context.Context, userID uuid.UUID, page int64) (FriendRelationListResponse, error) {
 	var friends []FriendRelationResponse
 
 	subSelect := r.db.NewSelect().
@@ -142,7 +142,7 @@ func (r *bunRepository) GetFriendsList(ctx context.Context, userID uuid.UUID, pa
 		ColumnExpr("users.username AS username").
 		Join("JOIN users ON users.id = friends_list.target_friend_id").
 		Limit(pageSize).
-		Offset(page*pageSize-pageSize).
+		Offset((page-1)*pageSize).
 		Scan(ctx, &friends)
 	if err != nil {
 		return FriendRelationListResponse{}, err
@@ -164,7 +164,7 @@ func (r *bunRepository) GetFriendsList(ctx context.Context, userID uuid.UUID, pa
 	}, nil
 }
 
-func (r *bunRepository) GetPendingFriendRequests(ctx context.Context, receiverID uuid.UUID, page int) (FriendRequestsListResponse, error) {
+func (r *bunRepository) GetPendingFriendRequests(ctx context.Context, receiverID uuid.UUID, page int64) (FriendRequestsListResponse, error) {
 	var requests []FriendRequestResponse
 
 	err := r.db.NewSelect().
@@ -175,7 +175,7 @@ func (r *bunRepository) GetPendingFriendRequests(ctx context.Context, receiverID
 		Join("JOIN users ON users.id = friend_requests.sender_id").
 		Where("friend_requests.receiver_id = ?", receiverID).
 		Limit(pageSize).
-		Offset(page*pageSize-pageSize).
+		Offset((page-1)*pageSize).
 		Scan(ctx, &requests)
 	if err != nil {
 		return FriendRequestsListResponse{}, err
