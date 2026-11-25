@@ -36,6 +36,22 @@ type Repository interface {
 	CreatePasswordResetToken(ctx context.Context, reset *PasswordResetToken) (*PasswordResetToken, error)
 	GetPasswordResetToken(ctx context.Context, tokenHash string) (*PasswordResetToken, error)
 	DeletePasswordResetToken(ctx context.Context, tokenID uuid.UUID) error
+
+	GetUserPasswordHash(ctx context.Context, userID uuid.UUID) (string, error)
+	DeleteUser(ctx context.Context, userID uuid.UUID) error
+	DeleteEmailVerifToken(ctx context.Context, userID uuid.UUID) error
+	DeletePasswordTokenFromUserID(ctx context.Context, userID uuid.UUID) error
+	DeleteFriendRequestsWithUserID(ctx context.Context, userID uuid.UUID) error
+	DeleteFriendRelationsWithUserID(ctx context.Context, userID uuid.UUID) error
+	DeleteFriendMessagesFromUserID(ctx context.Context, userID uuid.UUID) error
+
+	UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error
+	UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error
+
+	GetFriendListFromUserID(ctx context.Context, userID uuid.UUID) ([]string, error)
+	GetFriendRequestsFromUserID(ctx context.Context, userID uuid.UUID) ([]string, error)
+	GetFriendRequestsToUserID(ctx context.Context, userID uuid.UUID) ([]string, error)
+	GetMessagesFromUserID(ctx context.Context, userID uuid.UUID) ([]MessageExport, error)
 }
 
 type bunRepository struct {
@@ -210,4 +226,181 @@ func (r *bunRepository) GetUserByUsername(ctx context.Context, username string) 
 		return nil, err
 	}
 	return user, nil
+}
+
+func (r *bunRepository) DeleteUser(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Table("users").
+		Where("id = ?0", userID).
+		Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) DeleteEmailVerifToken(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Table("user_verifications").
+		Where("user_id = ?0", userID).
+		Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) DeletePasswordTokenFromUserID(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Table("password_reset_tokens").
+		Where("user_id = ?0", userID).
+		Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) DeleteFriendRequestsWithUserID(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Table("friend_requests").
+		Where("sender_id = ?0 OR receiver_id = ?0", userID).
+		Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) DeleteFriendRelationsWithUserID(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Table("friend_relations").
+		Where("user_id = ?0 OR friend_id = ?0", userID).
+		Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) DeleteFriendMessagesFromUserID(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Table("friend_message").
+		Where("sender_id = ?0", userID).
+		Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) GetUserPasswordHash(ctx context.Context, userID uuid.UUID) (string, error) {
+	var passwordHash string
+	err := r.db.NewSelect().
+		Table("users").
+		Where("id = ?0", userID).
+		Column("password_hash").
+		Scan(ctx, &passwordHash)
+	if err != nil {
+		return "", err
+	}
+	return passwordHash, nil
+}
+
+func (r *bunRepository) UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error {
+	_, err := r.db.NewUpdate().
+		Model((*User)(nil)).
+		Set("email = ?0", email).
+		Set("verified = false").
+		Where("id = ?0", userID).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *bunRepository) UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error {
+	_, err := r.db.NewUpdate().
+		Model((*User)(nil)).
+		Set("username = ?0", username).
+		Where("id = ?0", userID).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *bunRepository) GetFriendListFromUserID(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	var friends []string
+
+	subQ := r.db.NewSelect().
+		Table("friend_relations").
+		ColumnExpr("CASE WHEN user_id = ?0 THEN friend_id ELSE user_id END AS target_friend_id", userID).
+		Where("user_id = ?0 OR friend_id = ?0", userID)
+
+	err := r.db.NewSelect().
+		TableExpr("(?) AS friends_list", subQ).
+		ColumnExpr("users.username AS username").
+		Join("JOIN users ON users.id = friends_list.target_friend_id").
+		Scan(ctx, &friends)
+	if err != nil {
+		return []string{}, err
+	}
+	if friends == nil {
+		friends = []string{}
+	}
+	return friends, nil
+}
+
+func (r *bunRepository) GetFriendRequestsFromUserID(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	var friendsReq []string
+
+	subQ := r.db.NewSelect().
+		Table("friend_requests").
+		Where("sender_id = ?0", userID).
+		ColumnExpr("receiver_id AS target_friend_id")
+
+	err := r.db.NewSelect().
+		TableExpr("(?) AS friends_req", subQ).
+		ColumnExpr("users.username AS username").
+		Join("JOIN users ON users.id = friends_req.target_friend_id").
+		Scan(ctx, &friendsReq)
+	if err != nil {
+		return []string{}, err
+	}
+	if friendsReq == nil {
+		friendsReq = []string{}
+	}
+	return friendsReq, nil
+}
+
+func (r *bunRepository) GetFriendRequestsToUserID(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	var friendsReq []string
+
+	subQ := r.db.NewSelect().
+		Table("friend_requests").
+		Where("receiver_id = ?0", userID).
+		ColumnExpr("sender_id AS target_friend_id")
+
+	err := r.db.NewSelect().
+		TableExpr("(?) AS friends_req", subQ).
+		ColumnExpr("users.username AS username").
+		Join("JOIN users ON users.id = friends_req.target_friend_id").
+		Scan(ctx, &friendsReq)
+	if err != nil {
+		return []string{}, err
+	}
+	if friendsReq == nil {
+		friendsReq = []string{}
+	}
+	return friendsReq, nil
+}
+
+func (r *bunRepository) GetMessagesFromUserID(ctx context.Context, userID uuid.UUID) ([]MessageExport, error) {
+	var msg []MessageExport
+
+	subQ := r.db.NewSelect().
+		Table("friend_message").
+		Where("sender_id = ?0", userID).
+		Column("body", "created_at").
+		ColumnExpr("receiver_id AS target_friend_id")
+
+	err := r.db.NewSelect().
+		TableExpr("(?) AS friend_msg", subQ).
+		ColumnExpr("users.username AS receiver_name").
+		Column("friend_msg.body").
+		ColumnExpr("friend_msg.created_at AS sent_at").
+		Join("JOIN users ON users.id = friend_msg.target_friend_id").
+		Scan(ctx, &msg)
+	if err != nil {
+		return nil, err
+	}
+	if msg == nil {
+		msg = []MessageExport{}
+	}
+	return msg, nil
 }

@@ -39,6 +39,10 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 	group.POST("/forgot-password", h.forgotPassword) // Sends the mail with the link
 	group.POST("/reset-password", h.resetPassword)   // Sent by the link in the mail
 	group.GET("/me", h.me)
+
+	group.DELETE("/me", h.deleteAccount)
+	group.PATCH("/me", h.changeEmailAndUsername)
+	group.GET("/me/export", h.exportData)
 }
 
 func apiError(err error) error {
@@ -330,4 +334,70 @@ func (h *handler) me(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, userResp)
+}
+
+func (h *handler) deleteAccount(c *echo.Context) error {
+	ctx := c.Request().Context()
+	userIDStr := h.sessionManager.GetString(ctx, "user_id")
+	if userIDStr == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+	var req DeleteAccountRequest
+	if err = c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+	if err = h.validator.Validate(&req); err != nil {
+		return apiError(err)
+	}
+	err = h.service.DeleteAccount(ctx, userID, req.Password)
+	if err != nil {
+		return apiError(err)
+	}
+
+	h.sessionManager.Remove(c.Request().Context(), "user_id")
+	return c.JSON(http.StatusNoContent, map[string]any{"message": "successfully deleted account."})
+}
+
+func (h *handler) changeEmailAndUsername(c *echo.Context) error {
+	ctx := c.Request().Context()
+	userIDStr := h.sessionManager.GetString(ctx, "user_id")
+	if userIDStr == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+	var req PatchProfileRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+	if err := h.validator.Validate(&req); err != nil {
+		return apiError(err)
+	}
+	if err := h.service.UpdateProfile(ctx, userID, req.Email, req.Username); err != nil {
+		return apiError(err)
+	}
+	return c.JSON(http.StatusNoContent, map[string]any{"message": "successfully updated profile."})
+}
+
+func (h *handler) exportData(c *echo.Context) error {
+	ctx := c.Request().Context()
+	userIDStr := h.sessionManager.GetString(ctx, "user_id")
+	if userIDStr == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	}
+	dataResponse, err := h.service.GetDataFromUser(ctx, userID)
+	if err != nil {
+		return apiError(err)
+	}
+	return c.JSON(http.StatusOK, dataResponse)
 }

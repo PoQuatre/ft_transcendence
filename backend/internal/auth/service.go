@@ -48,14 +48,54 @@ var passwordMailTemplate string
 //go:embed verifMail.html
 var verifMailTemplate string
 
+//go:embed deleteMail.html
+var deleteMailTemplate string
+
+//go:embed exportMail.html
+var exportMailTemplate string
+
 func createForgotPasswordMail(resetURL string) string {
 	strRep := fmt.Sprintf(passwordMailTemplate, resetURL, resetURL, resetURL)
 	return strRep
 }
 
 func createMailVerificationMail(code string) string {
-	strRep := fmt.Sprintf(verifMailTemplate, code)
+	strRep := fmt.Sprintf(verifMailTemplate, code, code)
 	return strRep
+}
+
+func createDeleteMail(username string) string {
+	utcTime := time.Now().UTC().Format("02-01-2006 15:04:05")
+	strRep := fmt.Sprintf(deleteMailTemplate, username, utcTime)
+	return strRep
+}
+
+func createExportMail(username string) string {
+	utcTime := time.Now().UTC().Format("02-01-2006 15:04:05")
+	strRep := fmt.Sprintf(exportMailTemplate, username, utcTime)
+	return strRep
+}
+
+func (s *Service) SendExportMail(ctx context.Context, user *User) error {
+	if os.Getenv("HOSTNAME") == "" {
+		return echo.NewHTTPError(http.StatusInternalServerError, "mails are disabled")
+	}
+	mailContent := createExportMail(user.Username)
+	if err := SendMail(ctx, user.Email, "transcendence@transcendence.com", "Data Export - ft_transcendence", mailContent); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) SendDeleteMail(ctx context.Context, user *User) error {
+	if os.Getenv("HOSTNAME") == "" {
+		return echo.NewHTTPError(http.StatusInternalServerError, "mails are disabled")
+	}
+	mailContent := createDeleteMail(user.Username)
+	if err := SendMail(ctx, user.Email, "transcendence@transcendence.com", "Delete Account - ft_transcendence", mailContent); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Service) SendForgotPasswordMail(ctx context.Context, user *User) error {
@@ -268,4 +308,117 @@ func (s *Service) GetUserByUsername(ctx context.Context, username string) (*User
 func (s *Service) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 	return s.repo.GetUserByEmail(ctx, email)
+}
+
+func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID, password string) error {
+	passwordHash, err := s.repo.GetUserPasswordHash(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password)); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid password")
+	}
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	err = s.repo.DeleteEmailVerifToken(ctx, userID)
+	if err != nil {
+		return err
+	}
+	err = s.repo.DeletePasswordTokenFromUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	err = s.repo.DeleteFriendRequestsWithUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	err = s.repo.DeleteFriendRelationsWithUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	err = s.repo.DeleteFriendMessagesFromUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	err = s.repo.DeleteUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	return s.SendDeleteMail(ctx, user)
+}
+
+func (s *Service) UpdateProfile(ctx context.Context, userID uuid.UUID, email, username string) error {
+	user, err := s.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if email != "" && user.Email != email {
+		// Checks that the email is not already used.
+		_, err = s.repo.GetUserByEmail(ctx, email)
+		if err != nil && !errors.Is(err, ErrNotFound) {
+			return err
+		} else if err == nil {
+			return ErrEmailAlreadyExists
+		}
+
+		err = s.repo.UpdateEmail(ctx, userID, email)
+		if err != nil {
+			return err
+		}
+	}
+	if username != "" && user.Username != username {
+		// Checks that the username is not already used.
+		_, err = s.repo.GetUserByUsername(ctx, username)
+		if err != nil && !errors.Is(err, ErrNotFound) {
+			return err
+		} else if err == nil {
+			return ErrUsernameAlreadyExists
+		}
+
+		err = s.repo.UpdateUsername(ctx, userID, username)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) GetDataFromUser(ctx context.Context, userID uuid.UUID) (*DataExport, error) {
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	friendList, err := s.repo.GetFriendListFromUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	friendRequestsSent, err := s.repo.GetFriendRequestsFromUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	friendRequestsReceived, err := s.repo.GetFriendRequestsToUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	friendMessages, err := s.repo.GetMessagesFromUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	err = s.SendExportMail(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	userData := new(DataExport)
+	userData.Email = user.Email
+	userData.Username = user.Username
+	userData.ID = user.ID.String()
+	userData.Verified = user.Verified
+	userData.Friends = friendList
+	userData.FriendRequestsSent = friendRequestsSent
+	userData.FriendRequestsReceived = friendRequestsReceived
+	userData.Messages = friendMessages
+	return userData, nil
 }

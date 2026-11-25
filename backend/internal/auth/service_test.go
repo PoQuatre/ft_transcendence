@@ -6,14 +6,26 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 )
+
+type MockMessage struct {
+	SenderID   uuid.UUID
+	ReceiverID uuid.UUID
+	Body       string
+	CreatedAt  time.Time
+}
 
 type mockRepository struct {
 	users               map[string]*User
 	usersverifs         map[uuid.UUID]*UserVerify
 	passwordresettokens map[uuid.UUID]*PasswordResetToken
+
+	friends        map[uuid.UUID][]uuid.UUID
+	friendRequests map[uuid.UUID][]uuid.UUID
+	messages       []MockMessage
 }
 
 func newMockRepository() *mockRepository {
@@ -128,6 +140,200 @@ func (m *mockRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*User, 
 		}
 	}
 	return nil, ErrNotFound
+}
+
+func (m *mockRepository) GetUserPasswordHash(ctx context.Context, userID uuid.UUID) (string, error) {
+	for _, u := range m.users {
+		if u.ID == userID {
+			return u.PasswordHash, nil
+		}
+	}
+	return "", ErrNotFound
+}
+
+func (m *mockRepository) DeleteUser(ctx context.Context, userID uuid.UUID) error {
+	var target *User
+	for _, u := range m.users {
+		if u.ID == userID {
+			target = u
+			break
+		}
+	}
+	if target == nil {
+		return nil
+	}
+	delete(m.users, target.Email)
+	delete(m.users, target.Username)
+	return nil
+}
+
+func (m *mockRepository) DeleteEmailVerifToken(ctx context.Context, userID uuid.UUID) error {
+	delete(m.usersverifs, userID)
+	return nil
+}
+
+func (m *mockRepository) DeletePasswordTokenFromUserID(ctx context.Context, userID uuid.UUID) error {
+	for id, token := range m.passwordresettokens {
+		if token.UserID == userID {
+			delete(m.passwordresettokens, id)
+		}
+	}
+	return nil
+}
+
+func (m *mockRepository) DeleteFriendRequestsWithUserID(ctx context.Context, userID uuid.UUID) error {
+	if m.friendRequests == nil {
+		return nil
+	}
+	delete(m.friendRequests, userID)
+
+	for senderID, receivers := range m.friendRequests {
+		var filtered []uuid.UUID
+		for _, rID := range receivers {
+			if rID != userID {
+				filtered = append(filtered, rID)
+			}
+		}
+		m.friendRequests[senderID] = filtered
+	}
+	return nil
+}
+
+func (m *mockRepository) DeleteFriendRelationsWithUserID(ctx context.Context, userID uuid.UUID) error {
+	if m.friends == nil {
+		return nil
+	}
+	delete(m.friends, userID)
+
+	for uID, friendList := range m.friends {
+		var filtered []uuid.UUID
+		for _, fID := range friendList {
+			if fID != userID {
+				filtered = append(filtered, fID)
+			}
+		}
+		m.friends[uID] = filtered
+	}
+	return nil
+}
+
+func (m *mockRepository) DeleteFriendMessagesFromUserID(ctx context.Context, userID uuid.UUID) error {
+	if m.messages == nil {
+		return nil
+	}
+	var filtered []MockMessage
+	for _, msg := range m.messages {
+		if msg.SenderID != userID {
+			filtered = append(filtered, msg)
+		}
+	}
+	m.messages = filtered
+	return nil
+}
+
+func (m *mockRepository) UpdateEmail(ctx context.Context, userID uuid.UUID, email string) error {
+	for _, u := range m.users {
+		if u.ID == userID {
+			delete(m.users, u.Email)
+			u.Email = email
+			u.Verified = false
+			m.users[email] = u
+			return nil
+		}
+	}
+	return nil
+}
+
+func (m *mockRepository) UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error {
+	for _, u := range m.users {
+		if u.ID == userID {
+			delete(m.users, u.Username)
+			u.Username = username
+			m.users[username] = u
+			return nil
+		}
+	}
+	return nil
+}
+
+func (m *mockRepository) GetFriendListFromUserID(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	friends := []string{}
+	if m.friends == nil {
+		return friends, nil
+	}
+
+	friendIDs := make(map[uuid.UUID]bool)
+	for _, fID := range m.friends[userID] {
+		friendIDs[fID] = true
+	}
+	for uID, list := range m.friends {
+		for _, fID := range list {
+			if fID == userID {
+				friendIDs[uID] = true
+			}
+		}
+	}
+
+	for fID := range friendIDs {
+		if u, err := m.GetUserByID(ctx, fID); err == nil {
+			friends = append(friends, u.Username)
+		}
+	}
+	return friends, nil
+}
+
+func (m *mockRepository) GetFriendRequestsFromUserID(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	friendsReq := []string{}
+	if m.friendRequests == nil {
+		return friendsReq, nil
+	}
+
+	for _, receiverID := range m.friendRequests[userID] {
+		if u, err := m.GetUserByID(ctx, receiverID); err == nil {
+			friendsReq = append(friendsReq, u.Username)
+		}
+	}
+	return friendsReq, nil
+}
+
+func (m *mockRepository) GetFriendRequestsToUserID(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	friendsReq := []string{}
+	if m.friendRequests == nil {
+		return friendsReq, nil
+	}
+
+	for senderID, receivers := range m.friendRequests {
+		for _, receiverID := range receivers {
+			if receiverID == userID {
+				if u, err := m.GetUserByID(ctx, senderID); err == nil {
+					friendsReq = append(friendsReq, u.Username)
+				}
+			}
+		}
+	}
+	return friendsReq, nil
+}
+
+func (m *mockRepository) GetMessagesFromUserID(ctx context.Context, userID uuid.UUID) ([]MessageExport, error) {
+	exports := []MessageExport{}
+	if m.messages == nil {
+		return exports, nil
+	}
+
+	for _, msg := range m.messages {
+		if msg.SenderID == userID {
+			receiverName := ""
+			if u, err := m.GetUserByID(ctx, msg.ReceiverID); err == nil {
+				receiverName = u.Username
+			}
+			exports = append(exports, MessageExport{
+				ReceiverName: receiverName,
+				Body:         msg.Body,
+				SentAt:       msg.CreatedAt,
+			})
+		}
+	}
+	return exports, nil
 }
 
 // --- SERVICE TESTS ---
