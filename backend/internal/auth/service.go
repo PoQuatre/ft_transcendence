@@ -322,10 +322,6 @@ func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID, password 
 	if err != nil {
 		return err
 	}
-	err = s.repo.DeleteUser(ctx, userID)
-	if err != nil {
-		return err
-	}
 	err = s.repo.DeleteEmailVerifToken(ctx, userID)
 	if err != nil {
 		return err
@@ -343,6 +339,10 @@ func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID, password 
 		return err
 	}
 	err = s.repo.DeleteFriendMessagesFromUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	err = s.repo.DeleteUser(ctx, userID)
 	if err != nil {
 		return err
 	}
