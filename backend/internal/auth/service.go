@@ -355,12 +355,28 @@ func (s *Service) UpdateProfile(ctx context.Context, userID uuid.UUID, email, us
 		return err
 	}
 	if email != "" && user.Email != email {
+		// Checks that the email is not already used.
+		_, err = s.repo.GetUserByEmail(ctx, email)
+		if err != nil && !errors.Is(err, ErrNotFound) {
+			return err
+		} else if err == nil {
+			return ErrEmailAlreadyExists
+		}
+
 		err = s.repo.UpdateEmail(ctx, userID, email)
 		if err != nil {
 			return err
 		}
 	}
 	if username != "" && user.Username != username {
+		// Checks that the username is not already used.
+		_, err = s.repo.GetUserByUsername(ctx, username)
+		if err != nil && !errors.Is(err, ErrNotFound) {
+			return err
+		} else if err == nil {
+			return ErrUsernameAlreadyExists
+		}
+
 		err = s.repo.UpdateUsername(ctx, userID, username)
 		if err != nil {
 			return err

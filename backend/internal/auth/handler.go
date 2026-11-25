@@ -41,7 +41,7 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 	group.GET("/me", h.me)
 
 	group.DELETE("/me", h.deleteAccount)
-	group.PATCH("/me", h.changeEmailAnsUsername)
+	group.PATCH("/me", h.changeEmailAndUsername)
 	group.GET("/me/export", h.exportData)
 }
 
@@ -362,7 +362,7 @@ func (h *handler) deleteAccount(c *echo.Context) error {
 	return c.JSON(http.StatusNoContent, map[string]any{"message": "successfully deleted account."})
 }
 
-func (h *handler) changeEmailAnsUsername(c *echo.Context) error {
+func (h *handler) changeEmailAndUsername(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userIDStr := h.sessionManager.GetString(ctx, "user_id")
 	if userIDStr == "" {
