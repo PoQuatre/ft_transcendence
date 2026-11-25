@@ -14,6 +14,7 @@ import {
   TableHead,
   TableRow,
 } from '~/components/ui';
+import { pilotXp, XP_PER_KILL, XP_PER_SHAPE } from '~/lib/level';
 import { paginate, PAGE_SIZES, type PageSize } from '~/lib/pagination';
 import { cn } from '~/lib/utils';
 
@@ -28,10 +29,6 @@ const COLUMN_HEADING_CLASS =
 const SORT_BUTTON_CLASS =
   'cursor-pointer bg-transparent border-0 font-bold h-auto min-h-11 rounded-sm p-0 font-label-data text-label-data text-inherit md:min-h-8 pointer-coarse:min-h-11';
 
-// XP earned per action, following the diep-style progression.
-export const XP_PER_KILL = 5;
-export const XP_PER_SHAPE = 1;
-
 type PilotStats = {
   name: string;
   kills: number;
@@ -39,9 +36,6 @@ type PilotStats = {
 };
 
 type Pilot = PilotStats & { xp: number };
-
-export const pilotXp = (pilot: Pick<PilotStats, 'kills' | 'shapes'>) =>
-  pilot.kills * XP_PER_KILL + pilot.shapes * XP_PER_SHAPE;
 
 const pilotStats: readonly PilotStats[] = [
   { name: 'NEOVIM', kills: 4268, shapes: 18420 },

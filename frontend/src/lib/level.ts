@@ -1,3 +1,11 @@
+// XP earned per action, following the diep-style progression. Shared by the
+// leaderboard and the profile page so both compute the same XP and level.
+export const XP_PER_KILL = 5;
+export const XP_PER_SHAPE = 1;
+
+export const pilotXp = (pilot: { kills: number; shapes: number }) =>
+  pilot.kills * XP_PER_KILL + pilot.shapes * XP_PER_SHAPE;
+
 // Total XP needed to reach a level: 0, 100, 400, 900, … (100 × (level − 1)²).
 export const XP_LEVEL_FACTOR = 100;
 

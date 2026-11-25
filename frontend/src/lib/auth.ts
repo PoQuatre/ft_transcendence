@@ -198,7 +198,7 @@ function toError(
   }
 }
 
-import { createRoot, createSignal } from 'solid-js';
+import { createRoot, createSignal, onSettled } from 'solid-js';
 
 // verified : absent tant que le backend ne gère pas la vérification d'email.
 export type AuthUser = {
@@ -214,6 +214,20 @@ export type AuthUser = {
 export const [currentUser, setCurrentUser] = createRoot(() =>
   createSignal<AuthUser | null | undefined>(undefined),
 );
+
+// currentUser() vu par une page rendue côté serveur. Le serveur ne connaît pas
+// la session (undefined), mais le getMe() du header peut se terminer pendant
+// le chargement du code de la page : à l'hydratation, le client rendrait un
+// autre contenu que le HTML du serveur, qui resterait affiché (« Hydration
+// key miss »). On renvoie donc undefined jusqu'à la fin de l'hydratation,
+// puis la vraie valeur. À appeler dans un composant.
+export function useSessionUser() {
+  const [hydrated, setHydrated] = createSignal(false);
+  onSettled(() => {
+    setHydrated(true);
+  });
+  return () => (hydrated() ? currentUser() : undefined);
+}
 
 type Method = 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 

@@ -8,7 +8,9 @@ import {
 } from '@solidjs/testing-library';
 import { afterEach, describe, expect, test } from 'vitest';
 
-import Leaderboard, { pilotXp } from './leaderboard';
+import { pilotXp } from '~/lib/level';
+
+import Leaderboard from './leaderboard';
 
 afterEach(cleanup);
 
