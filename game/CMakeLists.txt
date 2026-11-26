@@ -43,51 +43,20 @@ endif()
 
 include(FetchContent)
 
-set(RAYLIB_SOURCE_DIR "${CMAKE_BINARY_DIR}/_deps/raylib-src")
-
-if(NOT EXISTS "${RAYLIB_SOURCE_DIR}/CMakeLists.txt")
-    message(STATUS "Cloning raylib 6.0 with sparse checkout...")
-
-    execute_process(
-        COMMAND git clone
-            --single-branch
-            --branch=6.0
-            --filter=blob:none
-            --sparse
-            --depth=1
-            https://github.com/raysan5/raylib.git
-            "${RAYLIB_SOURCE_DIR}"
-        RESULT_VARIABLE GIT_CLONE_RESULT
-    )
-
-    if(NOT GIT_CLONE_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to clone raylib")
-    endif()
-
-    execute_process(
-        COMMAND git sparse-checkout set
-            --no-cone
-            "/*"
-            "!/examples/*"
-            "!/projects/*"
-        WORKING_DIRECTORY "${RAYLIB_SOURCE_DIR}"
-        RESULT_VARIABLE GIT_SPARSE_RESULT
-    )
-
-    if(NOT GIT_SPARSE_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to configure raylib sparse checkout")
-    endif()
-endif()
-
-# Raylib configuration
+FetchContent_Declare(
+    raylib
+    SOURCE_DIR "${CMAKE_BINARY_DIR}/_deps/raylib-sparse-src"
+    DOWNLOAD_COMMAND
+        git clone --single-branch --branch=6.2 --filter=blob:none --sparse
+        --depth=1 https://github.com/raysan5/raylib.git <SOURCE_DIR>
+	COMMAND
+		git -C <SOURCE_DIR> sparse-checkout set --no-cone "/*" "!/examples/*"
+        "!/projects/*"
+    PATCH_COMMAND
+        git -C <SOURCE_DIR> apply "${CMAKE_CURRENT_SOURCE_DIR}/raylib-web.patch"
+)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(USE_EXTERNAL_GLFW IF_POSSIBLE CACHE STRING "" FORCE)
-
-# Add raylib to the project
-add_subdirectory(
-    "${RAYLIB_SOURCE_DIR}"
-    "${CMAKE_BINARY_DIR}/_deps/raylib-build"
-)
 
 FetchContent_Declare(
     EnTT
@@ -121,7 +90,7 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     box2d
     GIT_REPOSITORY https://github.com/erincatto/box2d.git
-    GIT_TAG v3.1.1
+    GIT_TAG v3.2.0
     GIT_SHALLOW TRUE
 )
 set(BOX2D_SAMPLES OFF CACHE BOOL "" FORCE)
@@ -148,6 +117,7 @@ set(FLATBUFFERS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(FLATBUFFERS_BUILD_GRPCTEST OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(
+	raylib
     EnTT
     spdlog
     glm
@@ -187,9 +157,9 @@ if(BUILD_TESTING)
     FetchContent_Declare(
         Catch2
         GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG v3.16.0
+        GIT_TAG v3.16.1
         GIT_SHALLOW TRUE
-        FIND_PACKAGE_ARGS 3.16 CONFIG
+        FIND_PACKAGE_ARGS 3.16.1 CONFIG
     )
 
     FetchContent_MakeAvailable(Catch2)
@@ -199,13 +169,25 @@ endif()
 if(
     NOT EXISTS "${CMAKE_SOURCE_DIR}/src/renderer/assets/textures/space_grotesk.ttf"
 )
-    execute_process(
-        COMMAND
-            wget
-            https://fonts.gstatic.com/s/spacegrotesk/v22/V8mQoQDjQSkFtoMM3T6r8E7mF71Q-gOoraIAEj62UUsj.ttf
-            -O
-            "${CMAKE_SOURCE_DIR}/src/renderer/assets/textures/space_grotesk.ttf"
+    set(SPACE_GROTESK_COMMIT "2861cb7b12f90c0a294a12ed666e381e2211872f")
+    file(
+        DOWNLOAD
+            "https://raw.githubusercontent.com/google/fonts/${SPACE_GROTESK_COMMIT}/ofl/spacegrotesk/SpaceGrotesk%5Bwght%5D.ttf"
+        "${CMAKE_SOURCE_DIR}/src/renderer/assets/textures/space_grotesk.ttf"
+        TLS_VERIFY ON
+        STATUS font_download_status
     )
+    list(GET font_download_status 0 font_download_code)
+    if(NOT font_download_code EQUAL 0)
+        file(
+            REMOVE
+            "${CMAKE_SOURCE_DIR}/src/renderer/assets/textures/space_grotesk.ttf"
+        )
+        message(
+            FATAL_ERROR
+            "Failed to download Space Grotesk: ${font_download_status}"
+        )
+    endif()
 endif()
 
 # ------------------------------------------------------------------------------

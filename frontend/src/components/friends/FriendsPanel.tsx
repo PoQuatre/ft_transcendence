@@ -22,13 +22,13 @@ export const FriendsPanel: Component<FriendsPanelProps> = (props) => {
   const [version, setVersion] = createSignal(0);
   const [chatWith, setChatWith] = createSignal<Friend>();
 
+  const onKeyDown = (event: KeyboardEvent) => {
+    // La popup de suppression d'un ami gère Échap elle-même.
+    if (event.key === 'Escape' && !document.querySelector('dialog[open]')) {
+      props.onClose();
+    }
+  };
   onSettled(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      // La popup de suppression d'un ami gère Échap elle-même.
-      if (event.key === 'Escape' && !document.querySelector('dialog[open]')) {
-        props.onClose();
-      }
-    };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   });

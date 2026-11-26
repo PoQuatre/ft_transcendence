@@ -92,11 +92,11 @@ func (s *Service) SendMessageToFriend(ctx context.Context, userID, friendID uuid
 	return nil
 }
 
-func (s *Service) GetPendingFriendRequests(ctx context.Context, userID uuid.UUID, page int) (FriendRequestsListResponse, error) {
+func (s *Service) GetPendingFriendRequests(ctx context.Context, userID uuid.UUID, page int64) (FriendRequestsListResponse, error) {
 	return s.repo.GetPendingFriendRequests(ctx, userID, page)
 }
 
-func (s *Service) GetFriendsList(ctx context.Context, userID uuid.UUID, page int) (FriendRelationListResponse, error) {
+func (s *Service) GetFriendsList(ctx context.Context, userID uuid.UUID, page int64) (FriendRelationListResponse, error) {
 	return s.repo.GetFriendsList(ctx, userID, page)
 }
 

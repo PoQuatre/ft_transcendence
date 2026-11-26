@@ -147,7 +147,7 @@ services:
 
   nginx:
     restart: unless-stopped
-    image: docker.io/owasp/modsecurity-crs:4.29.0-nginx-202609111209
+    image: docker.io/owasp/modsecurity-crs:4.30.0-nginx-202611190211
     entrypoint: ["/bin/sh", "/usr/local/bin/tls-reload-entrypoint.sh"]
     command: ["nginx", "-g", "daemon off;"]
     depends_on:
@@ -180,7 +180,7 @@ services:
 
   haproxy:
     restart: unless-stopped
-    image: docker.io/library/haproxy:3.2-alpine
+    image: docker.io/library/haproxy:3.4-alpine
     depends_on:
       nginx:
         condition: service_started

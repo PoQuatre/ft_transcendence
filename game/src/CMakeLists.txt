@@ -19,7 +19,6 @@ if(EMSCRIPTEN)
             -sASYNCIFY
             -sENVIRONMENT=web
             -sEXPORTED_RUNTIME_METHODS=requestFullscreen
-            -sUSE_GLFW=3
             -sALLOW_MEMORY_GROWTH=1
             "--embed-file=${CMAKE_SOURCE_DIR}/src/renderer/assets/"
     )
