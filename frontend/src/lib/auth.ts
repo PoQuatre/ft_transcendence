@@ -4,7 +4,11 @@ export type AuthResult =
   | { ok: true }
   | { ok: false; title: string; message: string };
 
-export type LoginPayload = { email: string; password: string };
+export type LoginPayload = {
+  email: string;
+  password: string;
+  staySignedIn?: boolean;
+};
 export type SignupPayload = LoginPayload & { username: string };
 export type ProfilePayload = { username?: string; email?: string };
 export type PasswordPayload = { currentPassword: string; newPassword: string };

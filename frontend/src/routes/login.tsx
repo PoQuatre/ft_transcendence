@@ -4,7 +4,7 @@ import { createSignal } from 'solid-js';
 
 import { AuthCard } from '~/components/auth/AuthCard';
 import { FIELD_LABEL } from '~/components/settings/form';
-import { Button, Input, Kbd, PasswordInput } from '~/components/ui';
+import { Button, Input, Kbd, PasswordInput, Switch } from '~/components/ui';
 import { type AuthResult, login } from '~/lib/auth';
 
 // Affiché au retour de /reset-password (?reset=done).
@@ -19,6 +19,7 @@ export default function Login() {
   const [error, setError] = createSignal<Extract<AuthResult, { ok: false }>>();
   const [pending, setPending] = createSignal(false);
   const [emailValue, setEmailValue] = createSignal('');
+  const [staySignedIn, setStaySignedIn] = createSignal(false);
 
   const submit = async (form: HTMLFormElement) => {
     const data = new FormData(form);
@@ -38,7 +39,11 @@ export default function Login() {
 
     setPending(true);
     setError(undefined);
-    const result = await login({ email, password });
+    const result = await login({
+      email,
+      password,
+      staySignedIn: staySignedIn(),
+    });
     setPending(false);
 
     if (result.ok) {
@@ -112,6 +117,15 @@ export default function Login() {
               Mot de passe oublié ?
             </a>
           </p>
+
+          <div class="flex items-center gap-2 font-label-data text-label-data text-text-secondary">
+            <Switch
+              aria-labelledby="staySignedInLabel"
+              checked={staySignedIn()}
+              onCheckedChange={setStaySignedIn}
+            />
+            <span id="staySignedInLabel">Stay signed in</span>
+          </div>
 
           <Button
             type="submit"
