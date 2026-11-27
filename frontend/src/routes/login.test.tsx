@@ -20,9 +20,10 @@ afterEach(() => {
 describe('<Login />', () => {
   test('offers a stay signed in switch that is off by default', () => {
     const { getByRole } = render(() => <Login />);
-    expect(
-      getByRole('switch', { name: /stay signed in/i }),
-    ).toHaveAttribute('aria-checked', 'false');
+    expect(getByRole('switch', { name: /stay signed in/i })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
   });
 
   test('includes the selected stay signed in option in the login request', async () => {
