@@ -12,7 +12,7 @@ import (
 type session struct {
 	bun.BaseModel `bun:"table:sessions"`
 	Expiry        time.Time `bun:"expiry,notnull"`
-	Token         string    `bun:"token,pk"`
+	Token         string    `bun:"token,pk,type:text"`
 	Data          []byte    `bun:"data,notnull"`
 }
 
