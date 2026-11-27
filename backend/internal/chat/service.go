@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 
 	"github.com/google/uuid"
@@ -9,9 +10,9 @@ import (
 )
 
 type Service struct {
+	clients map[uuid.UUID]*clientConn
 	repo    Repository
 	mu      sync.RWMutex
-	clients map[uuid.UUID]*clientConn
 }
 
 func NewService(repo Repository) *Service {
@@ -25,7 +26,9 @@ func (s *Service) RegisterClient(userID uuid.UUID, conn *websocket.Conn) *client
 	client := &clientConn{conn: conn}
 	s.mu.Lock()
 	if old, ok := s.clients[userID]; ok {
-		_ = old.conn.Close()
+		if err := old.conn.Close(); err != nil {
+			slog.Debug("chat: failed to close replaced connection", "user_id", userID, "error", err)
+		}
 	}
 	s.clients[userID] = client
 	s.mu.Unlock()
@@ -49,7 +52,9 @@ func (s *Service) DisconnectUser(userID uuid.UUID) {
 	s.mu.Unlock()
 
 	if ok {
-		_ = client.conn.Close()
+		if err := client.conn.Close(); err != nil {
+			slog.Debug("chat: failed to close connection on disconnect", "user_id", userID, "error", err)
+		}
 	}
 }
 
@@ -69,6 +74,8 @@ func (s *Service) ForwardSignal(ctx context.Context, senderID uuid.UUID, msg Sig
 
 	if online {
 		msg.SenderID = senderID
-		_ = target.send(msg)
+		if err := target.send(msg); err != nil {
+			slog.Debug("chat: failed to forward signal", "target_id", msg.TargetID, "error", err)
+		}
 	}
 }

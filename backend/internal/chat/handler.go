@@ -2,6 +2,7 @@
 package chat
 
 import (
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -37,7 +38,9 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 		client := service.RegisterClient(userID, conn)
 		defer func() {
 			service.UnregisterClient(userID, client)
-			_ = conn.Close()
+			if closeErr := conn.Close(); closeErr != nil {
+				slog.Debug("chat: failed to close websocket", "user_id", userID, "error", closeErr)
+			}
 		}()
 
 		done := make(chan struct{})
@@ -51,8 +54,10 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 					return
 				case <-ticker.C:
 					client.mu.Lock()
-					_ = conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
-					err := conn.WriteMessage(websocket.PingMessage, nil)
+					err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+					if err == nil {
+						err = conn.WriteMessage(websocket.PingMessage, nil)
+					}
 					client.mu.Unlock()
 					if err != nil {
 						return

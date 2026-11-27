@@ -39,7 +39,7 @@ func (m *mockRepository) AreFriend(_ context.Context, userID, friendID uuid.UUID
 	return m.friends[[2]uuid.UUID{userID, friendID}], nil
 }
 
-func setupTestServer(t *testing.T, repo Repository) (*httptest.Server, *Service, *scs.SessionManager) {
+func setupTestServer(t *testing.T, repo Repository) (*httptest.Server, *Service) {
 	t.Helper()
 
 	sessionManager := scs.New()
@@ -58,39 +58,81 @@ func setupTestServer(t *testing.T, repo Repository) (*httptest.Server, *Service,
 	srv := httptest.NewServer(e)
 	t.Cleanup(srv.Close)
 
-	return srv, svc, sessionManager
+	return srv, svc
+}
+
+func closeResponseBody(t *testing.T, resp *http.Response) {
+	t.Helper()
+	if resp != nil && resp.Body != nil {
+		if err := resp.Body.Close(); err != nil {
+			t.Logf("close response body: %v", err)
+		}
+	}
+}
+
+func mustSetReadDeadline(t *testing.T, conn *websocket.Conn, d time.Duration) {
+	t.Helper()
+	if err := conn.SetReadDeadline(time.Now().Add(d)); err != nil {
+		t.Fatalf("failed to set read deadline: %v", err)
+	}
+}
+
+func mustWriteJSON(t *testing.T, conn *websocket.Conn, msg SignalMessage) {
+	t.Helper()
+	if err := conn.WriteJSON(msg); err != nil {
+		t.Fatalf("failed to write JSON message: %v", err)
+	}
 }
 
 func dialAuthenticated(t *testing.T, srv *httptest.Server, userID uuid.UUID) *websocket.Conn {
 	t.Helper()
 
-	resp, err := http.Get(srv.URL + "/test-login/" + userID.String())
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+"/test-login/"+userID.String(), nil)
+	if err != nil {
+		t.Fatalf("failed to build login request for %s: %v", userID, err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("failed to login test user %s: %v", userID, err)
 	}
-	_ = resp.Body.Close()
+	cookies := resp.Cookies()
+	closeResponseBody(t, resp)
 
 	header := http.Header{}
-	for _, cookie := range resp.Cookies() {
+	for _, cookie := range cookies {
 		header.Add("Cookie", cookie.String())
 	}
 
 	wsURL := "ws" + strings.TrimPrefix(srv.URL, "http") + "/chat/ws"
-	conn, _, err := websocket.DefaultDialer.Dial(wsURL, header)
+	conn, dialResp, err := websocket.DefaultDialer.Dial(wsURL, header)
+	closeResponseBody(t, dialResp)
 	if err != nil {
 		t.Fatalf("failed to dial websocket for user %s: %v", userID, err)
 	}
-	t.Cleanup(func() { _ = conn.Close() })
+
+	t.Cleanup(func() {
+		if closeErr := conn.Close(); closeErr != nil {
+			t.Logf("cleanup close websocket for %s: %v", userID, closeErr)
+		}
+	})
 
 	return conn
 }
 
 func TestWS_Unauthorized(t *testing.T) {
 	repo := newMockRepository()
-	srv, _, _ := setupTestServer(t, repo)
+	srv, _ := setupTestServer(t, repo)
 
 	wsURL := "ws" + strings.TrimPrefix(srv.URL, "http") + "/chat/ws"
-	_, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if conn != nil {
+		if closeErr := conn.Close(); closeErr != nil {
+			t.Logf("close unexpected conn: %v", closeErr)
+		}
+	}
+	closeResponseBody(t, resp)
+
 	if err == nil {
 		t.Fatal("expected websocket dial to fail without session, got nil error")
 	}
@@ -105,7 +147,7 @@ func TestWS_ForwardSignalBetweenFriends(t *testing.T) {
 	bobID := uuid.New()
 	repo.addFriendship(aliceID, bobID)
 
-	srv, _, _ := setupTestServer(t, repo)
+	srv, _ := setupTestServer(t, repo)
 
 	aliceConn := dialAuthenticated(t, srv, aliceID)
 	bobConn := dialAuthenticated(t, srv, bobID)
@@ -114,16 +156,14 @@ func TestWS_ForwardSignalBetweenFriends(t *testing.T) {
 
 	fakeID := uuid.New()
 	offerPayload := json.RawMessage(`{"type":"offer","sdp":"v=0\r\n..."}`)
-	if err := aliceConn.WriteJSON(SignalMessage{
+	mustWriteJSON(t, aliceConn, SignalMessage{
 		Type:     "offer",
 		TargetID: bobID,
 		SenderID: fakeID,
 		Payload:  offerPayload,
-	}); err != nil {
-		t.Fatalf("alice failed to write offer: %v", err)
-	}
+	})
 
-	_ = bobConn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	mustSetReadDeadline(t, bobConn, 2*time.Second)
 	var received SignalMessage
 	if err := bobConn.ReadJSON(&received); err != nil {
 		t.Fatalf("bob failed to read offer: %v", err)
@@ -137,15 +177,13 @@ func TestWS_ForwardSignalBetweenFriends(t *testing.T) {
 	}
 
 	answerPayload := json.RawMessage(`{"type":"answer","sdp":"v=0\r\n..."}`)
-	if err := bobConn.WriteJSON(SignalMessage{
+	mustWriteJSON(t, bobConn, SignalMessage{
 		Type:     "answer",
 		TargetID: aliceID,
 		Payload:  answerPayload,
-	}); err != nil {
-		t.Fatalf("bob failed to write answer: %v", err)
-	}
+	})
 
-	_ = aliceConn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	mustSetReadDeadline(t, aliceConn, 2*time.Second)
 	var answerReceived SignalMessage
 	if err := aliceConn.ReadJSON(&answerReceived); err != nil {
 		t.Fatalf("alice failed to read answer: %v", err)
@@ -161,32 +199,32 @@ func TestWS_RejectNonFriendsAndSelfAndUnknownTypes(t *testing.T) {
 	aliceID := uuid.New()
 	strangerID := uuid.New()
 
-	srv, _, _ := setupTestServer(t, repo)
+	srv, _ := setupTestServer(t, repo)
 
 	aliceConn := dialAuthenticated(t, srv, aliceID)
 	strangerConn := dialAuthenticated(t, srv, strangerID)
 
 	time.Sleep(30 * time.Millisecond)
 
-	_ = aliceConn.WriteJSON(SignalMessage{
+	mustWriteJSON(t, aliceConn, SignalMessage{
 		Type:     "offer",
 		TargetID: strangerID,
 		Payload:  json.RawMessage(`{"sdp":"blocked"}`),
 	})
 
-	_ = aliceConn.WriteJSON(SignalMessage{
+	mustWriteJSON(t, aliceConn, SignalMessage{
 		Type:     "offer",
 		TargetID: aliceID,
 		Payload:  json.RawMessage(`{"sdp":"self"}`),
 	})
 
-	_ = strangerConn.SetReadDeadline(time.Now().Add(150 * time.Millisecond))
+	mustSetReadDeadline(t, strangerConn, 150*time.Millisecond)
 	var msg SignalMessage
 	if err := strangerConn.ReadJSON(&msg); err == nil {
 		t.Fatalf("expected no message for non-friend, but received: %+v", msg)
 	}
 
-	_ = aliceConn.SetReadDeadline(time.Now().Add(150 * time.Millisecond))
+	mustSetReadDeadline(t, aliceConn, 150*time.Millisecond)
 	if err := aliceConn.ReadJSON(&msg); err == nil {
 		t.Fatalf("expected no self-message, but received: %+v", msg)
 	}
@@ -198,7 +236,7 @@ func TestWS_ReplaceExistingConnection(t *testing.T) {
 	bobID := uuid.New()
 	repo.addFriendship(aliceID, bobID)
 
-	srv, _, _ := setupTestServer(t, repo)
+	srv, _ := setupTestServer(t, repo)
 
 	firstConn := dialAuthenticated(t, srv, aliceID)
 	time.Sleep(20 * time.Millisecond)
@@ -206,21 +244,19 @@ func TestWS_ReplaceExistingConnection(t *testing.T) {
 	secondConn := dialAuthenticated(t, srv, aliceID)
 	bobConn := dialAuthenticated(t, srv, bobID)
 
-	_ = firstConn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+	mustSetReadDeadline(t, firstConn, 500*time.Millisecond)
 	if _, _, err := firstConn.ReadMessage(); err == nil {
 		t.Fatal("expected first connection to be closed when second connection registers")
 	}
 
 	candidate := json.RawMessage(`{"candidate":"candidate:1 1 UDP 2122252543 127.0.0.1 50000 typ host"}`)
-	if err := bobConn.WriteJSON(SignalMessage{
+	mustWriteJSON(t, bobConn, SignalMessage{
 		Type:     "ice-candidate",
 		TargetID: aliceID,
 		Payload:  candidate,
-	}); err != nil {
-		t.Fatalf("bob write failed: %v", err)
-	}
+	})
 
-	_ = secondConn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	mustSetReadDeadline(t, secondConn, 2*time.Second)
 	var received SignalMessage
 	if err := secondConn.ReadJSON(&received); err != nil {
 		t.Fatalf("second connection failed to read candidate: %v", err)
@@ -236,20 +272,20 @@ func TestService_DisconnectUserAndRepoError(t *testing.T) {
 	bobID := uuid.New()
 	repo.addFriendship(aliceID, bobID)
 
-	srv, svc, _ := setupTestServer(t, repo)
+	srv, svc := setupTestServer(t, repo)
 
 	aliceConn := dialAuthenticated(t, srv, aliceID)
 	bobConn := dialAuthenticated(t, srv, bobID)
 	time.Sleep(30 * time.Millisecond)
 
 	repo.err = errors.New("db connection lost")
-	_ = aliceConn.WriteJSON(SignalMessage{
+	mustWriteJSON(t, aliceConn, SignalMessage{
 		Type:     "offer",
 		TargetID: bobID,
 		Payload:  json.RawMessage(`{"sdp":"test"}`),
 	})
 
-	_ = bobConn.SetReadDeadline(time.Now().Add(150 * time.Millisecond))
+	mustSetReadDeadline(t, bobConn, 150*time.Millisecond)
 	var msg SignalMessage
 	if err := bobConn.ReadJSON(&msg); err == nil {
 		t.Fatalf("expected signal to be dropped on repo error, got %+v", msg)
@@ -257,7 +293,7 @@ func TestService_DisconnectUserAndRepoError(t *testing.T) {
 
 	svc.DisconnectUser(aliceID)
 
-	_ = aliceConn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+	mustSetReadDeadline(t, aliceConn, 500*time.Millisecond)
 	if _, _, err := aliceConn.ReadMessage(); err == nil {
 		t.Fatal("expected alice connection to close after DisconnectUser")
 	}
