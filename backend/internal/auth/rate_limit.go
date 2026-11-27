@@ -8,8 +8,6 @@ import (
 const (
 	apiKeyLimit  = 60
 	apiKeyWindow = time.Minute
-	// shortcut: at most 10000 active keys or IPs per limiter, use shared storage if this deployment grows.
-	maxRateLimitEntries = 10000
 )
 
 type rateWindow struct {
@@ -43,9 +41,6 @@ func (l *rateLimiter) allow(key string) bool {
 	}
 	window := l.entries[key]
 	if window == nil {
-		if len(l.entries) >= maxRateLimitEntries {
-			return false
-		}
 		window = &rateWindow{}
 		l.entries[key] = window
 	}

@@ -21,18 +21,18 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 		authService: authService,
 	}
 
-	session := auth.Middleware(sessionManager, authService, auth.VerifiedUser)
-	keyOrSession := auth.APIKeyMiddleware(sessionManager, authService, auth.VerifiedUser)
+	session := group.Group("", auth.Middleware(sessionManager, authService, auth.VerifiedUser))
+	keyOrSession := group.Group("", auth.APIKeyMiddleware(sessionManager, authService, auth.VerifiedUser))
 
-	group.POST("/requests/send", h.sendRequest, session)
-	group.POST("/requests/accept", h.acceptRequest, session)
-	group.POST("/requests/decline", h.declineRequest, session)
-	group.POST("/unfriend", h.unfriendFriend, session)
-	group.GET("/requests/list", h.getFriendRequestsList, keyOrSession)
-	group.GET("/list", h.getFriendsList, keyOrSession)
+	session.POST("/requests/send", h.sendRequest)
+	session.POST("/requests/accept", h.acceptRequest)
+	session.POST("/requests/decline", h.declineRequest)
+	session.POST("/unfriend", h.unfriendFriend)
+	keyOrSession.GET("/requests/list", h.getFriendRequestsList)
+	keyOrSession.GET("/list", h.getFriendsList)
 
-	group.POST("/chat/send-message", h.sendMessage, session)
-	group.GET("/chat/get-messages", h.getMessages, session)
+	session.POST("/chat/send-message", h.sendMessage)
+	session.GET("/chat/get-messages", h.getMessages)
 }
 
 func apiError(err error) error {
@@ -146,7 +146,8 @@ func (h *handler) declineRequest(c *echo.Context) error {
 
 // getFriendRequestsList godoc
 // @Summary      List Requests
-// @Description  Requires a verified account and accepts the login session cookie or X-API-Key. A supplied key takes precedence over the session.
+// @Description  Requires a verified account and accepts the login session cookie or X-API-Key. A supplied key takes precedence; invalid keys never fall back to the session.
+// @Description  Rolling limits: 60 API-key attempts per IP and 60 authenticated attempts per key per minute. The IP limit applies before authentication, including valid keys. Limits are in memory and reset on backend restart.
 // @Tags         Friends
 // @Produce      json
 // @Security     SessionCookie
@@ -176,7 +177,8 @@ func (h *handler) getFriendRequestsList(c *echo.Context) error {
 
 // getFriendsList godoc
 // @Summary      List Friends
-// @Description  Requires a verified account and accepts the login session cookie or X-API-Key. A supplied key takes precedence over the session.
+// @Description  Requires a verified account and accepts the login session cookie or X-API-Key. A supplied key takes precedence; invalid keys never fall back to the session.
+// @Description  Rolling limits: 60 API-key attempts per IP and 60 authenticated attempts per key per minute. The IP limit applies before authentication, including valid keys. Limits are in memory and reset on backend restart.
 // @Tags         Friends
 // @Produce      json
 // @Security     SessionCookie

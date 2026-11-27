@@ -59,9 +59,11 @@ func TestAPIKeyRoutesWithPostgres(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ip := "192.0.2.1:1234"
 	request := func(method, path, body, key string, cookie *http.Cookie) *httptest.ResponseRecorder {
 		t.Helper()
 		req := httptest.NewRequestWithContext(t.Context(), method, path, strings.NewReader(body))
+		req.RemoteAddr = ip
 		req.Header.Set("Content-Type", "application/json")
 		if key != "" {
 			req.Header.Set("X-API-Key", key)
@@ -102,6 +104,20 @@ func TestAPIKeyRoutesWithPostgres(t *testing.T) {
 	if storedHash == response.Key || storedHash == "" {
 		t.Fatal("the full API key must not be stored")
 	}
+	if _, err := db.ExecContext(t.Context(), "UPDATE users SET verified = false"); err != nil {
+		t.Fatal(err)
+	}
+	rec = request("GET", "/api/friends/list", "", response.Key, nil)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("unverified key access: %d %s", rec.Code, rec.Body.String())
+	}
+	var lastUsed sql.NullTime
+	if err := db.NewRaw("SELECT last_used_at FROM api_keys").Scan(t.Context(), &lastUsed); err != nil || !lastUsed.Valid {
+		t.Fatalf("last use after forbidden response: %v, %v", lastUsed, err)
+	}
+	if _, err := db.ExecContext(t.Context(), "UPDATE users SET verified = true"); err != nil {
+		t.Fatal(err)
+	}
 	for _, path := range []string{"/api/auth/me", "/api/friends/list", "/api/friends/requests/list"} {
 		rec = request("GET", path, "", response.Key, nil)
 		if rec.Code != http.StatusOK {
@@ -117,16 +133,18 @@ func TestAPIKeyRoutesWithPostgres(t *testing.T) {
 		t.Fatalf("last use: %d %s", rec.Code, rec.Body.String())
 	}
 	paths := []string{"/api/auth/me", "/api/friends/list", "/api/friends/requests/list"}
-	for i := 0; i < 57; i++ {
+	for i := 0; i < 56; i++ {
 		rec = request("GET", paths[i%len(paths)], "", response.Key, nil)
 		if rec.Code != http.StatusOK {
-			t.Fatalf("request %d: %d %s", i+4, rec.Code, rec.Body.String())
+			t.Fatalf("request %d: %d %s", i+5, rec.Code, rec.Body.String())
 		}
 	}
+	ip = "192.0.2.2:1234"
 	rec = request("GET", "/api/friends/list", "", response.Key, nil)
 	if rec.Code != http.StatusTooManyRequests {
 		t.Fatalf("shared key limit: %d %s", rec.Code, rec.Body.String())
 	}
+	ip = "192.0.2.3:1234"
 	for _, path := range []string{"/api/friends/chat/get-messages", "/api/auth/api-key"} {
 		rec = request("GET", path, "", response.Key, cookie)
 		if rec.Code != http.StatusUnauthorized {
@@ -165,6 +183,7 @@ func TestAPIKeyRoutesWithPostgres(t *testing.T) {
 	if counts[http.StatusOK] != 59 || counts[http.StatusTooManyRequests] != 11 {
 		t.Fatalf("concurrent rate limit: %v", counts)
 	}
+	ip = "192.0.2.4:1234"
 	rec = request("GET", "/api/auth/me", "", oldKey, cookie)
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("replaced key: %d %s", rec.Code, rec.Body.String())

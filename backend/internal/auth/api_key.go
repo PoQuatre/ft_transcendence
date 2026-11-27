@@ -1,54 +1,16 @@
 package auth
 
 import (
-	"context"
-	"crypto/rand"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"net/http"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
 )
 
-func (r *bunRepository) GetAPIKey(ctx context.Context, userID uuid.UUID) (*APIKey, error) {
-	key := new(APIKey)
-	err := r.db.NewSelect().Model(key).Where("user_id = ?", userID).Scan(ctx)
-	return key, err
-}
-
-func (r *bunRepository) SaveAPIKey(ctx context.Context, key *APIKey) error {
-	_, err := r.db.NewInsert().Model(key).
-		On("CONFLICT (user_id) DO UPDATE").
-		Set("key_hash = EXCLUDED.key_hash").
-		Set("prefix = EXCLUDED.prefix").
-		Set("created_at = EXCLUDED.created_at").
-		Set("last_used_at = NULL").
-		Exec(ctx)
-	return err
-}
-
-func (r *bunRepository) DeleteAPIKey(ctx context.Context, userID uuid.UUID) error {
-	_, err := r.db.NewDelete().Model((*APIKey)(nil)).Where("user_id = ?", userID).Exec(ctx)
-	return err
-}
-
-func (r *bunRepository) UseAPIKey(ctx context.Context, hash string) (uuid.UUID, error) {
-	var id uuid.UUID
-	err := r.db.NewUpdate().Model((*APIKey)(nil)).
-		Set("last_used_at = current_timestamp").
-		Where("key_hash = ?", hash).
-		Returning("user_id").
-		Scan(ctx, &id)
-	return id, err
-}
-
 // getAPIKey godoc
 // @Summary      Get API key metadata
-// @Description  Requires a verified account and the session cookie from login. The secret is not returned.
+// @Description  Requires a verified account and the session cookie from login. The secret is not returned. Keys do not expire automatically. last_used_at records successful key authentication, even if the endpoint subsequently returns an error.
 // @Tags         API Keys
 // @Produce      json
 // @Security     SessionCookie
@@ -72,7 +34,7 @@ func (h *handler) getAPIKey(c *echo.Context) error {
 
 // createAPIKey godoc
 // @Summary      Create or regenerate an API key
-// @Description  Requires a verified account and the session cookie from login. Replaces any existing key; the secret is returned only once.
+// @Description  Requires a verified account and the session cookie from login. Replaces any existing key; the secret is returned only once. Keys do not expire automatically.
 // @Tags         API Keys
 // @Produce      json
 // @Security     SessionCookie
@@ -84,21 +46,8 @@ func (h *handler) getAPIKey(c *echo.Context) error {
 func (h *handler) createAPIKey(c *echo.Context) error {
 	id, _ := UserID(c.Request().Context())
 
-	var random [32]byte
-	if _, err := rand.Read(random[:]); err != nil {
-		return err
-	}
-
-	secret := hex.EncodeToString(random[:])
-	hash := sha256.Sum256([]byte(secret))
-	key := &APIKey{
-		UserID:    id,
-		KeyHash:   hex.EncodeToString(hash[:]),
-		Prefix:    secret[:8],
-		CreatedAt: time.Now().UTC(),
-	}
-
-	if err := h.service.repo.SaveAPIKey(c.Request().Context(), key); err != nil {
+	key, secret, err := h.service.CreateAPIKey(c.Request().Context(), id)
+	if err != nil {
 		return err
 	}
 

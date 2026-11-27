@@ -307,7 +307,8 @@ func (h *handler) logout(c *echo.Context) error {
 
 // me godoc
 // @Summary      Get current user profile
-// @Description  Accepts the login session cookie or X-API-Key. A supplied key takes precedence over the session.
+// @Description  Accepts the login session cookie or X-API-Key. A supplied key takes precedence; invalid keys never fall back to the session.
+// @Description  Rolling limits: 60 API-key attempts per IP and 60 authenticated attempts per key per minute. The IP limit applies before authentication, including valid keys. Limits are in memory and reset on backend restart.
 // @Tags         User
 // @Produce      json
 // @Security     SessionCookie

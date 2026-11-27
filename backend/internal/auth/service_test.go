@@ -20,6 +20,7 @@ type MockMessage struct {
 
 type mockRepository struct {
 	apiKeys             map[uuid.UUID]*APIKey
+	apiKeyUses          int
 	users               map[string]*User
 	usersverifs         map[uuid.UUID]*UserVerify
 	passwordresettokens map[uuid.UUID]*PasswordResetToken

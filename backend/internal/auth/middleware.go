@@ -2,9 +2,7 @@ package auth
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"net/http"
 
@@ -55,21 +53,17 @@ func middleware(sessions *scs.SessionManager, service *Service, access Access, a
 				if service == nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "authentication service unavailable")
 				}
-				invalidKey := func() error {
-					if !service.invalidLimits.allow(c.RealIP()) {
-						return echo.NewHTTPError(http.StatusTooManyRequests, "too many requests")
-					}
-					return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+				if !service.ipLimits.allow(c.RealIP()) {
+					return echo.NewHTTPError(http.StatusTooManyRequests, "too many requests")
 				}
 				if len(values) != 1 || len(values[0]) != 64 {
-					return invalidKey()
+					return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 				}
-				hash := sha256.Sum256([]byte(values[0]))
-				keyHash := hex.EncodeToString(hash[:])
+				keyHash := hashSecret(values[0])
 				var err error
 				id, err = service.repo.UseAPIKey(ctx, keyHash)
 				if errors.Is(err, sql.ErrNoRows) {
-					return invalidKey()
+					return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 				}
 				if err != nil {
 					return err

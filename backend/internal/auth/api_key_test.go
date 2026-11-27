@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -116,6 +117,7 @@ func (m *mockRepository) DeleteAPIKey(_ context.Context, id uuid.UUID) error {
 }
 
 func (m *mockRepository) UseAPIKey(_ context.Context, hash string) (uuid.UUID, error) {
+	m.apiKeyUses++
 	for _, key := range m.apiKeys {
 		if key.KeyHash == hash {
 			now := time.Now()
@@ -137,6 +139,30 @@ func TestAPIKeyManagementRequiresSession(t *testing.T) {
 				t.Fatalf("got %d, want 401", rec.Code)
 			}
 		})
+	}
+}
+
+func TestAPIKeyLastUsedWhenAccessRejected(t *testing.T) {
+	repo := newMockRepository()
+	id := uuid.New()
+	repo.users["alice"] = &User{ID: id, Verified: false}
+	secret := strings.Repeat("a", 64)
+	key := &APIKey{UserID: id, KeyHash: hashSecret(secret)}
+	repo.apiKeys[id] = key
+	sessions := scs.New()
+	service := NewService(repo)
+	e := echo.New()
+	e.Use(echo.WrapMiddleware(sessions.LoadAndSave))
+	e.GET("/verified", func(c *echo.Context) error {
+		return c.NoContent(http.StatusNoContent)
+	}, APIKeyMiddleware(sessions, service, VerifiedUser))
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/verified", nil)
+	req.Header.Set("X-API-Key", secret)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden || key.LastUsedAt == nil {
+		t.Fatalf("got status %d and last_used_at %v, want 403 and timestamp", rec.Code, key.LastUsedAt)
 	}
 }
 
@@ -226,17 +252,39 @@ func TestAPIKeyAuthenticatesMe(t *testing.T) {
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("regenerate: %d %s", rec.Code, rec.Body.String())
 	}
-	if rec = request(http.MethodGet, "/api/auth/me", []string{key.Secret}, ""); rec.Code != http.StatusUnauthorized {
-		t.Fatalf("old key after regeneration: %d %s", rec.Code, rec.Body.String())
-	}
+	oldSecret := key.Secret
+	key.Secret = ""
 	if err := json.Unmarshal(rec.Body.Bytes(), &key); err != nil {
 		t.Fatal(err)
+	}
+	if key.Secret == "" || key.Secret == oldSecret {
+		t.Fatal("regeneration must return a new secret")
+	}
+	if rec = request(http.MethodGet, "/api/auth/me", []string{oldSecret}, ""); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("old key after regeneration: %d %s", rec.Code, rec.Body.String())
+	}
+	if rec = request(http.MethodGet, "/api/auth/me", []string{key.Secret}, ""); rec.Code != http.StatusOK {
+		t.Fatalf("regenerated key: %d %s", rec.Code, rec.Body.String())
 	}
 	if rec := request(http.MethodDelete, "/api/auth/api-key", nil, token); rec.Code != http.StatusNoContent {
 		t.Fatalf("delete: %d %s", rec.Code, rec.Body.String())
 	}
 	if rec := request(http.MethodGet, "/api/auth/me", []string{key.Secret}, ""); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("deleted key: %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestRateLimiterAllowsManyDistinctEntries(t *testing.T) {
+	now := time.Now()
+	limiter := rateLimiter{now: func() time.Time { return now }}
+	for i := 0; i <= 10000; i++ {
+		if !limiter.allow(strconv.Itoa(i)) {
+			t.Fatalf("first attempt for entry %d was rejected", i)
+		}
+	}
+	now = now.Add(time.Minute)
+	if !limiter.allow("new") || len(limiter.entries) != 1 {
+		t.Fatalf("expired entries not cleaned up: %d entries", len(limiter.entries))
 	}
 }
 
@@ -250,6 +298,7 @@ func TestAPIKeyRateLimit(t *testing.T) {
 	service := NewService(repo)
 	now := time.Now()
 	service.keyLimits.now = func() time.Time { return now }
+	service.ipLimits.now = func() time.Time { return now }
 	RegisterRoutes(e.Group("/api/auth"), service, sessions, nil, nil)
 	ctx, err := sessions.Load(t.Context(), "")
 	if err != nil {
@@ -278,6 +327,7 @@ func TestAPIKeyRateLimit(t *testing.T) {
 			now = now.Add(30 * time.Second)
 		}
 		req = httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/auth/me", nil)
+		req.RemoteAddr = "192.0.2." + strconv.Itoa(i+1) + ":1234"
 		req.Header.Set("X-API-Key", key.Secret)
 		rec := httptest.NewRecorder()
 		e.ServeHTTP(rec, req)
@@ -291,6 +341,7 @@ func TestAPIKeyRateLimit(t *testing.T) {
 	}
 	now = now.Add(30 * time.Second)
 	req = httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/auth/me", nil)
+	req.RemoteAddr = "192.0.2.100:1234"
 	req.Header.Set("X-API-Key", key.Secret)
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -299,6 +350,7 @@ func TestAPIKeyRateLimit(t *testing.T) {
 	}
 	now = now.Add(time.Minute)
 	req = httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/auth/me", nil)
+	req.RemoteAddr = "192.0.2.101:1234"
 	req.Header.Set("X-API-Key", key.Secret)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -319,7 +371,7 @@ func TestInvalidAPIKeyRateLimit(t *testing.T) {
 	e.Use(echo.WrapMiddleware(sessions.LoadAndSave))
 	service := NewService(repo)
 	now := time.Now()
-	service.invalidLimits.now = func() time.Time { return now }
+	service.ipLimits.now = func() time.Time { return now }
 	RegisterRoutes(e.Group("/api/auth"), service, sessions, nil, nil)
 	request := func(ip, key string) int {
 		t.Helper()
@@ -346,8 +398,18 @@ func TestInvalidAPIKeyRateLimit(t *testing.T) {
 	if got := request("192.0.2.2", "invalid"); got != http.StatusUnauthorized {
 		t.Fatalf("other IP: got %d", got)
 	}
-	if got := request("192.0.2.1", secret); got != http.StatusOK {
+	uses := repo.apiKeyUses
+	if got := request("192.0.2.1", strings.Repeat("a", 64)); got != http.StatusTooManyRequests {
+		t.Fatalf("invalid key from rate-limited IP: got %d", got)
+	}
+	if got := request("192.0.2.1", secret); got != http.StatusTooManyRequests {
 		t.Fatalf("valid key from rate-limited IP: got %d", got)
+	}
+	if repo.apiKeyUses != uses || repo.apiKeys[id].LastUsedAt != nil {
+		t.Fatal("rate-limited request must not reach the repository")
+	}
+	if got := request("192.0.2.2", secret); got != http.StatusOK {
+		t.Fatalf("valid key from another IP: got %d", got)
 	}
 	now = now.Add(time.Minute)
 	if got := request("192.0.2.1", "invalid"); got != http.StatusUnauthorized {
