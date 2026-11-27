@@ -107,13 +107,26 @@ export const Header: Component = () => {
               </div>
             }
           >
-            {/* 1. Badge [ONLINE] vert pulsant */}
+            {/* 1. Badge [ONLINE] vert pulsant, [UNVERIFIED] tant que l'email n'est pas vérifié */}
             <div class="flex items-center gap-2 px-3 py-1 rounded-sm bg-success-background/40 border border-success-border/40">
               <span class="w-2 h-2 rounded-pill bg-success-foreground shadow-glow-green-xs animate-pulse" />
               <span class="text-success-foreground font-bold text-[11px] tracking-widest">
                 [ONLINE]
               </span>
             </div>
+            <Show when={currentUser()?.verified === false}>
+              <a
+                href={paths.settings()}
+                title="Vérifie ton email dans les settings"
+                class="flex items-center gap-2 px-3 py-1 rounded-sm bg-warning-background/40 border border-warning-border/40 hover:border-warning-foreground transition-colors no-underline text-warning-foreground font-bold text-[11px] tracking-widest"
+              >
+                <span class="w-2 h-2 rounded-pill bg-warning-foreground" />
+                <span aria-hidden="true" class="sm:hidden">
+                  [!]
+                </span>
+                <span class="sr-only sm:not-sr-only">[UNVERIFIED]</span>
+              </a>
+            </Show>
 
             {/* 2. Bouton amis : le panneau s'ouvre par-dessus la page en cours */}
             <button
