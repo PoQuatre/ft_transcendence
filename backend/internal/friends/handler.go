@@ -21,17 +21,18 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 		authService: authService,
 	}
 
-	group.Use(auth.Middleware(sessionManager, authService, auth.VerifiedUser))
+	session := auth.Middleware(sessionManager, authService, auth.VerifiedUser)
+	keyOrSession := auth.APIKeyMiddleware(sessionManager, authService, auth.VerifiedUser)
 
-	group.POST("/requests/send", h.sendRequest)
-	group.POST("/requests/accept", h.acceptRequest)
-	group.POST("/requests/decline", h.declineRequest)
-	group.POST("/unfriend", h.unfriendFriend)
-	group.GET("/requests/list", h.getFriendRequestsList)
-	group.GET("/list", h.getFriendsList)
+	group.POST("/requests/send", h.sendRequest, session)
+	group.POST("/requests/accept", h.acceptRequest, session)
+	group.POST("/requests/decline", h.declineRequest, session)
+	group.POST("/unfriend", h.unfriendFriend, session)
+	group.GET("/requests/list", h.getFriendRequestsList, keyOrSession)
+	group.GET("/list", h.getFriendsList, keyOrSession)
 
-	group.POST("/chat/send-message", h.sendMessage)
-	group.GET("/chat/get-messages", h.getMessages)
+	group.POST("/chat/send-message", h.sendMessage, session)
+	group.GET("/chat/get-messages", h.getMessages, session)
 }
 
 func apiError(err error) error {

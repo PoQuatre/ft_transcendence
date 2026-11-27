@@ -36,6 +36,16 @@ func (r *bunRepository) DeleteAPIKey(ctx context.Context, userID uuid.UUID) erro
 	return err
 }
 
+func (r *bunRepository) UseAPIKey(ctx context.Context, hash string) (uuid.UUID, error) {
+	var id uuid.UUID
+	err := r.db.NewUpdate().Model((*APIKey)(nil)).
+		Set("last_used_at = current_timestamp").
+		Where("key_hash = ?", hash).
+		Returning("user_id").
+		Scan(ctx, &id)
+	return id, err
+}
+
 // getAPIKey godoc
 // @Summary      Get API key metadata
 // @Description  Requires a verified account and the session cookie from login. The secret is not returned.

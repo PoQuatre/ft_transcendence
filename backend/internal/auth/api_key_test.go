@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/google/uuid"
@@ -112,6 +113,17 @@ func (m *mockRepository) DeleteAPIKey(_ context.Context, id uuid.UUID) error {
 	return nil
 }
 
+func (m *mockRepository) UseAPIKey(_ context.Context, hash string) (uuid.UUID, error) {
+	for _, key := range m.apiKeys {
+		if key.KeyHash == hash {
+			now := time.Now()
+			key.LastUsedAt = &now
+			return key.UserID, nil
+		}
+	}
+	return uuid.Nil, sql.ErrNoRows
+}
+
 func TestAPIKeyManagementRequiresSession(t *testing.T) {
 	e, _ := setupTestServer(t, nil)
 	for _, method := range []string{http.MethodGet, http.MethodPost, http.MethodDelete} {
@@ -123,5 +135,104 @@ func TestAPIKeyManagementRequiresSession(t *testing.T) {
 				t.Fatalf("got %d, want 401", rec.Code)
 			}
 		})
+	}
+}
+
+func TestAPIKeyAuthenticatesMe(t *testing.T) {
+	repo := newMockRepository()
+	id := uuid.New()
+	repo.users["alice"] = &User{ID: id, Username: "alice", Email: "alice@example.com", Verified: true}
+	sessions := scs.New()
+	e := echo.New()
+	e.Use(echo.WrapMiddleware(sessions.LoadAndSave))
+	RegisterRoutes(e.Group("/api/auth"), NewService(repo), sessions, nil, nil)
+	ctx, err := sessions.Load(t.Context(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sessions.Put(ctx, "user_id", id.String())
+	token, _, err := sessions.Commit(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	create := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/auth/api-key", nil)
+	create.AddCookie(&http.Cookie{Name: sessions.Cookie.Name, Value: token})
+	created := httptest.NewRecorder()
+	e.ServeHTTP(created, create)
+	if created.Code != http.StatusCreated {
+		t.Fatalf("create: %d %s", created.Code, created.Body.String())
+	}
+	var key struct {
+		Secret string `json:"key"`
+	}
+	if err = json.Unmarshal(created.Body.Bytes(), &key); err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/auth/me", nil)
+	req.Header.Set("X-API-Key", key.Secret)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"email":"alice@example.com"`) {
+		t.Fatalf("key request: %d %s", rec.Code, rec.Body.String())
+	}
+	bobID := uuid.New()
+	repo.users["bob"] = &User{ID: bobID, Username: "bob", Email: "bob@example.com", Verified: true}
+	bobCtx, err := sessions.Load(t.Context(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sessions.Put(bobCtx, "user_id", bobID.String())
+	bobToken, _, err := sessions.Commit(bobCtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := func(method, path string, keys []string, cookie string) *httptest.ResponseRecorder {
+		t.Helper()
+		req := httptest.NewRequestWithContext(t.Context(), method, path, nil)
+		for _, value := range keys {
+			req.Header.Add("X-API-Key", value)
+		}
+		if cookie != "" {
+			req.AddCookie(&http.Cookie{Name: sessions.Cookie.Name, Value: cookie})
+		}
+		result := httptest.NewRecorder()
+		e.ServeHTTP(result, req)
+		return result
+	}
+	rec = request(http.MethodGet, "/api/auth/me", []string{key.Secret}, bobToken)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"email":"alice@example.com"`) {
+		t.Fatalf("key must override session: %d %s", rec.Code, rec.Body.String())
+	}
+	for _, keys := range [][]string{{""}, {"invalid"}, {strings.Repeat("a", 64)}, {key.Secret, key.Secret}} {
+		rec = request(http.MethodGet, "/api/auth/me", keys, bobToken)
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("invalid key must not fall back to session: %d %s", rec.Code, rec.Body.String())
+		}
+	}
+	for _, path := range []string{"/api/auth/api-key", "/api/auth/me/export"} {
+		rec = request(http.MethodGet, path, []string{key.Secret}, token)
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("key on session-only %s: %d %s", path, rec.Code, rec.Body.String())
+		}
+	}
+	rec = request(http.MethodGet, "/api/auth/api-key", nil, token)
+	if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), `"last_used_at":null`) {
+		t.Fatalf("last use: %d %s", rec.Code, rec.Body.String())
+	}
+	rec = request(http.MethodPost, "/api/auth/api-key", nil, token)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("regenerate: %d %s", rec.Code, rec.Body.String())
+	}
+	if rec = request(http.MethodGet, "/api/auth/me", []string{key.Secret}, ""); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("old key after regeneration: %d %s", rec.Code, rec.Body.String())
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &key); err != nil {
+		t.Fatal(err)
+	}
+	if rec := request(http.MethodDelete, "/api/auth/api-key", nil, token); rec.Code != http.StatusNoContent {
+		t.Fatalf("delete: %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := request(http.MethodGet, "/api/auth/me", []string{key.Secret}, ""); rec.Code != http.StatusUnauthorized {
+		t.Fatalf("deleted key: %d %s", rec.Code, rec.Body.String())
 	}
 }

@@ -24,6 +24,7 @@ type Repository interface {
 	GetAPIKey(ctx context.Context, userID uuid.UUID) (*APIKey, error)
 	SaveAPIKey(ctx context.Context, key *APIKey) error
 	DeleteAPIKey(ctx context.Context, userID uuid.UUID) error
+	UseAPIKey(ctx context.Context, hash string) (uuid.UUID, error)
 	CreateUser(ctx context.Context, user *User) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
