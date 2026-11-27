@@ -4,6 +4,7 @@ package auth
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/labstack/echo/v5"
@@ -261,6 +262,14 @@ func (h *handler) login(c *echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to renew session")
 	}
 
+	lifetime := 24 * time.Hour
+	if req.StaySignedIn {
+		lifetime = 90 * 24 * time.Hour
+	}
+	h.sessionManager.RememberMe(c.Request().Context(), req.StaySignedIn)
+	h.sessionManager.SetDeadline(c.Request().Context(), time.Now().Add(lifetime))
+	h.sessionManager.Put(c.Request().Context(), "stay_signed_in", req.StaySignedIn)
+	h.sessionManager.Put(c.Request().Context(), "last_activity", time.Now().UnixNano())
 	h.sessionManager.Put(c.Request().Context(), "user_id", userResp.ID)
 
 	return c.JSON(http.StatusOK, map[string]any{"message": "logged in successfully"})

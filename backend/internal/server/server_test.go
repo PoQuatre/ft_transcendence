@@ -45,6 +45,20 @@ func TestNewHealthzWithUnavailableDatabase(t *testing.T) {
 	assertStatusResponse(t, response, "unavailable")
 }
 
+func TestSessionLookupWithUnavailableDatabase(t *testing.T) {
+	srv, err := New(WithDatabase(unavailableDatabase(t)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/auth/me", nil)
+	req.AddCookie(&http.Cookie{Name: "session", Value: "existing-session"})
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("session lookup with unavailable database: got %d, want 500", rec.Code)
+	}
+}
+
 func TestNewDoesNotRegisterAuthRoutesWithoutDatabase(t *testing.T) {
 	srv, err := New()
 	if err != nil {

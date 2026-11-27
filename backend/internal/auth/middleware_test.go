@@ -30,7 +30,7 @@ func TestAuthenticationRoutes(t *testing.T) {
 	cookie := func(id string) *http.Cookie {
 		t.Helper()
 		rec := httptest.NewRecorder()
-		e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/session/"+id, nil))
+		e.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/session/"+id, nil))
 		return rec.Result().Cookies()[0]
 	}
 	valid := cookie("2f1d5420-370b-45f9-96f9-d98bc909b974")
@@ -51,7 +51,7 @@ func TestAuthenticationRoutes(t *testing.T) {
 		{"malformed required", "/required", "", malformed, 500},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, tc.path, nil)
 			if tc.cookie != nil {
 				req.AddCookie(tc.cookie)
 			}
@@ -99,10 +99,10 @@ func TestVerifiedAuthenticationRoute(t *testing.T) {
 		{"invalid policy", "/invalid-policy", "", http.StatusInternalServerError},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, tc.path, nil)
 			if tc.id != "" {
 				rec := httptest.NewRecorder()
-				e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/session/"+tc.id, nil))
+				e.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/session/"+tc.id, nil))
 				req.AddCookie(rec.Result().Cookies()[0])
 			}
 			rec := httptest.NewRecorder()

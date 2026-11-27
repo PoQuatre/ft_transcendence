@@ -27,8 +27,9 @@ type SignupRequest struct {
 }
 
 type LoginRequest struct {
-	Email    string `json:"email"    validate:"required,email" example:"your@email.com"`
-	Password string `json:"password"   validate:"required" example:"Y0urP4ssword?"`
+	Email        string `json:"email"    validate:"required,email" example:"your@email.com"`
+	Password     string `json:"password"   validate:"required" example:"Y0urP4ssword?"`
+	StaySignedIn bool   `json:"staySignedIn"`
 }
 
 type UserResponse struct {
