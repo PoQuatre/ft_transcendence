@@ -328,6 +328,19 @@ func (h *handler) me(c *echo.Context) error {
 	return c.JSON(http.StatusOK, userResp)
 }
 
+// deleteAccount godoc
+// @Summary      Delete your account data
+// @Description  Requires the session cookie from login. Delete User's data.
+// @Tags         User
+// @Accept       json
+// @Produce      json
+// @Param        credentials body auth.DeleteAccountRequest true "password"
+// @Success      200 {object} map[string]string "successfully deleted account."
+// @Failure      400 {object} map[string]string "invalid password"
+// @Failure      400 {object} map[string]string "invalid request body"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      500 {object} map[string]string "internal server error"
+// @Router       /api/auth/me [delete].
 func (h *handler) deleteAccount(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userID, _ := UserID(ctx)
@@ -348,6 +361,19 @@ func (h *handler) deleteAccount(c *echo.Context) error {
 	return c.JSON(http.StatusNoContent, map[string]any{"message": "successfully deleted account."})
 }
 
+// changeEmailAndUsername godoc
+// @Summary      Change profile
+// @Description  Requires the session cookie from login. Change User's mail and/or password.
+// @Tags         User
+// @Accept       json
+// @Produce      json
+// @Param        credentials body auth.PatchProfileRequest true "email and username"
+// @Success      200 {object} map[string]string "successfully updated profile."
+// @Failure      400 {object} map[string]string "invalid request body"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      409 {object} map[string]string "email or username already used"
+// @Failure      500 {object} map[string]string "internal server error"
+// @Router       /api/auth/me [patch].
 func (h *handler) changeEmailAndUsername(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userID, _ := UserID(ctx)
@@ -364,6 +390,15 @@ func (h *handler) changeEmailAndUsername(c *echo.Context) error {
 	return c.JSON(http.StatusNoContent, map[string]any{"message": "successfully updated profile."})
 }
 
+// exportData    godoc
+// @Summary      Export your account data
+// @Description  Requires the session cookie from login. Export User's data.
+// @Tags         User
+// @Produce      json
+// @Success      200 {object} auth.DataExport
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      500 {object} map[string]string "internal server error"
+// @Router       /api/auth/me/export [get].
 func (h *handler) exportData(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userID, _ := UserID(ctx)
