@@ -7,6 +7,8 @@
 package server
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -73,6 +75,22 @@ func (k *keyedLocks) lock(key string) func() {
 
 type Option func(*config)
 
+type sessionStore struct {
+	*bunstore.BunStore
+	db *bun.DB
+}
+
+// BunStore.FindCtx treats query errors as missing sessions when the count is zero.
+func (s *sessionStore) FindCtx(ctx context.Context, token string) ([]byte, bool, error) {
+	var data []byte
+	err := s.db.NewSelect().Table("sessions").Column("data").
+		Where("token = ? AND expiry >= ?", token, time.Now()).Scan(ctx, &data)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, false, nil
+	}
+	return data, err == nil, err
+}
+
 func WithDatabase(database *bun.DB) Option {
 	return func(config *config) { config.database = database }
 }
@@ -92,7 +110,7 @@ func newSessionManager(database *bun.DB) (*scs.SessionManager, error) {
 		if err != nil {
 			return nil, fmt.Errorf("create session store: %w", err)
 		}
-		manager.Store = store
+		manager.Store = &sessionStore{BunStore: store, db: database}
 	}
 	return manager, nil
 }
