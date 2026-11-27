@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/alexedwards/scs/bunstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/labstack/echo/v5"
@@ -23,6 +25,7 @@ import (
 	"github.com/uptrace/bun"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/auth"
+	"github.com/PoQuatre/ft_transcendence/backend/internal/chat"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/friends"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/game/webrtc"
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
@@ -206,13 +209,21 @@ func New(options ...Option) (http.Handler, error) {
 	swagger.RegisterRoutes(e.Group("/api/docs"))
 
 	if cfg.database != nil {
-		var onLogout func(string)
-		if cfg.webrtc != nil {
-			onLogout = cfg.webrtc.DisconnectAccount
-		}
 		authService := auth.NewService(auth.NewRepository(cfg.database))
+		chatService := chat.NewService(chat.NewRepository(cfg.database))
+
+		onLogout := func(accountID string) {
+			if cfg.webrtc != nil {
+				cfg.webrtc.DisconnectAccount(accountID)
+			}
+			if uid, err := uuid.Parse(accountID); err == nil {
+				chatService.DisconnectUser(uid)
+			}
+		}
+
 		auth.RegisterRoutes(e.Group("/api/auth"), authService, sessionManager, validat, onLogout)
 		friends.RegisterRoutes(e.Group("/api/friends"), friends.NewService(friends.NewRepository(cfg.database)), sessionManager, authService)
+		chat.RegisterRoutes(e.Group("/api/chat"), chatService, sessionManager)
 	}
 	if cfg.webrtc != nil {
 		webrtc.RegisterRoutes(e.Group(webrtcPrefix, auth.Middleware(sessionManager, nil, auth.AnonymousAllowed)), cfg.webrtc, func(r *http.Request) (webrtc.Identity, error) {
