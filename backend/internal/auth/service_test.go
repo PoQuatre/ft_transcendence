@@ -19,6 +19,7 @@ type MockMessage struct {
 }
 
 type mockRepository struct {
+	apiKeys             map[uuid.UUID]*APIKey
 	users               map[string]*User
 	usersverifs         map[uuid.UUID]*UserVerify
 	passwordresettokens map[uuid.UUID]*PasswordResetToken
@@ -30,6 +31,7 @@ type mockRepository struct {
 
 func newMockRepository() *mockRepository {
 	return &mockRepository{
+		apiKeys:             make(map[uuid.UUID]*APIKey),
 		users:               make(map[string]*User),
 		usersverifs:         make(map[uuid.UUID]*UserVerify),
 		passwordresettokens: make(map[uuid.UUID]*PasswordResetToken),

@@ -38,11 +38,15 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 
 	group.POST("/forgot-password", h.forgotPassword) // Sends the mail with the link
 	group.POST("/reset-password", h.resetPassword)   // Sent by the link in the mail
-	group.GET("/me", h.me, Middleware(sessionManager, service, AuthenticatedUser))
 
+	group.GET("/me", h.me, Middleware(sessionManager, service, AuthenticatedUser))
 	group.DELETE("/me", h.deleteAccount, Middleware(sessionManager, service, AuthenticatedUser))
 	group.PATCH("/me", h.changeEmailAndUsername, Middleware(sessionManager, service, AuthenticatedUser))
 	group.GET("/me/export", h.exportData, Middleware(sessionManager, service, AuthenticatedUser))
+
+	group.GET("/api-key", h.getAPIKey, Middleware(sessionManager, service, VerifiedUser))
+	group.POST("/api-key", h.createAPIKey, Middleware(sessionManager, service, VerifiedUser))
+	group.DELETE("/api-key", h.deleteAPIKey, Middleware(sessionManager, service, VerifiedUser))
 }
 
 func apiError(err error) error {
