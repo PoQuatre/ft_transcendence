@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
 
 	"github.com/PoQuatre/ft_transcendence/backend/internal/helpers"
@@ -30,19 +29,19 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 	}
 
 	group.POST("/signup", h.signup)
-	group.POST("/login", h.login)
-	group.POST(LogoutPath, h.logout)
-	group.POST("/verify-email/request", h.requestEmailVerification)
-	group.POST("/verify-email/confirm", h.confirmEmailVerification)
-	group.POST("/change-password", h.changePassword)
+	group.POST("/login", h.login, Middleware(sessionManager, service, AnonymousAllowed))
+	group.POST(LogoutPath, h.logout, Middleware(sessionManager, service, AnonymousAllowed))
+	group.POST("/verify-email/request", h.requestEmailVerification, Middleware(sessionManager, service, AuthenticatedUser))
+	group.POST("/verify-email/confirm", h.confirmEmailVerification, Middleware(sessionManager, service, AuthenticatedUser))
+	group.POST("/change-password", h.changePassword, Middleware(sessionManager, service, AuthenticatedUser))
 
 	group.POST("/forgot-password", h.forgotPassword) // Sends the mail with the link
 	group.POST("/reset-password", h.resetPassword)   // Sent by the link in the mail
-	group.GET("/me", h.me)
+	group.GET("/me", h.me, Middleware(sessionManager, service, AuthenticatedUser))
 
-	group.DELETE("/me", h.deleteAccount)
-	group.PATCH("/me", h.changeEmailAndUsername)
-	group.GET("/me/export", h.exportData)
+	group.DELETE("/me", h.deleteAccount, Middleware(sessionManager, service, AuthenticatedUser))
+	group.PATCH("/me", h.changeEmailAndUsername, Middleware(sessionManager, service, AuthenticatedUser))
+	group.GET("/me/export", h.exportData, Middleware(sessionManager, service, AuthenticatedUser))
 }
 
 func apiError(err error) error {
@@ -128,14 +127,8 @@ func (h *handler) forgotPassword(c *echo.Context) error {
 // @Router       /api/auth/change-password [post].
 func (h *handler) changePassword(c *echo.Context) error {
 	ctx := c.Request().Context()
-	if !h.sessionManager.Exists(ctx, "user_id") {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
+	userID, _ := UserID(ctx)
+	var err error
 	var req ChangePasswordRequest
 	if err = c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -168,12 +161,8 @@ func (h *handler) confirmEmailVerification(c *echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "invalid session user id")
-	}
-	if err = h.service.CheckVerificationEmail(ctx, userID, req.Code); err != nil {
+	userID, _ := UserID(ctx)
+	if err := h.service.CheckVerificationEmail(ctx, userID, req.Code); err != nil {
 		return apiError(err)
 	}
 	return c.JSON(http.StatusOK, map[string]string{"message": "user email successfully validated"})
@@ -191,11 +180,7 @@ func (h *handler) confirmEmailVerification(c *echo.Context) error {
 // @Router       /api/auth/verify-email/request [post].
 func (h *handler) requestEmailVerification(c *echo.Context) error {
 	ctx := c.Request().Context()
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid session user id")
-	}
+	userID, _ := UserID(ctx)
 	user, err := h.service.GetUserByID(ctx, userID)
 	if err != nil {
 		return apiError(err)
@@ -254,8 +239,7 @@ func (h *handler) signup(c *echo.Context) error {
 // @Failure      500 {object} map[string]string "failed to renew session or internal server error"
 // @Router       /api/auth/login [post].
 func (h *handler) login(c *echo.Context) error {
-	ctx := c.Request().Context()
-	if h.sessionManager.Exists(ctx, "user_id") {
+	if _, ok := UserID(c.Request().Context()); ok {
 		return echo.NewHTTPError(http.StatusBadRequest, "already logged in")
 	}
 
@@ -293,16 +277,16 @@ func (h *handler) login(c *echo.Context) error {
 // @Router       /api/auth/logout [post].
 func (h *handler) logout(c *echo.Context) error {
 	ctx := c.Request().Context()
-	if !h.sessionManager.Exists(ctx, "user_id") {
+	userID, ok := UserID(ctx)
+	if !ok {
 		return echo.NewHTTPError(http.StatusBadRequest, "not logged in")
 	}
 
-	userID := h.sessionManager.GetString(ctx, "user_id")
 	if err := h.sessionManager.Destroy(ctx); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to destroy session")
 	}
 	if h.onLogout != nil {
-		h.onLogout(userID)
+		h.onLogout(userID.String())
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{"message": "logged out successfully"})
@@ -318,16 +302,7 @@ func (h *handler) logout(c *echo.Context) error {
 // @Failure      500 {object} map[string]string "internal server error"
 // @Router       /api/auth/me [get].
 func (h *handler) me(c *echo.Context) error {
-	userIDStr := h.sessionManager.GetString(c.Request().Context(), "user_id")
-	if userIDStr == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
-	}
-
+	userID, _ := UserID(c.Request().Context())
 	userResp, err := h.service.GetUserByID(c.Request().Context(), userID)
 	if err != nil {
 		return apiError(err)
@@ -338,14 +313,8 @@ func (h *handler) me(c *echo.Context) error {
 
 func (h *handler) deleteAccount(c *echo.Context) error {
 	ctx := c.Request().Context()
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	if userIDStr == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
-	}
+	userID, _ := UserID(ctx)
+	var err error
 	var req DeleteAccountRequest
 	if err = c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -364,14 +333,7 @@ func (h *handler) deleteAccount(c *echo.Context) error {
 
 func (h *handler) changeEmailAndUsername(c *echo.Context) error {
 	ctx := c.Request().Context()
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	if userIDStr == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
-	}
+	userID, _ := UserID(ctx)
 	var req PatchProfileRequest
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -387,14 +349,7 @@ func (h *handler) changeEmailAndUsername(c *echo.Context) error {
 
 func (h *handler) exportData(c *echo.Context) error {
 	ctx := c.Request().Context()
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	if userIDStr == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
-	}
+	userID, _ := UserID(ctx)
 	dataResponse, err := h.service.GetDataFromUser(ctx, userID)
 	if err != nil {
 		return apiError(err)

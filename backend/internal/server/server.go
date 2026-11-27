@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
@@ -155,13 +154,12 @@ func New(options ...Option) (http.Handler, error) {
 		friends.RegisterRoutes(e.Group("/api/friends"), friends.NewService(friends.NewRepository(cfg.database)), sessionManager, authService)
 	}
 	if cfg.webrtc != nil {
-		webrtc.RegisterRoutes(e.Group(webrtcPrefix), cfg.webrtc, func(r *http.Request) (webrtc.Identity, error) {
-			_, cookieErr := r.Cookie(sessionManager.Cookie.Name)
-			if errors.Is(cookieErr, http.ErrNoCookie) && r.Header.Get("Authorization") == "" {
+		webrtc.RegisterRoutes(e.Group(webrtcPrefix, auth.Middleware(sessionManager, nil, auth.AnonymousAllowed)), cfg.webrtc, func(r *http.Request) (webrtc.Identity, error) {
+			id, ok := auth.UserID(r.Context())
+			if !ok {
 				return webrtc.Identity{}, nil
 			}
-			id, err := uuid.Parse(sessionManager.GetString(r.Context(), "user_id"))
-			if err != nil || cfg.database == nil || r.Header.Get("Authorization") != "" {
+			if cfg.database == nil {
 				return webrtc.Identity{}, echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired credentials")
 			}
 			user, err := auth.NewService(auth.NewRepository(cfg.database)).GetUserByID(r.Context(), id)

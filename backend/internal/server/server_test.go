@@ -161,14 +161,14 @@ func TestWebRTCQuickPlayReceivesLobbyState(t *testing.T) {
 	}
 }
 
-func TestWebRTCRejectsInvalidSession(t *testing.T) {
+func TestWebRTCAllowsInvalidSessionAsGuest(t *testing.T) {
 	handler := newWebRTCTestHandler(t)
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/webrtc/offer", bytes.NewReader([]byte(`{}`)))
 	req.AddCookie(&http.Cookie{Name: "session", Value: "invalid"})
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, req)
-	if response.Code != http.StatusUnauthorized {
-		t.Fatalf("status = %d, want 401", response.Code)
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400 for invalid offer", response.Code)
 	}
 }
 
@@ -244,7 +244,7 @@ func TestKeyedLocksSerializeOnlyMatchingKeys(t *testing.T) {
 	}
 }
 
-func TestWebRTCRejectsBearerToken(t *testing.T) {
+func TestWebRTCIgnoresBearerToken(t *testing.T) {
 	handler := newWebRTCTestHandler(t)
 	for _, cookie := range []bool{false, true} {
 		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/webrtc/offer", bytes.NewReader([]byte(`{}`)))
@@ -254,8 +254,8 @@ func TestWebRTCRejectsBearerToken(t *testing.T) {
 		}
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, req)
-		if response.Code != http.StatusUnauthorized {
-			t.Fatalf("cookie=%t: status = %d, want 401", cookie, response.Code)
+		if response.Code != http.StatusBadRequest {
+			t.Fatalf("cookie=%t: status = %d, want 400 for invalid offer", cookie, response.Code)
 		}
 	}
 }
