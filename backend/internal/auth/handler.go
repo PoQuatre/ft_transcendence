@@ -307,11 +307,14 @@ func (h *handler) logout(c *echo.Context) error {
 
 // me godoc
 // @Summary      Get current user profile
-// @Description  Requires the session cookie from login. Retrieves the user's profile from the session.
+// @Description  Accepts the login session cookie or X-API-Key. A supplied key takes precedence over the session.
 // @Tags         User
 // @Produce      json
+// @Security     SessionCookie
+// @Security     APIKeyAuth
 // @Success      200 {object} auth.UserResponse
 // @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      429 {object} map[string]string "API key rate limit exceeded"
 // @Failure      500 {object} map[string]string "internal server error"
 // @Router       /api/auth/me [get].
 func (h *handler) me(c *echo.Context) error {

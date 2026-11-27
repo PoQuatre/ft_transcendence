@@ -116,6 +116,17 @@ func TestAPIKeyRoutesWithPostgres(t *testing.T) {
 	if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), `"last_used_at":null`) {
 		t.Fatalf("last use: %d %s", rec.Code, rec.Body.String())
 	}
+	paths := []string{"/api/auth/me", "/api/friends/list", "/api/friends/requests/list"}
+	for i := 0; i < 57; i++ {
+		rec = request("GET", paths[i%len(paths)], "", response.Key, nil)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("request %d: %d %s", i+4, rec.Code, rec.Body.String())
+		}
+	}
+	rec = request("GET", "/api/friends/list", "", response.Key, nil)
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("shared key limit: %d %s", rec.Code, rec.Body.String())
+	}
 	for _, path := range []string{"/api/friends/chat/get-messages", "/api/auth/api-key"} {
 		rec = request("GET", path, "", response.Key, cookie)
 		if rec.Code != http.StatusUnauthorized {
@@ -136,6 +147,23 @@ func TestAPIKeyRoutesWithPostgres(t *testing.T) {
 	}
 	if response.Key == oldKey {
 		t.Fatal("regeneration returned the same key")
+	}
+	rec = request("GET", "/api/auth/me", "", response.Key, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("new key has its own limit: %d %s", rec.Code, rec.Body.String())
+	}
+	statuses := make(chan int, 70)
+	for range 70 {
+		go func() {
+			statuses <- request("GET", "/api/auth/me", "", response.Key, nil).Code
+		}()
+	}
+	counts := make(map[int]int)
+	for range 70 {
+		counts[<-statuses]++
+	}
+	if counts[http.StatusOK] != 59 || counts[http.StatusTooManyRequests] != 11 {
+		t.Fatalf("concurrent rate limit: %v", counts)
 	}
 	rec = request("GET", "/api/auth/me", "", oldKey, cookie)
 	if rec.Code != http.StatusUnauthorized {

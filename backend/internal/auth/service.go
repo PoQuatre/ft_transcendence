@@ -23,11 +23,13 @@ import (
 var ErrInvalidCredentials = errors.New("invalid email or password")
 
 type Service struct {
-	repo Repository
+	repo          Repository
+	keyLimits     rateLimiter
+	invalidLimits rateLimiter
 }
 
 func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+	return &Service{repo: repo, keyLimits: rateLimiter{now: time.Now}, invalidLimits: rateLimiter{now: time.Now}}
 }
 
 func toUserResponse(user *User) *UserResponse {

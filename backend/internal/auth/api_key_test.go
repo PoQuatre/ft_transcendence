@@ -2,7 +2,9 @@ package auth
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -145,7 +147,8 @@ func TestAPIKeyAuthenticatesMe(t *testing.T) {
 	sessions := scs.New()
 	e := echo.New()
 	e.Use(echo.WrapMiddleware(sessions.LoadAndSave))
-	RegisterRoutes(e.Group("/api/auth"), NewService(repo), sessions, nil, nil)
+	service := NewService(repo)
+	RegisterRoutes(e.Group("/api/auth"), service, sessions, nil, nil)
 	ctx, err := sessions.Load(t.Context(), "")
 	if err != nil {
 		t.Fatal(err)
@@ -234,5 +237,120 @@ func TestAPIKeyAuthenticatesMe(t *testing.T) {
 	}
 	if rec := request(http.MethodGet, "/api/auth/me", []string{key.Secret}, ""); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("deleted key: %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestAPIKeyRateLimit(t *testing.T) {
+	repo := newMockRepository()
+	id := uuid.New()
+	repo.users["alice"] = &User{ID: id, Verified: true}
+	sessions := scs.New()
+	e := echo.New()
+	e.Use(echo.WrapMiddleware(sessions.LoadAndSave))
+	service := NewService(repo)
+	now := time.Now()
+	service.keyLimits.now = func() time.Time { return now }
+	RegisterRoutes(e.Group("/api/auth"), service, sessions, nil, nil)
+	ctx, err := sessions.Load(t.Context(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sessions.Put(ctx, "user_id", id.String())
+	token, _, err := sessions.Commit(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/auth/api-key", nil)
+	req.AddCookie(&http.Cookie{Name: sessions.Cookie.Name, Value: token})
+	created := httptest.NewRecorder()
+	e.ServeHTTP(created, req)
+	var key struct {
+		Secret string `json:"key"`
+	}
+	if created.Code != http.StatusCreated {
+		t.Fatalf("create: %d %s", created.Code, created.Body.String())
+	}
+	if err := json.Unmarshal(created.Body.Bytes(), &key); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 61; i++ {
+		if i == 1 {
+			now = now.Add(30 * time.Second)
+		}
+		req = httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/auth/me", nil)
+		req.Header.Set("X-API-Key", key.Secret)
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, req)
+		want := http.StatusOK
+		if i == 60 {
+			want = http.StatusTooManyRequests
+		}
+		if rec.Code != want {
+			t.Fatalf("request %d: got %d, want %d", i+1, rec.Code, want)
+		}
+	}
+	now = now.Add(30 * time.Second)
+	req = httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/auth/me", nil)
+	req.Header.Set("X-API-Key", key.Secret)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("rejected requests should count toward the rolling limit: got %d", rec.Code)
+	}
+	now = now.Add(time.Minute)
+	req = httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/auth/me", nil)
+	req.Header.Set("X-API-Key", key.Secret)
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("window should expire: got %d", rec.Code)
+	}
+}
+
+func TestInvalidAPIKeyRateLimit(t *testing.T) {
+	repo := newMockRepository()
+	id := uuid.New()
+	repo.users["alice"] = &User{ID: id, Verified: true}
+	secret := strings.Repeat("b", 64)
+	hash := sha256.Sum256([]byte(secret))
+	repo.apiKeys[id] = &APIKey{UserID: id, KeyHash: hex.EncodeToString(hash[:])}
+	sessions := scs.New()
+	e := echo.New()
+	e.Use(echo.WrapMiddleware(sessions.LoadAndSave))
+	service := NewService(repo)
+	now := time.Now()
+	service.invalidLimits.now = func() time.Time { return now }
+	RegisterRoutes(e.Group("/api/auth"), service, sessions, nil, nil)
+	request := func(ip, key string) int {
+		t.Helper()
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/auth/me", nil)
+		req.RemoteAddr = ip + ":1234"
+		req.Header.Set("X-API-Key", key)
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	for i := 0; i < 61; i++ {
+		key := "malformed"
+		if i%2 == 0 {
+			key = strings.Repeat("a", 64)
+		}
+		want := http.StatusUnauthorized
+		if i == 60 {
+			want = http.StatusTooManyRequests
+		}
+		if got := request("192.0.2.1", key); got != want {
+			t.Fatalf("invalid attempt %d: got %d, want %d", i+1, got, want)
+		}
+	}
+	if got := request("192.0.2.2", "invalid"); got != http.StatusUnauthorized {
+		t.Fatalf("other IP: got %d", got)
+	}
+	if got := request("192.0.2.1", secret); got != http.StatusOK {
+		t.Fatalf("valid key from rate-limited IP: got %d", got)
+	}
+	now = now.Add(time.Minute)
+	if got := request("192.0.2.1", "invalid"); got != http.StatusUnauthorized {
+		t.Fatalf("window should expire: got %d", got)
 	}
 }

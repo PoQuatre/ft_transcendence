@@ -49,20 +49,33 @@ func middleware(sessions *scs.SessionManager, service *Service, access Access, a
 			values, hasKey := c.Request().Header[http.CanonicalHeaderKey("X-API-Key")]
 			switch {
 			case hasKey:
-				if !allowAPIKey || len(values) != 1 || len(values[0]) != 64 {
+				if !allowAPIKey {
 					return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 				}
 				if service == nil {
 					return echo.NewHTTPError(http.StatusInternalServerError, "authentication service unavailable")
 				}
-				hash := sha256.Sum256([]byte(values[0]))
-				var err error
-				id, err = service.repo.UseAPIKey(ctx, hex.EncodeToString(hash[:]))
-				if errors.Is(err, sql.ErrNoRows) {
+				invalidKey := func() error {
+					if !service.invalidLimits.allow(c.RealIP()) {
+						return echo.NewHTTPError(http.StatusTooManyRequests, "too many requests")
+					}
 					return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+				}
+				if len(values) != 1 || len(values[0]) != 64 {
+					return invalidKey()
+				}
+				hash := sha256.Sum256([]byte(values[0]))
+				keyHash := hex.EncodeToString(hash[:])
+				var err error
+				id, err = service.repo.UseAPIKey(ctx, keyHash)
+				if errors.Is(err, sql.ErrNoRows) {
+					return invalidKey()
 				}
 				if err != nil {
 					return err
+				}
+				if !service.keyLimits.allow(keyHash) {
+					return echo.NewHTTPError(http.StatusTooManyRequests, "too many requests")
 				}
 			case !sessions.Exists(ctx, "user_id"):
 				if access != AnonymousAllowed {

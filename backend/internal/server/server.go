@@ -4,6 +4,12 @@
 // @version         1.0
 // @description     Backend API for ft_transcendence
 // @BasePath        /
+// @securityDefinitions.apikey APIKeyAuth
+// @in header
+// @name X-API-Key
+// @securityDefinitions.apikey SessionCookie
+// @in header
+// @name Cookie
 package server
 
 import (

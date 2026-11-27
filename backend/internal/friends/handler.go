@@ -146,13 +146,16 @@ func (h *handler) declineRequest(c *echo.Context) error {
 
 // getFriendRequestsList godoc
 // @Summary      List Requests
-// @Description  Requires the session cookie from login. Lists the friend requests
+// @Description  Requires a verified account and accepts the login session cookie or X-API-Key. A supplied key takes precedence over the session.
 // @Tags         Friends
 // @Produce      json
+// @Security     SessionCookie
+// @Security     APIKeyAuth
 // @Param        request query GetListPageRequest false "Page index"
 // @Success      200 {object} friends.FriendRequestsListResponse
 // @Failure      401 {object} map[string]string "unauthorized"
 // @Failure      403 {object} map[string]string "you need to verify your email"
+// @Failure      429 {object} map[string]string "API key rate limit exceeded"
 // @Router       /api/friends/requests/list [get].
 func (h *handler) getFriendRequestsList(c *echo.Context) error {
 	ctx := c.Request().Context()
@@ -173,13 +176,16 @@ func (h *handler) getFriendRequestsList(c *echo.Context) error {
 
 // getFriendsList godoc
 // @Summary      List Friends
-// @Description  Requires the session cookie from login. Lists the friends
+// @Description  Requires a verified account and accepts the login session cookie or X-API-Key. A supplied key takes precedence over the session.
 // @Tags         Friends
 // @Produce      json
+// @Security     SessionCookie
+// @Security     APIKeyAuth
 // @Param        request query GetListPageRequest false "Page index"
 // @Success      200 {object} friends.FriendRelationListResponse
 // @Failure      401 {object} map[string]string "unauthorized"
 // @Failure      403 {object} map[string]string "you need to verify your email"
+// @Failure      429 {object} map[string]string "API key rate limit exceeded"
 // @Router       /api/friends/list [get].
 func (h *handler) getFriendsList(c *echo.Context) error {
 	ctx := c.Request().Context()
