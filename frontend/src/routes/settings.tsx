@@ -2,6 +2,7 @@ import { Title } from '@solidjs/meta';
 import { useNavigate, useSearchParams } from '@solidjs/router';
 import { createEffect, Show } from 'solid-js';
 
+import { ApiAccess } from '~/components/settings/ApiAccess';
 import { ControlsForm } from '~/components/settings/ControlsForm';
 import { DataExport } from '~/components/settings/DataExport';
 import { DeleteAccount } from '~/components/settings/DeleteAccount';
@@ -20,11 +21,13 @@ import {
 import { currentUser } from '~/lib/auth';
 import { paths } from '~/router';
 
-// Page réservée aux pilotes connectés : paramètres du compte (OPERATOR) et
-// touches du jeu (COMBAT).
+const TABS = ['operator', 'combat', 'api'] as const;
+
+// Page réservée aux pilotes connectés : paramètres du compte (OPERATOR),
+// touches du jeu (COMBAT) et clé de l'API publique (API).
 export default function Settings() {
   const navigate = useNavigate();
-  // ?tab=combat ouvre directement les touches (lien du lobby).
+  // ?tab=combat ou ?tab=api ouvre directement l'onglet (lien du lobby).
   const [search] = useSearchParams<{ tab: string }>();
 
   // currentUser() vaut undefined tant que la session n'est pas vérifiée (SSR,
@@ -70,12 +73,12 @@ export default function Settings() {
                     </span>
                   </h1>
                   <p class="mt-space-xs font-body-sm text-body-sm text-text-secondary">
-                    Paramètres du compte et touches du jeu.
+                    Paramètres du compte, touches du jeu et accès à l'API.
                   </p>
 
                   <Tabs
                     defaultValue={
-                      search.tab === 'combat' ? 'combat' : 'operator'
+                      TABS.find((tab) => tab === search.tab) ?? 'operator'
                     }
                     class="mt-space-lg"
                   >
@@ -85,6 +88,9 @@ export default function Settings() {
                       </TabsTrigger>
                       <TabsTrigger value="combat" class="flex-1">
                         COMBAT
+                      </TabsTrigger>
+                      <TabsTrigger value="api" class="flex-1">
+                        API
                       </TabsTrigger>
                     </TabsList>
 
@@ -100,6 +106,9 @@ export default function Settings() {
                     </TabsContent>
                     <TabsContent value="combat" class="mt-space-md">
                       <ControlsForm />
+                    </TabsContent>
+                    <TabsContent value="api" class="mt-space-md">
+                      <ApiAccess />
                     </TabsContent>
                   </Tabs>
                 </div>
