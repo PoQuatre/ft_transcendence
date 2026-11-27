@@ -11,17 +11,17 @@ import (
 )
 
 type handler struct {
-	service        *Service
-	authService    *auth.Service
-	sessionManager *scs.SessionManager
+	service     *Service
+	authService *auth.Service
 }
 
 func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.SessionManager, authService *auth.Service) {
 	h := handler{
-		service:        service,
-		authService:    authService,
-		sessionManager: sessionManager,
+		service:     service,
+		authService: authService,
 	}
+
+	group.Use(auth.Middleware(sessionManager, authService, auth.VerifiedUser))
 
 	group.POST("/requests/send", h.sendRequest)
 	group.POST("/requests/accept", h.acceptRequest)
@@ -65,14 +65,8 @@ func apiError(err error) error {
 // @Router       /api/friends/requests/send [post].
 func (h *handler) sendRequest(c *echo.Context) error {
 	ctx := c.Request().Context()
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	if userIDStr == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
-	if !canAccess {
-		return apiError(err)
-	}
+	userID, _ := auth.UserID(ctx)
+	var err error
 	var req FriendRequestRequest
 	if err = c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
@@ -107,15 +101,8 @@ func (h *handler) sendRequest(c *echo.Context) error {
 // @Router       /api/friends/requests/accept [post].
 func (h *handler) acceptRequest(c *echo.Context) error {
 	ctx := c.Request().Context()
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	if userIDStr == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-
-	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
-	if !canAccess {
-		return apiError(err)
-	}
+	userID, _ := auth.UserID(ctx)
+	var err error
 
 	var req HandleFriendRequestRequest
 	if err = c.Bind(&req); err != nil {
@@ -142,15 +129,8 @@ func (h *handler) acceptRequest(c *echo.Context) error {
 // @Router       /api/friends/requests/decline [post].
 func (h *handler) declineRequest(c *echo.Context) error {
 	ctx := c.Request().Context()
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	if userIDStr == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-
-	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
-	if !canAccess {
-		return apiError(err)
-	}
+	userID, _ := auth.UserID(ctx)
+	var err error
 
 	var req HandleFriendRequestRequest
 	if err = c.Bind(&req); err != nil {
@@ -175,15 +155,8 @@ func (h *handler) declineRequest(c *echo.Context) error {
 // @Router       /api/friends/requests/list [get].
 func (h *handler) getFriendRequestsList(c *echo.Context) error {
 	ctx := c.Request().Context()
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	if userIDStr == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-
-	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
-	if !canAccess {
-		return apiError(err)
-	}
+	userID, _ := auth.UserID(ctx)
+	var err error
 
 	var req GetListPageRequest
 	if err = c.Bind(&req); err != nil {
@@ -209,15 +182,8 @@ func (h *handler) getFriendRequestsList(c *echo.Context) error {
 // @Router       /api/friends/list [get].
 func (h *handler) getFriendsList(c *echo.Context) error {
 	ctx := c.Request().Context()
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	if userIDStr == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-
-	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
-	if !canAccess {
-		return apiError(err)
-	}
+	userID, _ := auth.UserID(ctx)
+	var err error
 
 	var req GetListPageRequest
 	if err = c.Bind(&req); err != nil {
@@ -245,15 +211,8 @@ func (h *handler) getFriendsList(c *echo.Context) error {
 // @Router       /api/friends/unfriend [post].
 func (h *handler) unfriendFriend(c *echo.Context) error {
 	ctx := c.Request().Context()
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	if userIDStr == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-
-	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
-	if !canAccess {
-		return apiError(err)
-	}
+	userID, _ := auth.UserID(ctx)
+	var err error
 
 	var req UnfriendRequest
 	if err = c.Bind(&req); err != nil {
@@ -280,15 +239,8 @@ func (h *handler) unfriendFriend(c *echo.Context) error {
 // @Router       /api/friends/chat/send-message [post].
 func (h *handler) sendMessage(c *echo.Context) error {
 	ctx := c.Request().Context()
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	if userIDStr == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-
-	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
-	if !canAccess {
-		return apiError(err)
-	}
+	userID, _ := auth.UserID(ctx)
+	var err error
 
 	var req SendMessageRequest
 	if err = c.Bind(&req); err != nil {
@@ -315,15 +267,8 @@ func (h *handler) sendMessage(c *echo.Context) error {
 // @Router       /api/friends/chat/get-messages [get].
 func (h *handler) getMessages(c *echo.Context) error {
 	ctx := c.Request().Context()
-	userIDStr := h.sessionManager.GetString(ctx, "user_id")
-	if userIDStr == "" {
-		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
-	}
-
-	canAccess, userID, err := h.service.CanAccessFriendStuffes(c, h.authService, userIDStr)
-	if !canAccess {
-		return apiError(err)
-	}
+	userID, _ := auth.UserID(ctx)
+	var err error
 
 	var req GetMessagesRequest
 	if err = c.Bind(&req); err != nil {

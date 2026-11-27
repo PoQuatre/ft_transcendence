@@ -7,14 +7,16 @@
 package server
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/alexedwards/scs/bunstore"
 	"github.com/alexedwards/scs/v2"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
@@ -73,12 +75,99 @@ func (k *keyedLocks) lock(key string) func() {
 
 type Option func(*config)
 
+type sessionStore struct {
+	*bunstore.BunStore
+	db *bun.DB
+}
+
+// BunStore.FindCtx treats query errors as missing sessions when the count is zero.
+func (s *sessionStore) FindCtx(ctx context.Context, token string) ([]byte, bool, error) {
+	var data []byte
+	err := s.db.NewSelect().Table("sessions").Column("data").
+		Where("token = ? AND expiry >= ?", token, time.Now()).Scan(ctx, &data)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, false, nil
+	}
+	return data, err == nil, err
+}
+
 func WithDatabase(database *bun.DB) Option {
 	return func(config *config) { config.database = database }
 }
 
 func WithWebRTC(webrtcServer *webrtc.Server) Option {
 	return func(config *config) { config.webrtc = webrtcServer }
+}
+
+func newSessionManager(database *bun.DB) (*scs.SessionManager, error) {
+	manager := scs.New()
+	manager.HashTokenInStore = true
+	manager.Cookie.Persist = false
+	manager.Cookie.SameSite = http.SameSiteLaxMode
+	manager.Cookie.Secure = true
+	if database != nil {
+		store, err := bunstore.New(database)
+		if err != nil {
+			return nil, fmt.Errorf("create session store: %w", err)
+		}
+		manager.Store = &sessionStore{BunStore: store, db: database}
+	}
+	return manager, nil
+}
+
+func setupSessionMiddleware(e *echo.Echo, sessionManager *scs.SessionManager) {
+	var sessionLocks, accountLocks keyedLocks
+	needsLock := func(path string) bool {
+		return path == webrtcPrefix+webrtc.OfferPath || path == authPrefix+auth.LogoutPath
+	}
+
+	// Serialize requests for the same session so logout cannot be undone by a stale save.
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			if cookie, err := c.Request().Cookie(sessionManager.Cookie.Name); err == nil && cookie.Value != "" {
+				unlock := sessionLocks.lock(cookie.Value)
+				defer unlock()
+			}
+			return next(c)
+		}
+	})
+
+	e.Use(echo.WrapMiddleware(sessionManager.LoadAndSave))
+
+	// Apply the inactivity limit selected at login and refresh it on activity.
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			ctx := c.Request().Context()
+			if sessionManager.Exists(ctx, "user_id") {
+				idle := time.Hour
+				if sessionManager.GetBool(ctx, "stay_signed_in") {
+					idle = 30 * 24 * time.Hour
+				}
+				now := time.Now()
+				if now.Sub(time.Unix(0, sessionManager.GetInt64(ctx, "last_activity"))) >= idle {
+					if err := sessionManager.Destroy(ctx); err != nil {
+						return err
+					}
+				} else {
+					sessionManager.Put(ctx, "last_activity", now.UnixNano())
+				}
+			}
+			return next(c)
+		}
+	})
+
+	// Coordinate logout and WebRTC offers across an account's sessions.
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			if needsLock(c.Request().URL.Path) {
+				if id := sessionManager.GetString(c.Request().Context(), "user_id"); id != "" {
+					unlock := accountLocks.lock(id)
+					defer unlock()
+				}
+			}
+			return next(c)
+		}
+	})
 }
 
 func New(options ...Option) (http.Handler, error) {
@@ -94,40 +183,11 @@ func New(options ...Option) (http.Handler, error) {
 	e.Use(middleware.RequestLogger())
 	e.Use(middleware.Recover())
 
-	sessionManager := scs.New()
-	sessionManager.IdleTimeout = 1 * time.Hour
-	sessionManager.Cookie.Persist = false
-	sessionManager.Cookie.SameSite = http.SameSiteLaxMode
-	sessionManager.Cookie.Secure = true
-
-	// Lock before loading a session, then by account to cover multiple sessions.
-	var sessionLocks, accountLocks keyedLocks
-	needsLock := func(path string) bool {
-		return path == webrtcPrefix+webrtc.OfferPath || path == authPrefix+auth.LogoutPath
+	sessionManager, sessionErr := newSessionManager(cfg.database)
+	if sessionErr != nil {
+		return nil, sessionErr
 	}
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c *echo.Context) error {
-			if needsLock(c.Request().URL.Path) {
-				if cookie, err := c.Request().Cookie(sessionManager.Cookie.Name); err == nil && cookie.Value != "" {
-					unlock := sessionLocks.lock(cookie.Value)
-					defer unlock()
-				}
-			}
-			return next(c)
-		}
-	})
-	e.Use(echo.WrapMiddleware(sessionManager.LoadAndSave))
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c *echo.Context) error {
-			if needsLock(c.Request().URL.Path) {
-				if id := sessionManager.GetString(c.Request().Context(), "user_id"); id != "" {
-					unlock := accountLocks.lock(id)
-					defer unlock()
-				}
-			}
-			return next(c)
-		}
-	})
+	setupSessionMiddleware(e, sessionManager)
 
 	validat, err := helpers.NewCustomValidator()
 	if err != nil {
@@ -155,13 +215,12 @@ func New(options ...Option) (http.Handler, error) {
 		friends.RegisterRoutes(e.Group("/api/friends"), friends.NewService(friends.NewRepository(cfg.database)), sessionManager, authService)
 	}
 	if cfg.webrtc != nil {
-		webrtc.RegisterRoutes(e.Group(webrtcPrefix), cfg.webrtc, func(r *http.Request) (webrtc.Identity, error) {
-			_, cookieErr := r.Cookie(sessionManager.Cookie.Name)
-			if errors.Is(cookieErr, http.ErrNoCookie) && r.Header.Get("Authorization") == "" {
+		webrtc.RegisterRoutes(e.Group(webrtcPrefix, auth.Middleware(sessionManager, nil, auth.AnonymousAllowed)), cfg.webrtc, func(r *http.Request) (webrtc.Identity, error) {
+			id, ok := auth.UserID(r.Context())
+			if !ok {
 				return webrtc.Identity{}, nil
 			}
-			id, err := uuid.Parse(sessionManager.GetString(r.Context(), "user_id"))
-			if err != nil || cfg.database == nil || r.Header.Get("Authorization") != "" {
+			if cfg.database == nil {
 				return webrtc.Identity{}, echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired credentials")
 			}
 			user, err := auth.NewService(auth.NewRepository(cfg.database)).GetUserByID(r.Context(), id)

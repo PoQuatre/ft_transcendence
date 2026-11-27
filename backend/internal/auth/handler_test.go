@@ -20,7 +20,6 @@ func setupTestServer(t *testing.T, onLogout func(string)) (*echo.Echo, *scs.Sess
 	svc := NewService(repo)
 
 	sessionManager := scs.New()
-	sessionManager.IdleTimeout = 1 * time.Hour
 	sessionManager.Cookie.Persist = false
 
 	group := e.Group("/auth")
@@ -119,6 +118,13 @@ func TestHandler_LoginAndMeFlow(t *testing.T) {
 	if sessionCookie == nil || sessionCookie.Value == "" {
 		t.Fatal("expected SCS session cookie to be set")
 	}
+	ctx, err := sm.Load(t.Context(), sessionCookie.Value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if remaining := time.Until(sm.Deadline(ctx)); remaining < 23*time.Hour || remaining > 24*time.Hour {
+		t.Fatalf("ordinary session deadline remaining = %v", remaining)
+	}
 
 	req = httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/auth/me", nil)
 	req.AddCookie(sessionCookie)
@@ -162,4 +168,32 @@ func TestHandler_LoginAndMeFlow(t *testing.T) {
 	if recAfterLogout.Code != http.StatusUnauthorized {
 		t.Errorf("expected /me after logout to return 401, got %d", recAfterLogout.Code)
 	}
+}
+
+func TestLoginStaySignedInCookie(t *testing.T) {
+	e, sm := setupTestServer(t, nil)
+	signup := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/auth/signup", strings.NewReader(`{"username":"alice","email":"alice@example.com","password":"SuperPassword123!"}`))
+	signup.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	e.ServeHTTP(httptest.NewRecorder(), signup)
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/auth/login", strings.NewReader(`{"email":"alice@example.com","password":"SuperPassword123!","staySignedIn":true}`))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("login: %d: %s", rec.Code, rec.Body.String())
+	}
+	for _, cookie := range rec.Result().Cookies() {
+		if cookie.Name == sm.Cookie.Name && cookie.Expires.After(time.Now().Add(89*24*time.Hour)) {
+			ctx, err := sm.Load(t.Context(), cookie.Value)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if remaining := time.Until(sm.Deadline(ctx)); remaining < 89*24*time.Hour || remaining > 90*24*time.Hour {
+				t.Fatalf("persistent session deadline remaining = %v", remaining)
+			}
+			return
+		}
+	}
+	t.Fatal("expected persistent session cookie lasting up to 90 days")
 }
