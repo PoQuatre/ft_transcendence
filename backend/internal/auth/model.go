@@ -9,6 +9,17 @@ import (
 )
 
 //nolint:govet // Field order follows the database column order.
+type APIKey struct {
+	bun.BaseModel `bun:"table:api_keys,alias:ak" json:"-"`
+
+	UserID     uuid.UUID  `bun:",type:uuid,pk" json:"-"`
+	KeyHash    string     `bun:",notnull,unique" json:"-"`
+	Prefix     string     `bun:",notnull" json:"prefix"`
+	CreatedAt  time.Time  `bun:",notnull,default:current_timestamp" json:"created_at"`
+	LastUsedAt *time.Time `bun:",nullzero" json:"last_used_at"`
+}
+
+//nolint:govet // Field order follows the database column order.
 type PasswordResetToken struct {
 	bun.BaseModel `bun:"table:password_reset_tokens,alias:prt"`
 

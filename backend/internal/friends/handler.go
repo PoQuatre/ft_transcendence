@@ -21,17 +21,18 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 		authService: authService,
 	}
 
-	group.Use(auth.Middleware(sessionManager, authService, auth.VerifiedUser))
+	session := group.Group("", auth.Middleware(sessionManager, authService, auth.VerifiedUser))
+	keyOrSession := group.Group("", auth.APIKeyMiddleware(sessionManager, authService, auth.VerifiedUser))
 
-	group.POST("/requests/send", h.sendRequest)
-	group.POST("/requests/accept", h.acceptRequest)
-	group.POST("/requests/decline", h.declineRequest)
-	group.POST("/unfriend", h.unfriendFriend)
-	group.GET("/requests/list", h.getFriendRequestsList)
-	group.GET("/list", h.getFriendsList)
+	session.POST("/requests/send", h.sendRequest)
+	session.POST("/requests/accept", h.acceptRequest)
+	session.POST("/requests/decline", h.declineRequest)
+	session.POST("/unfriend", h.unfriendFriend)
+	keyOrSession.GET("/requests/list", h.getFriendRequestsList)
+	keyOrSession.GET("/list", h.getFriendsList)
 
-	group.POST("/chat/send-message", h.sendMessage)
-	group.GET("/chat/get-messages", h.getMessages)
+	session.POST("/chat/send-message", h.sendMessage)
+	session.GET("/chat/get-messages", h.getMessages)
 }
 
 func apiError(err error) error {
@@ -145,13 +146,17 @@ func (h *handler) declineRequest(c *echo.Context) error {
 
 // getFriendRequestsList godoc
 // @Summary      List Requests
-// @Description  Requires the session cookie from login. Lists the friend requests
+// @Description  Requires a verified account and accepts the login session cookie or X-API-Key. A supplied key takes precedence; invalid keys never fall back to the session.
+// @Description  Rolling limits: 60 API-key attempts per IP and 60 authenticated attempts per key per minute. The IP limit applies before authentication, including valid keys. Limits are in memory and reset on backend restart.
 // @Tags         Friends
 // @Produce      json
+// @Security     SessionCookie
+// @Security     APIKeyAuth
 // @Param        request query GetListPageRequest false "Page index"
 // @Success      200 {object} friends.FriendRequestsListResponse
 // @Failure      401 {object} map[string]string "unauthorized"
 // @Failure      403 {object} map[string]string "you need to verify your email"
+// @Failure      429 {object} map[string]string "API key rate limit exceeded"
 // @Router       /api/friends/requests/list [get].
 func (h *handler) getFriendRequestsList(c *echo.Context) error {
 	ctx := c.Request().Context()
@@ -172,13 +177,17 @@ func (h *handler) getFriendRequestsList(c *echo.Context) error {
 
 // getFriendsList godoc
 // @Summary      List Friends
-// @Description  Requires the session cookie from login. Lists the friends
+// @Description  Requires a verified account and accepts the login session cookie or X-API-Key. A supplied key takes precedence; invalid keys never fall back to the session.
+// @Description  Rolling limits: 60 API-key attempts per IP and 60 authenticated attempts per key per minute. The IP limit applies before authentication, including valid keys. Limits are in memory and reset on backend restart.
 // @Tags         Friends
 // @Produce      json
+// @Security     SessionCookie
+// @Security     APIKeyAuth
 // @Param        request query GetListPageRequest false "Page index"
 // @Success      200 {object} friends.FriendRelationListResponse
 // @Failure      401 {object} map[string]string "unauthorized"
 // @Failure      403 {object} map[string]string "you need to verify your email"
+// @Failure      429 {object} map[string]string "API key rate limit exceeded"
 // @Router       /api/friends/list [get].
 func (h *handler) getFriendsList(c *echo.Context) error {
 	ctx := c.Request().Context()

@@ -21,6 +21,10 @@ var (
 )
 
 type Repository interface {
+	GetAPIKey(ctx context.Context, userID uuid.UUID) (*APIKey, error)
+	SaveAPIKey(ctx context.Context, key *APIKey) error
+	DeleteAPIKey(ctx context.Context, userID uuid.UUID) error
+	UseAPIKey(ctx context.Context, hash string) (uuid.UUID, error)
 	CreateUser(ctx context.Context, user *User) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
@@ -60,6 +64,38 @@ type bunRepository struct {
 
 func NewRepository(db *bun.DB) Repository {
 	return &bunRepository{db: db}
+}
+
+func (r *bunRepository) GetAPIKey(ctx context.Context, userID uuid.UUID) (*APIKey, error) {
+	key := new(APIKey)
+	err := r.db.NewSelect().Model(key).Where("user_id = ?", userID).Scan(ctx)
+	return key, err
+}
+
+func (r *bunRepository) SaveAPIKey(ctx context.Context, key *APIKey) error {
+	_, err := r.db.NewInsert().Model(key).
+		On("CONFLICT (user_id) DO UPDATE").
+		Set("key_hash = EXCLUDED.key_hash").
+		Set("prefix = EXCLUDED.prefix").
+		Set("created_at = EXCLUDED.created_at").
+		Set("last_used_at = NULL").
+		Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) DeleteAPIKey(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().Model((*APIKey)(nil)).Where("user_id = ?", userID).Exec(ctx)
+	return err
+}
+
+func (r *bunRepository) UseAPIKey(ctx context.Context, hash string) (uuid.UUID, error) {
+	var id uuid.UUID
+	err := r.db.NewUpdate().Model((*APIKey)(nil)).
+		Set("last_used_at = current_timestamp").
+		Where("key_hash = ?", hash).
+		Returning("user_id").
+		Scan(ctx, &id)
+	return id, err
 }
 
 func (r *bunRepository) GetPasswordResetToken(ctx context.Context, tokenHash string) (*PasswordResetToken, error) {

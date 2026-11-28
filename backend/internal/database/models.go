@@ -18,6 +18,7 @@ type session struct {
 
 func Models() []any {
 	return []any{
+		(*auth.APIKey)(nil),
 		(*auth.User)(nil),
 		(*auth.UserVerify)(nil),
 		(*auth.PasswordResetToken)(nil),

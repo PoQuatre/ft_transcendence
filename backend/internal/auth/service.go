@@ -23,11 +23,38 @@ import (
 var ErrInvalidCredentials = errors.New("invalid email or password")
 
 type Service struct {
-	repo Repository
+	repo      Repository
+	keyLimits rateLimiter
+	ipLimits  rateLimiter
 }
 
 func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+	return &Service{repo: repo, keyLimits: rateLimiter{now: time.Now}, ipLimits: rateLimiter{now: time.Now}}
+}
+
+func generateSecret() (string, error) {
+	var random [32]byte
+	if _, err := rand.Read(random[:]); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(random[:]), nil
+}
+
+func hashSecret(secret string) string {
+	hash := sha256.Sum256([]byte(secret))
+	return hex.EncodeToString(hash[:])
+}
+
+func (s *Service) CreateAPIKey(ctx context.Context, id uuid.UUID) (*APIKey, string, error) {
+	secret, err := generateSecret()
+	if err != nil {
+		return nil, "", err
+	}
+	key := &APIKey{UserID: id, KeyHash: hashSecret(secret), Prefix: secret[:8], CreatedAt: time.Now().UTC()}
+	if err := s.repo.SaveAPIKey(ctx, key); err != nil {
+		return nil, "", err
+	}
+	return key, secret, nil
 }
 
 func toUserResponse(user *User) *UserResponse {
@@ -103,18 +130,14 @@ func (s *Service) SendForgotPasswordMail(ctx context.Context, user *User) error 
 		return echo.NewHTTPError(http.StatusInternalServerError, "mails are disabled")
 	}
 
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
+	rawToken, err := generateSecret()
+	if err != nil {
 		return err
 	}
-	rawToken := hex.EncodeToString(b)
-
-	h := sha256.Sum256([]byte(rawToken))
-	tokenHash := hex.EncodeToString(h[:])
 
 	reset := &PasswordResetToken{
 		UserID:    user.ID,
-		TokenHash: tokenHash,
+		TokenHash: hashSecret(rawToken),
 		ExpiresAt: time.Now().Add(15 * time.Minute),
 	}
 	if _, err := s.repo.CreatePasswordResetToken(ctx, reset); err != nil {
@@ -132,10 +155,7 @@ func (s *Service) SendForgotPasswordMail(ctx context.Context, user *User) error 
 }
 
 func (s *Service) ResetPasswordWithToken(ctx context.Context, rawToken, newPassword string) error {
-	h := sha256.Sum256([]byte(rawToken))
-	tokenHash := hex.EncodeToString(h[:])
-
-	resetToken, err := s.repo.GetPasswordResetToken(ctx, tokenHash)
+	resetToken, err := s.repo.GetPasswordResetToken(ctx, hashSecret(rawToken))
 	if err != nil {
 		return errors.New("invalid or expired token")
 	}
@@ -339,6 +359,10 @@ func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID, password 
 		return err
 	}
 	err = s.repo.DeleteFriendMessagesFromUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	err = s.repo.DeleteAPIKey(ctx, userID)
 	if err != nil {
 		return err
 	}

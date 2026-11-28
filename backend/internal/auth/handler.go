@@ -38,11 +38,15 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 
 	group.POST("/forgot-password", h.forgotPassword) // Sends the mail with the link
 	group.POST("/reset-password", h.resetPassword)   // Sent by the link in the mail
-	group.GET("/me", h.me, Middleware(sessionManager, service, AuthenticatedUser))
 
+	group.GET("/me", h.me, APIKeyMiddleware(sessionManager, service, AuthenticatedUser))
 	group.DELETE("/me", h.deleteAccount, Middleware(sessionManager, service, AuthenticatedUser))
 	group.PATCH("/me", h.changeEmailAndUsername, Middleware(sessionManager, service, AuthenticatedUser))
 	group.GET("/me/export", h.exportData, Middleware(sessionManager, service, AuthenticatedUser))
+
+	group.GET("/api-key", h.getAPIKey, Middleware(sessionManager, service, VerifiedUser))
+	group.POST("/api-key", h.createAPIKey, Middleware(sessionManager, service, VerifiedUser))
+	group.DELETE("/api-key", h.deleteAPIKey, Middleware(sessionManager, service, VerifiedUser))
 }
 
 func apiError(err error) error {
@@ -303,11 +307,15 @@ func (h *handler) logout(c *echo.Context) error {
 
 // me godoc
 // @Summary      Get current user profile
-// @Description  Requires the session cookie from login. Retrieves the user's profile from the session.
+// @Description  Accepts the login session cookie or X-API-Key. A supplied key takes precedence; invalid keys never fall back to the session.
+// @Description  Rolling limits: 60 API-key attempts per IP and 60 authenticated attempts per key per minute. The IP limit applies before authentication, including valid keys. Limits are in memory and reset on backend restart.
 // @Tags         User
 // @Produce      json
+// @Security     SessionCookie
+// @Security     APIKeyAuth
 // @Success      200 {object} auth.UserResponse
 // @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      429 {object} map[string]string "API key rate limit exceeded"
 // @Failure      500 {object} map[string]string "internal server error"
 // @Router       /api/auth/me [get].
 func (h *handler) me(c *echo.Context) error {
@@ -320,6 +328,19 @@ func (h *handler) me(c *echo.Context) error {
 	return c.JSON(http.StatusOK, userResp)
 }
 
+// deleteAccount godoc
+// @Summary      Delete your account data
+// @Description  Requires the session cookie from login. Delete User's data.
+// @Tags         User
+// @Accept       json
+// @Produce      json
+// @Param        credentials body auth.DeleteAccountRequest true "password"
+// @Success      200 {object} map[string]string "successfully deleted account."
+// @Failure      400 {object} map[string]string "invalid password"
+// @Failure      400 {object} map[string]string "invalid request body"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      500 {object} map[string]string "internal server error"
+// @Router       /api/auth/me [delete].
 func (h *handler) deleteAccount(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userID, _ := UserID(ctx)
@@ -340,6 +361,19 @@ func (h *handler) deleteAccount(c *echo.Context) error {
 	return c.JSON(http.StatusNoContent, map[string]any{"message": "successfully deleted account."})
 }
 
+// changeEmailAndUsername godoc
+// @Summary      Change profile
+// @Description  Requires the session cookie from login. Change User's mail and/or password.
+// @Tags         User
+// @Accept       json
+// @Produce      json
+// @Param        credentials body auth.PatchProfileRequest true "email and username"
+// @Success      200 {object} map[string]string "successfully updated profile."
+// @Failure      400 {object} map[string]string "invalid request body"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      409 {object} map[string]string "email or username already used"
+// @Failure      500 {object} map[string]string "internal server error"
+// @Router       /api/auth/me [patch].
 func (h *handler) changeEmailAndUsername(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userID, _ := UserID(ctx)
@@ -356,6 +390,15 @@ func (h *handler) changeEmailAndUsername(c *echo.Context) error {
 	return c.JSON(http.StatusNoContent, map[string]any{"message": "successfully updated profile."})
 }
 
+// exportData    godoc
+// @Summary      Export your account data
+// @Description  Requires the session cookie from login. Export User's data.
+// @Tags         User
+// @Produce      json
+// @Success      200 {object} auth.DataExport
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      500 {object} map[string]string "internal server error"
+// @Router       /api/auth/me/export [get].
 func (h *handler) exportData(c *echo.Context) error {
 	ctx := c.Request().Context()
 	userID, _ := UserID(ctx)
