@@ -34,6 +34,7 @@ func RegisterRoutes(group *echo.Group, service *Service, sessionManager *scs.Ses
 	group.POST(LogoutPath, h.logout, Middleware(sessionManager, service, AnonymousAllowed))
 	group.POST("/verify-email/request", h.requestEmailVerification, Middleware(sessionManager, service, AuthenticatedUser))
 	group.POST("/verify-email/confirm", h.confirmEmailVerification, Middleware(sessionManager, service, AuthenticatedUser))
+	group.POST("/verify-email/confirm-new-mail", h.confirmNewEmailVerification, Middleware(sessionManager, service, AuthenticatedUser))
 	group.POST("/change-password", h.changePassword, Middleware(sessionManager, service, AuthenticatedUser))
 
 	group.POST("/forgot-password", h.forgotPassword) // Sends the mail with the link
@@ -146,6 +147,31 @@ func (h *handler) changePassword(c *echo.Context) error {
 		return apiError(err)
 	}
 	return c.JSON(http.StatusOK, map[string]string{"message": "password successfully changed."})
+}
+
+// confirmEmailVerification godoc
+// @Summary      Confirm email verification
+// @Description  Requires the session cookie from login. Validates the user's email using the verification code sent by email.
+// @Tags         Verification
+// @Accept       json
+// @Produce      json
+// @Param        request body auth.MailVerificationRequest true "Verification code"
+// @Success      200 {object} map[string]string "user email successfully validated"
+// @Failure      400 {object} map[string]string "invalid request body or verification code"
+// @Failure      401 {object} map[string]string "unauthorized"
+// @Failure      500 {object} map[string]string "invalid session user id or internal server error"
+// @Router       /api/auth/verify-email/confirm [post].
+func (h *handler) confirmNewEmailVerification(c *echo.Context) error {
+	ctx := c.Request().Context()
+	var req MailVerificationRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+	userID, _ := UserID(ctx)
+	if err := h.service.CheckNewMailVerification(ctx, userID, req.Code); err != nil {
+		return apiError(err)
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "user email successfully validated"})
 }
 
 // confirmEmailVerification godoc

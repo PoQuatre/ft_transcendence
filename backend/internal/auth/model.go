@@ -40,6 +40,16 @@ func (u *PasswordResetToken) BeforeAppendModel(_ context.Context, query bun.Quer
 }
 
 //nolint:govet // Field order follows the database column order.
+type NewMailVerify struct {
+	bun.BaseModel `bun:"table:new_mail_verifications,alias:nmv"`
+
+	UserID uuid.UUID `bun:",type:uuid,pk"`
+	Code   string    `bun:",notnull"`
+	Email  string    `bun:",notnull"`
+	EndsAt time.Time `bun:",nullzero,notnull"`
+}
+
+//nolint:govet // Field order follows the database column order.
 type UserVerify struct {
 	bun.BaseModel `bun:"table:user_verifications,alias:uv"`
 

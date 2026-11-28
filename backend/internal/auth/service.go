@@ -373,6 +373,64 @@ func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID, password 
 	return s.SendDeleteMail(ctx, user)
 }
 
+func (s *Service) RequestMailChange(ctx context.Context, userID uuid.UUID, email string) error {
+	if os.Getenv("HOSTNAME") == "" {
+
+		if err := s.repo.UpdateEmail(ctx, userID, email); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		return s.repo.MarkEmailAsVerified(ctx, userID)
+	}
+
+	code, err := generateCodeForMailVerif()
+	if err != nil {
+		return err
+	}
+	userVerif := &NewMailVerify{
+		UserID: userID,
+		Code:   code,
+		Email:  email,
+	}
+
+	mailContent := createMailVerificationMail(code)
+	if _, err = s.repo.CreateNewMailVerification(ctx, userVerif); err != nil {
+		return err
+	}
+	// remplacer transcendence@transcendence par le vrai mail une fois quon a un mail bien setup
+	if err := SendMail(ctx, email, "transcendence@transcendence.com", "Your verification code - ft_transcendence", mailContent); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) CheckNewMailVerification(ctx context.Context, userID uuid.UUID, code string) error {
+	verif, err := s.repo.GetNewMailVerificationByID(ctx, userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "user does not exist")
+	}
+	if verif.EndsAt.Before(time.Now()) {
+		return echo.NewHTTPError(http.StatusBadRequest, "timeout")
+	}
+	if verif.Code != code {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid code")
+	}
+	// Check a nouveau les conflits de mail au cas ou entre temps l'email ne soit plus utilisable somehow
+	_, err = s.repo.GetUserByEmail(ctx, verif.Email)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	} else if err == nil {
+		return ErrEmailAlreadyExists
+	}
+	if err := s.repo.UpdateEmail(ctx, userID, verif.Email); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	if err := s.repo.MarkEmailAsVerified(ctx, userID); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return nil
+}
+
 func (s *Service) UpdateProfile(ctx context.Context, userID uuid.UUID, email, username string) error {
 	user, err := s.GetUserByID(ctx, userID)
 	if err != nil {
@@ -389,10 +447,14 @@ func (s *Service) UpdateProfile(ctx context.Context, userID uuid.UUID, email, us
 			return ErrEmailAlreadyExists
 		}
 
-		err = s.repo.UpdateEmail(ctx, userID, email)
+		err = s.RequestMailChange(ctx, userID, email)
 		if err != nil {
 			return err
 		}
+		// err = s.repo.UpdateEmail(ctx, userID, email)
+		// if err != nil {
+		// 	return err
+		// }
 	}
 	if username != "" && user.Username != username {
 		// Checks that the username is not already used.

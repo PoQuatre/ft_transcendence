@@ -34,6 +34,8 @@ type Repository interface {
 
 	GetUserVerificationByID(ctx context.Context, id uuid.UUID) (*UserVerify, error)
 	CreateUserVerification(ctx context.Context, user *UserVerify) (*UserVerify, error)
+	GetNewMailVerificationByID(ctx context.Context, id uuid.UUID) (*NewMailVerify, error)
+	CreateNewMailVerification(ctx context.Context, user *NewMailVerify) (*NewMailVerify, error)
 
 	MarkEmailAsVerified(ctx context.Context, UserID uuid.UUID) error
 
@@ -198,6 +200,33 @@ func (r *bunRepository) SetNewPasswordToUser(ctx context.Context, user *User, pa
 		Exec(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update user password in database: %w", err)
+	}
+	return user, nil
+}
+
+func (r *bunRepository) GetNewMailVerificationByID(ctx context.Context, id uuid.UUID) (*NewMailVerify, error) {
+	verif := new(NewMailVerify)
+	err := r.db.NewSelect().Model(verif).Where("user_id = ?", id).Scan(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return verif, nil
+}
+
+func (r *bunRepository) CreateNewMailVerification(ctx context.Context, user *NewMailVerify) (*NewMailVerify, error) {
+	_, err := r.db.NewInsert().
+		Model(user).
+		On("CONFLICT (user_id) DO UPDATE").
+		Set("code = EXCLUDED.code").
+		Set("email = EXCLUDED.email").
+		Set("ends_at = EXCLUDED.ends_at").
+		Returning("*").
+		Exec(ctx)
+	if err != nil {
+		return nil, err
 	}
 	return user, nil
 }
