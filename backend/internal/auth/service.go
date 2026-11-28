@@ -342,6 +342,10 @@ func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID, password 
 	if err != nil {
 		return err
 	}
+	err = s.repo.DeleteNewMailVerification(ctx, userID)
+	if err != nil {
+		return err
+	}
 	err = s.repo.DeleteEmailVerifToken(ctx, userID)
 	if err != nil {
 		return err

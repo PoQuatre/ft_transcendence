@@ -36,6 +36,7 @@ type Repository interface {
 	CreateUserVerification(ctx context.Context, user *UserVerify) (*UserVerify, error)
 	GetNewMailVerificationByID(ctx context.Context, id uuid.UUID) (*NewMailVerify, error)
 	CreateNewMailVerification(ctx context.Context, user *NewMailVerify) (*NewMailVerify, error)
+	DeleteNewMailVerification(ctx context.Context, id uuid.UUID) error
 
 	MarkEmailAsVerified(ctx context.Context, UserID uuid.UUID) error
 
@@ -214,6 +215,11 @@ func (r *bunRepository) GetNewMailVerificationByID(ctx context.Context, id uuid.
 		return nil, err
 	}
 	return verif, nil
+}
+
+func (r *bunRepository) DeleteNewMailVerification(ctx context.Context, userID uuid.UUID) error {
+	_, err := r.db.NewDelete().Table("new_mail_verifications").Where("user_id = ?", userID).Exec(ctx)
+	return err
 }
 
 func (r *bunRepository) CreateNewMailVerification(ctx context.Context, user *NewMailVerify) (*NewMailVerify, error) {
