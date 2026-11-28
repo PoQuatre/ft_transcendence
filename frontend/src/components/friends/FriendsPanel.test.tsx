@@ -5,6 +5,10 @@ import { setCurrentUser } from '~/lib/auth';
 
 import { FriendsPanel } from './FriendsPanel';
 
+vi.mock('~/context/WebRTCContext', () => ({
+  useWebRTC: () => ({ channels: () => ({}) }),
+}));
+
 vi.mock('~/router', () => ({
   paths: { settings: () => '/settings' },
 }));
