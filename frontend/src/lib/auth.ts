@@ -288,12 +288,25 @@ export async function sendAuthenticated(
   return result;
 }
 
-export async function getAuthenticated(
+// Comme sendAuthenticated, mais renvoie aussi le corps JSON de la réponse
+// (null pour un 204).
+export async function requestAuthenticated(
+  method: 'GET' | Method,
   path: string,
+  payload?: object,
 ): Promise<{ ok: true; data: unknown } | Extract<AuthResult, { ok: false }>> {
   try {
-    const res = await fetch(path, { credentials: 'include' });
-    if (res.ok) return { ok: true, data: await res.json() };
+    const res = await fetch(path, {
+      method,
+      credentials: 'include',
+      ...(payload && {
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }),
+    });
+    if (res.ok) {
+      return { ok: true, data: res.status === 204 ? null : await res.json() };
+    }
     const error = toError(res.status, await readMessage(res));
     await refreshSession();
     return error;
@@ -301,6 +314,9 @@ export async function getAuthenticated(
     return UPLINK_LOST;
   }
 }
+
+export const getAuthenticated = (path: string) =>
+  requestAuthenticated('GET', path);
 
 // 2. Récupération du profil connecté via /api/auth/me
 export async function getMe(): Promise<AuthUser | null> {
