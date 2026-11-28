@@ -362,6 +362,10 @@ func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID, password 
 	if err != nil {
 		return err
 	}
+	err = s.repo.DeleteAPIKey(ctx, userID)
+	if err != nil {
+		return err
+	}
 	err = s.repo.DeleteUser(ctx, userID)
 	if err != nil {
 		return err

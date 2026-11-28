@@ -1,1 +1,3 @@
-DROP TABLE api_keys;
+SET statement_timeout = 0;
+
+DROP TABLE public.api_keys;
