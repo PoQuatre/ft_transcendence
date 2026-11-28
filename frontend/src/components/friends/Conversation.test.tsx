@@ -1,4 +1,5 @@
-import { cleanup, fireEvent, render } from '@solidjs/testing-library';
+import { cleanup, fireEvent, render, waitFor } from '@solidjs/testing-library';
+import { createRoot, createSignal } from 'solid-js';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { setCurrentUser } from '~/lib/auth';
@@ -7,6 +8,26 @@ import { Conversation } from './Conversation';
 
 const me = { id: '1', username: 'NEXUS_VIPER', email: 'nexus@example.com' };
 const ghost = { username: 'ghost', friend_id: 'f1' };
+
+const [channels, setChannels] = createRoot(() =>
+  createSignal<Partial<{ control: RTCDataChannel }>>({}),
+);
+vi.mock('~/context/WebRTCContext', () => ({ useWebRTC: () => ({ channels }) }));
+
+class Channel extends EventTarget {
+  readyState: RTCDataChannelState = 'connecting';
+
+  open() {
+    this.readyState = 'open';
+    this.dispatchEvent(new Event('open'));
+  }
+
+  message(data: unknown) {
+    this.dispatchEvent(
+      new MessageEvent('message', { data: JSON.stringify(data) }),
+    );
+  }
+}
 
 function json(body: unknown, status: number) {
   return new Response(JSON.stringify(body), { status });
@@ -31,6 +52,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   setCurrentUser(undefined);
+  setChannels({});
 });
 
 describe('<Conversation />', () => {
@@ -100,9 +122,12 @@ describe('<Conversation />', () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
-  test('reloads the conversation every few seconds', async () => {
+  test('reloads only for messages from the current friend, not on a timer', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     setCurrentUser(me);
+    const channel = new Channel();
+    channel.readyState = 'open';
+    setChannels({ control: channel as unknown as RTCDataChannel });
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(json({ messages: [] }, 200))
@@ -115,10 +140,95 @@ describe('<Conversation />', () => {
     ));
     await view.findByText('Pas encore de messages, dis bonjour.');
 
-    vi.advanceTimersByTime(3000);
+    vi.advanceTimersByTime(9000);
+    channel.message({
+      type: 'PrivateMessage',
+      senderId: 'other',
+      message: 'hi',
+    });
+    channel.message({ type: 'LobbyState' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    channel.message({
+      type: 'PrivateMessage',
+      senderId: 'f1',
+      message: 't la ?',
+    });
 
     expect(await view.findByText('t la ?')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  test('refreshes on reconnect and ignores the old channel', async () => {
+    setCurrentUser(me);
+    const first = new Channel();
+    first.readyState = 'open';
+    setChannels({ control: first as unknown as RTCDataChannel });
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(json({ messages: [] }, 200))
+      .mockResolvedValueOnce(
+        json({ messages: [said('missed', 'f1', '4')] }, 200),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    const view = render(() => (
+      <Conversation friend={ghost} onBack={vi.fn<() => void>()} />
+    ));
+    await view.findByText('Pas encore de messages, dis bonjour.');
+
+    setChannels({});
+    const second = new Channel();
+    const listen = vi.spyOn(second, 'addEventListener');
+    setChannels({ control: second as unknown as RTCDataChannel });
+    await waitFor(() => expect(listen).toHaveBeenCalled());
+    first.message({ type: 'PrivateMessage', senderId: 'f1', message: 'old' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    second.open();
+
+    expect(await view.findByText('missed')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    view.unmount();
+    second.message({ type: 'PrivateMessage', senderId: 'f1', message: 'late' });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  test('keeps the newest conversation when refresh responses arrive out of order', async () => {
+    setCurrentUser(me);
+    const channel = new Channel();
+    channel.readyState = 'open';
+    setChannels({ control: channel as unknown as RTCDataChannel });
+    let resolveOld!: (response: Response) => void;
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(json({ messages: [] }, 200))
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveOld = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(
+        json({ messages: [said('newest', 'f1', '4')] }, 200),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    const view = render(() => (
+      <Conversation friend={ghost} onBack={vi.fn<() => void>()} />
+    ));
+    await view.findByText('Pas encore de messages, dis bonjour.');
+    channel.message({
+      type: 'PrivateMessage',
+      senderId: 'f1',
+      message: 'first',
+    });
+    channel.message({
+      type: 'PrivateMessage',
+      senderId: 'f1',
+      message: 'second',
+    });
+    expect(await view.findByText('newest')).toBeInTheDocument();
+    resolveOld(json({ messages: [said('stale', 'f1', '3')] }, 200));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(view.queryByText('stale')).not.toBeInTheDocument();
+    expect(view.getByText('newest')).toBeInTheDocument();
   });
 
   test('stops reloading after an error', async () => {

@@ -23,6 +23,7 @@ import (
 
 	"github.com/alexedwards/scs/bunstore"
 	"github.com/alexedwards/scs/v2"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
@@ -218,7 +219,11 @@ func New(options ...Option) (http.Handler, error) {
 		}
 		authService := auth.NewService(auth.NewRepository(cfg.database))
 		auth.RegisterRoutes(e.Group("/api/auth"), authService, sessionManager, validat, onLogout)
-		friends.RegisterRoutes(e.Group("/api/friends"), friends.NewService(friends.NewRepository(cfg.database)), sessionManager, authService)
+		var notifyMessage func(recipient, sender uuid.UUID, message string)
+		if cfg.webrtc != nil {
+			notifyMessage = cfg.webrtc.SendPrivateMessage
+		}
+		friends.RegisterRoutes(e.Group("/api/friends"), friends.NewService(friends.NewRepository(cfg.database), notifyMessage), sessionManager, authService)
 	}
 	if cfg.webrtc != nil {
 		webrtc.RegisterRoutes(e.Group(webrtcPrefix, auth.Middleware(sessionManager, nil, auth.AnonymousAllowed)), cfg.webrtc, func(r *http.Request) (webrtc.Identity, error) {

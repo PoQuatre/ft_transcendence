@@ -135,7 +135,7 @@ describe('<WebRTCProvider />', () => {
       return null;
     };
 
-    render(() => (
+    const { unmount } = render(() => (
       <WebRTCProvider>
         <Probe />
       </WebRTCProvider>
@@ -154,6 +154,7 @@ describe('<WebRTCProvider />', () => {
       'state',
       'sync',
     ]);
+    unmount();
   });
 
   test('retries with exponential backoff and resets after connecting', async () => {

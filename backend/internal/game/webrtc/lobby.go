@@ -62,7 +62,6 @@ func (s *Server) control(peer *pion.PeerConnection, channel *pion.DataChannel, m
 	if p == nil {
 		return
 	}
-	p.channel = channel
 	switch request.Type {
 	case "QuickPlayRequest":
 		if p.lobby == nil {
@@ -152,6 +151,6 @@ func sendControl(channel *pion.DataChannel, value any) {
 		err = channel.SendText(string(data))
 	}
 	if err != nil {
-		slog.Debug("send lobby control message", "error", err)
+		slog.Debug("send control message", "error", err)
 	}
 }

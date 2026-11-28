@@ -9,6 +9,7 @@ import {
 
 import { type Feedback, FormFeedback, text } from '~/components/settings/form';
 import { Button, Input } from '~/components/ui';
+import { useWebRTC } from '~/context/WebRTCContext';
 import { currentUser } from '~/lib/auth';
 import {
   type ChatMessage,
@@ -17,9 +18,6 @@ import {
   isMessageTooLong,
   sendMessage,
 } from '~/lib/friends';
-
-// Pas encore de temps réel côté backend : on relit la conversation.
-const POLL_MS = 3000;
 
 const key = (message: ChatMessage) => `${message.sender_id}/${message.sent_at}`;
 
@@ -31,21 +29,19 @@ const lastKey = (messages: ChatMessage[]) => {
 export type ConversationProps = { friend: Friend; onBack: () => void };
 
 export const Conversation: Component<ConversationProps> = (props) => {
+  const network = useWebRTC();
   const [messages, setMessages] = createSignal<ChatMessage[]>();
   const [feedback, setFeedback] = createSignal<Feedback>();
   const [pending, setPending] = createSignal(false);
   let list: HTMLOListElement | undefined;
-  let timer: ReturnType<typeof setInterval> | undefined;
-
-  const stop = () => {
-    clearInterval(timer);
-    timer = undefined;
-  };
+  let loadVersion = 0;
+  let initialChannel = true;
 
   const load = async () => {
+    const version = ++loadVersion;
     const result = await getMessages(props.friend.friend_id);
+    if (version !== loadVersion) return;
     if (!result.ok) {
-      stop();
       setFeedback({
         kind: 'error',
         title: result.title,
@@ -66,17 +62,46 @@ export const Conversation: Component<ConversationProps> = (props) => {
     setMessages(next.map((m) => known.get(key(m)) ?? m));
   };
 
-  const start = () => {
-    timer ??= setInterval(() => {
-      if (!document.hidden) void load();
-    }, POLL_MS);
-  };
-
   onSettled(() => {
     void load();
-    start();
-    return stop;
   });
+
+  const onOpen = () => void load();
+  const onMessage = (event: MessageEvent) => {
+    if (typeof event.data !== 'string') return;
+    try {
+      const message: unknown = JSON.parse(event.data);
+      if (
+        message &&
+        typeof message === 'object' &&
+        'type' in message &&
+        message.type === 'PrivateMessage' &&
+        'senderId' in message &&
+        message.senderId === props.friend.friend_id
+      ) {
+        void load();
+      }
+    } catch {
+      // Ignore messages that are not valid JSON.
+    }
+  };
+
+  createEffect(
+    () => network.channels().control,
+    (channel) => {
+      const initial = initialChannel;
+      initialChannel = false;
+      if (!channel) return undefined;
+
+      channel.addEventListener('open', onOpen);
+      channel.addEventListener('message', onMessage);
+      if (!initial && channel.readyState === 'open') onOpen();
+      return () => {
+        channel.removeEventListener('open', onOpen);
+        channel.removeEventListener('message', onMessage);
+      };
+    },
+  );
 
   createEffect(messages, () => {
     if (list) list.scrollTop = list.scrollHeight;
@@ -108,7 +133,6 @@ export const Conversation: Component<ConversationProps> = (props) => {
     }
     form.reset();
     await load();
-    start();
   };
 
   return (

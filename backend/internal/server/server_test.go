@@ -110,36 +110,7 @@ func TestWebRTCQuickPlayReceivesLobbyState(t *testing.T) {
 		close(opened)
 	})
 
-	offer, err := client.CreateOffer(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gatherComplete := pion.GatheringCompletePromise(client)
-	localDescriptionErr := client.SetLocalDescription(offer)
-	if localDescriptionErr != nil {
-		t.Fatal(localDescriptionErr)
-	}
-	<-gatherComplete
-
-	body, err := json.Marshal(client.LocalDescription())
-	if err != nil {
-		t.Fatal(err)
-	}
-	response := httptest.NewRecorder()
-	handler.ServeHTTP(response, httptest.NewRequestWithContext(
-		t.Context(), http.MethodPost, "/api/webrtc/offer", bytes.NewReader(body),
-	))
-	if response.Code != http.StatusOK {
-		t.Fatalf("POST /api/webrtc/offer status = %d, want %d: %s", response.Code, http.StatusOK, response.Body)
-	}
-
-	var answer pion.SessionDescription
-	if err := json.NewDecoder(response.Body).Decode(&answer); err != nil {
-		t.Fatal(err)
-	}
-	if err := client.SetRemoteDescription(answer); err != nil {
-		t.Fatal(err)
-	}
+	exchangeOffer(t, handler, client, nil)
 
 	select {
 	case <-opened:
@@ -322,6 +293,39 @@ func createExpectedDataChannels(t *testing.T, peer *pion.PeerConnection) (*pion.
 		t.Fatal(err)
 	}
 	return control, event
+}
+
+func exchangeOffer(t *testing.T, handler http.Handler, client *pion.PeerConnection, cookie *http.Cookie) {
+	t.Helper()
+	offer, err := client.CreateOffer(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gathered := pion.GatheringCompletePromise(client)
+	if err = client.SetLocalDescription(offer); err != nil {
+		t.Fatal(err)
+	}
+	<-gathered
+	body, err := json.Marshal(client.LocalDescription())
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/webrtc/offer", bytes.NewReader(body))
+	if cookie != nil {
+		req.AddCookie(cookie)
+	}
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, req)
+	if response.Code != http.StatusOK {
+		t.Fatalf("POST /api/webrtc/offer status = %d, want %d: %s", response.Code, http.StatusOK, response.Body)
+	}
+	var answer pion.SessionDescription
+	if err := json.NewDecoder(response.Body).Decode(&answer); err != nil {
+		t.Fatal(err)
+	}
+	if err := client.SetRemoteDescription(answer); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func serve(t *testing.T, handler http.Handler, method, target string) *httptest.ResponseRecorder {

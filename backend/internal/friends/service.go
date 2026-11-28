@@ -9,11 +9,12 @@ import (
 )
 
 type Service struct {
-	repo Repository
+	repo          Repository
+	notifyMessage func(recipient, sender uuid.UUID, message string)
 }
 
-func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo Repository, notifyMessage func(recipient, sender uuid.UUID, message string)) *Service {
+	return &Service{repo: repo, notifyMessage: notifyMessage}
 }
 
 func (s *Service) SendFriendRequest(ctx context.Context, userID, receiverID uuid.UUID) error {
@@ -71,6 +72,9 @@ func (s *Service) SendMessageToFriend(ctx context.Context, userID, friendID uuid
 	err = s.repo.CreateFriendMessage(ctx, userID, friendID, message)
 	if err != nil {
 		return err
+	}
+	if s.notifyMessage != nil {
+		s.notifyMessage(friendID, userID, message)
 	}
 	return nil
 }
