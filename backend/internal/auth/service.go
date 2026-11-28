@@ -258,7 +258,7 @@ func (s *Service) SendVerificationEmail(ctx context.Context, userID uuid.UUID, e
 
 func (s *Service) SignUp(ctx context.Context, req SignupRequest) (*UserResponse, error) {
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
-	req.Username = strings.TrimSpace(strings.ToLower(req.Username))
+	req.Username = strings.TrimSpace(req.Username)
 	if req.Email == "" || req.Password == "" || req.Username == "" {
 		return nil, ErrInvalidCredentials
 	}
@@ -321,7 +321,7 @@ func (s *Service) GetUserByID(ctx context.Context, id uuid.UUID) (*UserResponse,
 }
 
 func (s *Service) GetUserByUsername(ctx context.Context, username string) (*User, error) {
-	username = strings.TrimSpace(strings.ToLower(username))
+	username = strings.TrimSpace(username)
 	return s.repo.GetUserByUsername(ctx, username)
 }
 
@@ -375,7 +375,6 @@ func (s *Service) DeleteAccount(ctx context.Context, userID uuid.UUID, password 
 
 func (s *Service) RequestMailChange(ctx context.Context, userID uuid.UUID, email string) error {
 	if os.Getenv("HOSTNAME") == "" {
-
 		if err := s.repo.UpdateEmail(ctx, userID, email); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -437,7 +436,7 @@ func (s *Service) UpdateProfile(ctx context.Context, userID uuid.UUID, email, us
 		return err
 	}
 	email = strings.TrimSpace(strings.ToLower(email))
-	username = strings.TrimSpace(strings.ToLower(username))
+	username = strings.TrimSpace(username)
 	if email != "" && user.Email != email {
 		// Checks that the email is not already used.
 		_, err = s.repo.GetUserByEmail(ctx, email)
@@ -451,10 +450,6 @@ func (s *Service) UpdateProfile(ctx context.Context, userID uuid.UUID, email, us
 		if err != nil {
 			return err
 		}
-		// err = s.repo.UpdateEmail(ctx, userID, email)
-		// if err != nil {
-		// 	return err
-		// }
 	}
 	if username != "" && user.Username != username {
 		// Checks that the username is not already used.

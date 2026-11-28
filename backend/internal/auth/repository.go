@@ -283,7 +283,7 @@ func (r *bunRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*User, e
 
 func (r *bunRepository) GetUserByUsername(ctx context.Context, username string) (*User, error) {
 	user := new(User)
-	err := r.db.NewSelect().Model(user).Where("username = ?", username).Scan(ctx)
+	err := r.db.NewSelect().Model(user).Where("LOWER(username) = LOWER(?)", username).Scan(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
