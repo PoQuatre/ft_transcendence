@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,6 +24,7 @@ type mockRepository struct {
 	apiKeyUses          int
 	users               map[string]*User
 	usersverifs         map[uuid.UUID]*UserVerify
+	newmailverifs       map[uuid.UUID]*NewMailVerify
 	passwordresettokens map[uuid.UUID]*PasswordResetToken
 
 	friends        map[uuid.UUID][]uuid.UUID
@@ -35,12 +37,30 @@ func newMockRepository() *mockRepository {
 		apiKeys:             make(map[uuid.UUID]*APIKey),
 		users:               make(map[string]*User),
 		usersverifs:         make(map[uuid.UUID]*UserVerify),
+		newmailverifs:       make(map[uuid.UUID]*NewMailVerify),
 		passwordresettokens: make(map[uuid.UUID]*PasswordResetToken),
 	}
 }
 
+func (m *mockRepository) DeleteNewMailVerification(ctx context.Context, userID uuid.UUID) error {
+	delete(m.newmailverifs, userID)
+	return nil
+}
+
+func (m *mockRepository) GetNewMailVerificationByID(ctx context.Context, id uuid.UUID) (*NewMailVerify, error) {
+	if verif, ok := m.newmailverifs[id]; ok {
+		return verif, nil
+	}
+	return nil, ErrNotFound
+}
+
+func (m *mockRepository) CreateNewMailVerification(ctx context.Context, user *NewMailVerify) (*NewMailVerify, error) {
+	m.newmailverifs[user.UserID] = user
+	return user, nil
+}
+
 func (m *mockRepository) GetUserByUsername(ctx context.Context, username string) (*User, error) {
-	if u, ok := m.users[username]; ok {
+	if u, ok := m.users[strings.ToLower(username)]; ok {
 		return u, nil
 	}
 	return nil, ErrNotFound
@@ -120,6 +140,10 @@ func (m *mockRepository) CreateUser(ctx context.Context, u *User) (*User, error)
 	if _, exists := m.users[u.Email]; exists {
 		return nil, ErrAlreadyExists
 	}
+	lowerUser := strings.ToLower(u.Username)
+	if _, exists := m.users[lowerUser]; exists {
+		return nil, ErrUsernameAlreadyExists
+	}
 	u.ID = uuid.New()
 	m.users[u.Email] = u
 	m.users[u.Username] = u
@@ -166,7 +190,7 @@ func (m *mockRepository) DeleteUser(ctx context.Context, userID uuid.UUID) error
 		return nil
 	}
 	delete(m.users, target.Email)
-	delete(m.users, target.Username)
+	delete(m.users, strings.ToLower(target.Username))
 	return nil
 }
 
@@ -248,11 +272,17 @@ func (m *mockRepository) UpdateEmail(ctx context.Context, userID uuid.UUID, emai
 }
 
 func (m *mockRepository) UpdateUsername(ctx context.Context, userID uuid.UUID, username string) error {
+	lowerNew := strings.ToLower(username)
+	for _, u := range m.users {
+		if u.ID != userID && strings.ToLower(u.Username) == lowerNew {
+			return ErrUsernameAlreadyExists
+		}
+	}
 	for _, u := range m.users {
 		if u.ID == userID {
-			delete(m.users, u.Username)
+			delete(m.users, strings.ToLower(u.Username))
 			u.Username = username
-			m.users[username] = u
+			m.users[lowerNew] = u
 			return nil
 		}
 	}
