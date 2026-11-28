@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -19,32 +20,33 @@ import (
 	"github.com/uptrace/bun/driver/pgdriver"
 )
 
-func TestSessionsSurviveServerRestart(t *testing.T) {
+func integrationDB(t *testing.T, prefix string) *bun.DB {
+	t.Helper()
 	dsn := os.Getenv("TEST_POSTGRES_DSN")
 	if dsn == "" {
 		t.Skip("TEST_POSTGRES_DSN is not set")
 	}
 	admin := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
-	defer func() {
+	t.Cleanup(func() {
 		if closeErr := admin.Close(); closeErr != nil {
 			t.Error(closeErr)
 		}
-	}()
-	schema := "session_test_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	})
+	schema := prefix + "_test_" + strings.ReplaceAll(uuid.NewString(), "-", "")
 	if _, err := admin.ExecContext(t.Context(), `CREATE SCHEMA "`+schema+`"`); err != nil {
 		t.Fatal(err)
 	}
-	defer func() {
-		if _, dropErr := admin.ExecContext(t.Context(), `DROP SCHEMA "`+schema+`" CASCADE`); dropErr != nil {
+	t.Cleanup(func() {
+		if _, dropErr := admin.ExecContext(context.Background(), `DROP SCHEMA "`+schema+`" CASCADE`); dropErr != nil {
 			t.Error(dropErr)
 		}
-	}()
+	})
 	db := bun.NewDB(sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn), pgdriver.WithConnParams(map[string]any{"search_path": schema}))), pgdialect.New())
-	defer func() {
+	t.Cleanup(func() {
 		if closeErr := db.Close(); closeErr != nil {
 			t.Error(closeErr)
 		}
-	}()
+	})
 	files, err := filepath.Glob("../../migrations/*.tx.up.sql")
 	if err != nil || len(files) == 0 {
 		t.Fatalf("find migrations: %v", err)
@@ -58,6 +60,11 @@ func TestSessionsSurviveServerRestart(t *testing.T) {
 			t.Fatalf("apply %s: %v", file, execErr)
 		}
 	}
+	return db
+}
+
+func TestSessionsSurviveServerRestart(t *testing.T) {
+	db := integrationDB(t, "session")
 	first, err := New(WithDatabase(db))
 	if err != nil {
 		t.Fatal(err)

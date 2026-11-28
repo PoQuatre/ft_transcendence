@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pion/ice/v4"
 	pion "github.com/pion/webrtc/v4"
 )
@@ -165,6 +166,11 @@ func (s *Server) answer(ctx context.Context, offer pion.SessionDescription, iden
 			return
 		}
 		if channel.Label() == "control" {
+			s.mu.Lock()
+			if p := s.players[peer]; p != nil {
+				p.channel = channel
+			}
+			s.mu.Unlock()
 			channel.OnClose(func() {
 				if err := peer.Close(); err != nil {
 					slog.Debug("close WebRTC peer after control channel closed", "error", err)
@@ -214,6 +220,20 @@ func (s *Server) answer(ctx context.Context, offer pion.SessionDescription, iden
 
 	closePeer = false
 	return peer.LocalDescription(), nil
+}
+
+func (s *Server) SendPrivateMessage(recipient, sender uuid.UUID, message string) {
+	s.mu.Lock()
+	p := s.players[s.accounts[recipient.String()]]
+	var channel *pion.DataChannel
+	if p != nil {
+		channel = p.channel
+	}
+	s.mu.Unlock()
+	if channel == nil || channel.ReadyState() != pion.DataChannelStateOpen {
+		return
+	}
+	sendControl(channel, map[string]string{"type": "PrivateMessage", "senderId": sender.String(), "message": message})
 }
 
 func (s *Server) managePlayer(peer *pion.PeerConnection, validator *dataChannelValidator, p *player) error {
