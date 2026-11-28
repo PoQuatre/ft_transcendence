@@ -378,6 +378,8 @@ func (s *Service) UpdateProfile(ctx context.Context, userID uuid.UUID, email, us
 	if err != nil {
 		return err
 	}
+	email = strings.TrimSpace(strings.ToLower(email))
+	username = strings.TrimSpace(username)
 	if email != "" && user.Email != email {
 		// Checks that the email is not already used.
 		_, err = s.repo.GetUserByEmail(ctx, email)
